@@ -93,7 +93,7 @@ endif()
 set ( CIVET_SOURCE
 		src/core/civet.h
 		src/core/geometry.h
-		)
+		src/core/ray.h)
 
 if (CUDA_ENABLED)
 	set ( CIVET_GPU_SOURCE
@@ -115,7 +115,11 @@ add_library ( civet_lib STATIC
 		${CIVET_SOURCE}
 		${CIVET_GPU_SOURCE}
 		)
-set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CXX)
+if (CUDA_ENABLED)
+	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CUDA)
+else()
+	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CXX)
+endif()
 
 set ( CIVET_CXX_FEATURES
 		cxx_auto_type
