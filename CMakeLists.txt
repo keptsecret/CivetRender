@@ -92,7 +92,7 @@ endif()
 
 set ( CIVET_SOURCE
 		src/core/civet.h
-		src/core/geometry.h
+		src/core/vecmath.h
 		src/core/ray.h)
 
 if (CUDA_ENABLED)

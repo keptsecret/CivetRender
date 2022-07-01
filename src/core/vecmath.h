@@ -1,5 +1,5 @@
-#ifndef CIVET_GEOMETRY_H
-#define CIVET_GEOMETRY_H
+#ifndef CIVET_VECMATH_H
+#define CIVET_VECMATH_H
 
 #include "civet.h"
 
@@ -749,7 +749,7 @@ CIVET_CPU_GPU inline Vector2<T> normalize(const Vector2<T>& v) {
 }
 
 template <typename T>
-CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Vector2<T>& v) {
+inline std::ostream& operator<<(std::ostream& os, const Vector2<T>& v) {
 	os << "[ " << v.x << ", " << v.y << " ]";
 	return os;
 }
@@ -846,7 +846,7 @@ CIVET_CPU_GPU inline Vector3<T> coordinateSystem(const Vector3<T>& v1, Vector3<T
 }
 
 template <typename T>
-CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Vector3<T>& v) {
+inline std::ostream& operator<<(std::ostream& os, const Vector3<T>& v) {
 	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
 	return os;
 }
@@ -893,7 +893,7 @@ CIVET_CPU_GPU inline Point2<T> abs(const Point2<T> &p) {
 }
 
 template <typename T>
-CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Point2<T>& p) {
+inline std::ostream& operator<<(std::ostream& os, const Point2<T>& p) {
 	os << "[ " << p.x << ", " << p.y << " ]";
 	return os;
 }
@@ -945,7 +945,7 @@ CIVET_CPU_GPU inline Point3<T> permute(const Point3<T>& p, int x, int y, int z) 
 }
 
 template <typename T>
-CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Point3<T>& p) {
+inline std::ostream& operator<<(std::ostream& os, const Point3<T>& p) {
 	os << "[ " << p.x << ", " << p.y << ", " << p.z << " ]";
 	return os;
 }
@@ -1017,11 +1017,11 @@ CIVET_CPU_GPU inline Normal3<T> faceforward(const Vector3<T>& v, const Normal3<T
 }
 
 template <typename T>
-CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Normal3<T>& v) {
+inline std::ostream& operator<<(std::ostream& os, const Normal3<T>& v) {
 	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
 	return os;
 }
 
 } // namespace civet
 
-#endif // CIVET_GEOMETRY_H
+#endif // CIVET_VECMATH_H
