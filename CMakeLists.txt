@@ -8,8 +8,15 @@ project (CIVET LANGUAGES CXX C)
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set (GPU_SHADER_MODEL "" CACHE STRING "")
+
 find_package ( Threads )
 find_package( OpenGL REQUIRED )
+
+if (MSVC)
+	list (APPEND CIVET_DEFINITIONS "CIVET_IS_MSVC" "_CRT_SECURE_NO_WARNINGS")
+	list (APPEND CIVET_DEFINITIONS "CIVET_IS_MSVC" "_ENABLE_EXTENDED_ALIGNED_STORAGE")
+endif ()
 
 include ( CheckCXXSourceCompiles )
 
@@ -58,8 +65,26 @@ if (CMAKE_CUDA_COMPILER)
 		set (CMAKE_CUDA_STANDARD 17)
 	endif ()
 
+	# https://github.com/VIAME/VIAME/blob/aa6c5f56a898b08e4da102c400b453e23952199c/CMakeLists.txt#L291
+	if (NOT CUDA_VERSION_PATCH)
+		if (CUDA_NVCC_EXECUTABLE AND
+				CUDA_NVCC_EXECUTABLE STREQUAL CMAKE_CUDA_COMPILER AND
+				CMAKE_CUDA_COMPILER_VERSION MATCHES [=[([0-9]+)\.([0-9]+)\.([0-9]+)]=])
+			set (CUDA_VERSION_PATCH "${CMAKE_MATCH_3}")
+		elseif (CUDA_NVCC_EXECUTABLE)
+			execute_process (COMMAND ${CUDA_NVCC_EXECUTABLE} "--version" OUTPUT_VARIABLE NOUT)
+			if (NOUT MATCHES [=[ V([0-9]+)\.([0-9]+)\.([0-9]+)]=])
+				set (CUDA_VERSION_PATCH "${CMAKE_MATCH_3}")
+			endif ()
+		endif ()
+	endif ()
+
+	message (STATUS "Found CUDA: ${CUDA_VERSION_MAJOR}.${CUDA_VERSION_MINOR}.${CUDA_VERSION_PATCH}")
+	if (CUDA_VERSION_MAJOR EQUAL 11 AND CUDA_VERSION_MINOR EQUAL 3 AND CUDA_VERSION_PATCH LESS 109)
+		message (SEND_ERROR "Unfortunately, civet triggers an internal compiler error in CUDA 11.3.0. Please either use CUDA 11.0-11.2 or 11.3.1 or later.")
+	endif ()
 	enable_language (CUDA)
-	message(STATUS "CUDA Support enabled.")
+	list (APPEND CIVET_DEFINITIONS "CIVET_BUILD_GPU")
 
 	set (CUDA_ENABLED ON)
 	include_directories (${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
@@ -76,6 +101,8 @@ if (CMAKE_CUDA_COMPILER)
 			"$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcudafe --diag_suppress=implicit_return_from_non_void_function>"
 	)
 
+	string (APPEND CMAKE_CUDA_FLAGS " -Xnvlink -suppress-stack-size-warning")
+
 	target_compile_options (
 			cuda_build_configuration
 			INTERFACE
@@ -83,6 +110,48 @@ if (CMAKE_CUDA_COMPILER)
 			# The "$<NOT:$<BOOL:$<TARGET_PROPERTY:CUDA_PTX_COMPILATION>>>" part is to not add debugging symbols when generating PTX files for OptiX; see https://github.com/mmp/pbrt-v4/issues/69#issuecomment-715499748.
 			"$<$<COMPILE_LANGUAGE:CUDA>:$<IF:$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:$<TARGET_PROPERTY:CUDA_PTX_COMPILATION>>>>,-G;-g,-lineinfo;-maxrregcount;128>>"
 	)
+
+	if (GPU_SHADER_MODEL STREQUAL "")
+		#Get CUDA compute capability
+		set (CHECK_CUDA_OUTPUT_EXE ${CMAKE_BINARY_DIR}/checkcuda)
+		execute_process (COMMAND ${CMAKE_CUDA_COMPILER} -lcuda ${CMAKE_SOURCE_DIR}/cmake_helpers/checkcuda.cu -o ${CHECK_CUDA_OUTPUT_EXE}
+				RESULT_VARIABLE BUILD_CHECK_CUDA_RETURN_CODE)
+
+		if (NOT ${BUILD_CHECK_CUDA_RETURN_CODE} EQUAL 0)
+			message (SEND_ERROR "Was unable to build checkcuda, consider manually setting GPU_SHADER_MODEL")
+		endif ()
+
+		execute_process (COMMAND ${CHECK_CUDA_OUTPUT_EXE}
+				RESULT_VARIABLE CUDA_RETURN_CODE
+				OUTPUT_VARIABLE CHECK_CUDA_OUTPUT)
+
+		if (NOT ${CUDA_RETURN_CODE} EQUAL 0)
+			message (SEND_ERROR ${CHECK_CUDA_OUTPUT})
+		else ()
+			set (ARCH "${CHECK_CUDA_OUTPUT}")
+			message (STATUS "Detected CUDA Architecture: ${ARCH}")
+			string (APPEND CMAKE_CUDA_FLAGS " --gpu-architecture=${ARCH}")
+		endif ()
+	else ()
+		set (ARCH "${GPU_SHADER_MODEL}")
+		message (STATUS "Specified CUDA Architecture: ${ARCH}")
+		string (APPEND CMAKE_CUDA_FLAGS " --gpu-architecture=${ARCH}")
+	endif ()
+
+	# find CUDA's bin2c executable
+	get_filename_component (cuda_compiler_bin "${CMAKE_CUDA_COMPILER}" DIRECTORY)
+	find_program (BIN2C
+			NAMES bin2c
+			PATHS ${cuda_compiler_bin}
+			DOC "Path to the CUDA SDK bin2c executable."
+			NO_DEFAULT_PATH)
+	if (NOT BIN2C)
+		message (FATAL_ERROR
+				"bin2c not found:\n"
+				"  CMAKE_CUDA_COMPILER='${CMAKE_CUDA_COMPILER}'\n"
+				"  cuda_compiler_bin='${cuda_compiler_bin}'\n"
+				)
+	endif ()
 else()
 	message(STATUS "CUDA not found")
 endif()
@@ -90,10 +159,18 @@ endif()
 ###########################################################################
 # Main civet stuff
 
-set ( CIVET_SOURCE
+set ( CIVET_SOURCE_HEADERS
 		src/core/civet.h
 		src/core/vecmath.h
-		src/core/ray.h)
+		src/core/ray.h
+		src/core/transform.h
+		src/core/interaction.h
+		)
+
+set ( CIVET_SOURCE
+		src/core/transform.cpp
+		src/core/interaction.cpp
+		)
 
 if (CUDA_ENABLED)
 	set ( CIVET_GPU_SOURCE
@@ -102,6 +179,7 @@ if (CUDA_ENABLED)
 			)
 
 	set_source_files_properties(
+			${CIVET_SOURCE_HEADERS}
 			${CIVET_SOURCE}
 
 			PROPERTIES LANGUAGE CUDA
@@ -112,6 +190,7 @@ include_directories( src )
 include_directories( src/core )
 
 add_library ( civet_lib STATIC
+		${CIVET_SOURCE_HEADERS}
 		${CIVET_SOURCE}
 		${CIVET_GPU_SOURCE}
 		)
@@ -120,6 +199,8 @@ if (CUDA_ENABLED)
 else()
 	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CXX)
 endif()
+
+target_compile_definitions (civet_lib PRIVATE ${CIVET_DEFINITIONS})
 
 set ( CIVET_CXX_FEATURES
 		cxx_auto_type
@@ -131,34 +212,35 @@ set ( CIVET_CXX_FEATURES
 		)
 target_compile_features ( civet_lib PRIVATE ${CIVET_CXX_FEATURES} )
 
-IF (WIN32)
+if (WIN32)
 	# Avoid a name clash when building on Visual Studio
-	SET_TARGET_PROPERTIES ( civet_lib PROPERTIES OUTPUT_NAME libcivet )
-ENDIF()
+	set_target_properties ( civet_lib PROPERTIES OUTPUT_NAME libcivet )
+endif()
 
 set_property(TARGET civet_lib PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 target_compile_options(civet_lib PUBLIC ${CIVET_CXX_FLAGS})
 target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:cuda_build_configuration>)
 
-SET ( ALL_CIVET_LIBS
+set ( ALL_CIVET_LIBS
 		civet_lib
 		)
 
 add_executable ( civet_exe src/civet.cpp )
 
 set_target_properties ( civet_exe PROPERTIES OUTPUT_NAME civet )
-target_compile_features ( civet_exe PRIVATE ${CIVET_CXX11_FEATURES} )
+target_compile_definitions (civet_exe PRIVATE ${CIVET_DEFINITIONS})
+target_compile_features ( civet_exe PRIVATE ${CIVET_CXX_FEATURES} )
 target_link_libraries ( civet_exe ${ALL_CIVET_LIBS} )
 
 # Installation
 
-INSTALL ( TARGETS
+install ( TARGETS
 		civet_exe
 		DESTINATION
 		bin
 		)
 
-INSTALL ( TARGETS
+install ( TARGETS
 		civet_lib
 		DESTINATION
 		lib

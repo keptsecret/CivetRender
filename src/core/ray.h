@@ -62,7 +62,7 @@ public:
 		return Ray::hasNaNs() || (has_differentials && (rx_origin.hasNaNs() || ry_origin.hasNaNs() || rx_direction.hasNaNs() || ry_direction.hasNaNs()));
 	}
 
-	friend std::ostream &operator<<(std::ostream &os, const RayDifferential &r) {
+	friend std::ostream &operator<<(std::ostream& os, const RayDifferential& r) {
 		os << "[ " << (Ray &)r << " has differentials: " <<
 				(r.has_differentials ? "true" : "false") << ", xo = " << r.rx_origin <<
 				", xd = " << r.rx_direction << ", yo = " << r.ry_origin << ", yd = " <<

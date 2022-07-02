@@ -19,7 +19,7 @@ public:
 	Vector2(T _x, T _y) :
 			x(_x), y(_y) {
 		if (!hasNaNs()) {
-			std::cerr << "ERROR::Vector2: NaN value assigned on initialization.\n";
+			printf("ERROR::Vector2: NaN value assigned on initialization.\n");
 		}
 	}
 
@@ -70,7 +70,7 @@ public:
 	CIVET_CPU_GPU
 	Vector2<T> operator/(T s) const {
 		if (s == 0.0f) {
-			std::cerr << "ERROR::Vector2: Divide by zero.\n";
+			printf("ERROR::Vector2: Divide by zero.\n");
 		}
 		float inv = 1.0f / s;
 		return Vector2(x * inv, y * inv);
@@ -79,7 +79,7 @@ public:
 	CIVET_CPU_GPU
 	Vector2<T>& operator/=(T s) const {
 		if (s == 0.0f) {
-			std::cerr << "ERROR::Vector2: Divide by zero.\n";
+			printf("ERROR::Vector2: Divide by zero.\n");
 		}
 		float inv = 1.0f / s;
 		x *= inv;
@@ -100,7 +100,7 @@ public:
 	CIVET_CPU_GPU
 	T operator[](int i) const {
 		if (i < 0 || i > 1) {
-			std::cerr << "ERROR::Vector2: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Vector2: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -111,7 +111,7 @@ public:
 	CIVET_CPU_GPU
 	T& operator[](int i) {
 		if (i < 0 || i > 1) {
-			std::cerr << "ERROR::Vector2: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Vector2: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -142,7 +142,7 @@ public:
 	Vector3(T _x, T _y, T _z) :
 			x(_x), y(_y), z(_z) {
 		if (!hasNaNs()) {
-			std::cerr << "ERROR::Vector3: NaN value assigned on initialization.\n";
+			printf("ERROR::Vector3: NaN value assigned on initialization.\n");
 		}
 	}
 
@@ -196,7 +196,7 @@ public:
 	CIVET_CPU_GPU
 	Vector3<T> operator/(T s) const {
 		if (s == 0.0f) {
-			std::cerr << "ERROR::Vector3: Divide by zero.\n";
+			printf("ERROR::Vector3: Divide by zero.\n");
 		}
 		float inv = 1.0f / s;
 		return Vector3(x * inv, y * inv, z * inv);
@@ -205,7 +205,7 @@ public:
 	CIVET_CPU_GPU
 	Vector3<T>& operator/=(T s) const {
 		if (s == 0.0f) {
-			std::cerr << "ERROR::Vector3: Divide by zero.\n";
+			printf("ERROR::Vector3: Divide by zero.\n");
 		}
 		float inv = 1.0f / s;
 		x *= inv;
@@ -227,7 +227,7 @@ public:
 	CIVET_CPU_GPU
 	T operator[](int i) const {
 		if (i < 0 || i > 2) {
-			std::cerr << "ERROR::Vector3: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Vector3: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -241,7 +241,7 @@ public:
 	CIVET_CPU_GPU
 	T& operator[](int i) {
 		if (i < 0 || i > 2) {
-			std::cerr << "ERROR::Vector3: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Vector3: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -279,14 +279,14 @@ public:
 	Point3<T>(T _x, T _y, T _z) :
 			x(_x), y(_y), z(_z) {
 		if (!hasNaNs()) {
-			std::cerr << "ERROR::Point3: NaN value assigned on initialization.\n";
+			printf("ERROR::Point3: NaN value assigned on initialization.\n");
 		}
 	}
 
 	template <typename U>
 	explicit Point3(const Point3<U>& p) :
 			x((T)p.x), y((T)p.y), z((T)p.z) {
-		std::cerr << "ERROR::Point3: NaN value assigned on initialization.\n";
+		printf("ERROR::Point3: NaN value assigned on initialization.\n");
 	}
 
 	template <typename U>
@@ -354,7 +354,7 @@ public:
 	template <typename U>
 	CIVET_CPU_GPU Point3<T> operator/(U f) const {
 		if (f == 0.0f) {
-			std::cerr << "ERROR::Point3: Divide by zero.\n";
+			printf("ERROR::Point3: Divide by zero.\n");
 		}
 		float inv = 1.0f / f;
 		return Point3<T>(inv * x, inv * y, inv * z);
@@ -363,7 +363,7 @@ public:
 	template <typename U>
 	CIVET_CPU_GPU Point3<T>& operator/=(U f) {
 		if (f == 0.0f) {
-			std::cerr << "ERROR::Point3: Divide by zero.\n";
+			printf("ERROR::Point3: Divide by zero.\n");
 		}
 		float inv = 1.0f / f;
 		x *= inv;
@@ -375,7 +375,7 @@ public:
 	CIVET_CPU_GPU
 	T operator[](int i) const {
 		if (i < 0 || i > 2) {
-			std::cerr << "ERROR::Point3: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Point3: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -389,7 +389,7 @@ public:
 	CIVET_CPU_GPU
 	T& operator[](int i) {
 		if (i < 0 || i > 2) {
-			std::cerr << "ERROR::Point3: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Point3: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -428,7 +428,7 @@ public:
 	Point2<T>(T _x, T _y) :
 			x(_x), y(_y) {
 		if (!hasNaNs()) {
-			std::cerr << "ERROR::Point2: NaN value assigned on initialization.\n";
+			printf("ERROR::Point2: NaN value assigned on initialization.\n");
 		}
 	}
 
@@ -436,7 +436,7 @@ public:
 	explicit Point2(const Point3<T>& p) :
 			x(p.x), y(p.y) {
 		if (!hasNaNs()) {
-			std::cerr << "ERROR::Point2: NaN value assigned on initialization.\n";
+			printf("ERROR::Point2: NaN value assigned on initialization.\n");
 		}
 	}
 
@@ -496,7 +496,7 @@ public:
 	CIVET_CPU_GPU
 	Vector2<T> operator/(T s) const {
 		if (s == 0.0f) {
-			std::cerr << "ERROR::Point2: Divide by zero.\n";
+			printf("ERROR::Point2: Divide by zero.\n");
 		}
 		float inv = 1 / s;
 		return Vector2(x * inv, y * inv);
@@ -505,7 +505,7 @@ public:
 	CIVET_CPU_GPU
 	Vector2<T>& operator/=(T s) const {
 		if (s == 0.0f) {
-			std::cerr << "ERROR::Point2: Divide by zero.\n";
+			printf("ERROR::Point2: Divide by zero.\n");
 		}
 		float inv = 1 / s;
 		x *= inv;
@@ -526,7 +526,7 @@ public:
 	CIVET_CPU_GPU
 	T operator[](int i) const {
 		if (i < 0 || i > 1) {
-			std::cerr << "ERROR::Point2: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Point2: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -537,7 +537,7 @@ public:
 	CIVET_CPU_GPU
 	T& operator[](int i) {
 		if (i < 0 || i > 1) {
-			std::cerr << "ERROR::Point2: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Point2: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -567,7 +567,7 @@ public:
 	Normal3<T>(T _x, T _y, T _z) :
 			x(_x), y(_y), z(_z) {
 		if (!hasNaNs()) {
-			std::cerr << "ERROR::Normal3: NaN value assigned on initialization.\n";
+			printf("ERROR::Normal3: NaN value assigned on initialization.\n");
 		}
 	}
 
@@ -575,7 +575,7 @@ public:
 	explicit Normal3<T>(const Vector3<T>& v) :
 			x(v.x), y(v.y), z(v.z) {
 		if (!hasNaNs()) {
-			std::cerr << "ERROR::Normal3: NaN value assigned on initialization.\n";
+			printf("ERROR::Normal3: NaN value assigned on initialization.\n");
 		}
 	}
 
@@ -650,7 +650,7 @@ public:
 	CIVET_CPU_GPU
 	T operator[](int i) const {
 		if (i < 0 || i > 2) {
-			std::cerr << "ERROR::Normal3: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Normal3: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -664,7 +664,7 @@ public:
 	CIVET_CPU_GPU
 	T& operator[](int i) {
 		if (i < 0 || i > 2) {
-			std::cerr << "ERROR::Normal3: Tried to access element at index " << i << ".\n";
+			printf("ERROR::Normal3: Tried to access element at index %d.\n", i);
 		}
 		if (i == 0) {
 			return x;
@@ -687,19 +687,6 @@ public:
 
 	T x, y, z;
 };
-
-// Some common typedefs
-typedef Vector2<float> Vector2f;
-typedef Vector2<int> Vector2i;
-typedef Vector3<float> Vector3f;
-typedef Vector3<int> Vector3i;
-
-typedef Point2<float> Point2f;
-typedef Point2<int> Point2i;
-typedef Point3<float> Point3f;
-typedef Point3<int> Point3i;
-
-typedef Normal3<float> Normal3f;
 
 /* -------------------------------------------------------------------------------
  * Bounds (AABBs)
@@ -885,11 +872,6 @@ public:
 	Point3<T> p_min, p_max;
 };
 
-typedef Bounds2<float> Bounds2f;
-typedef Bounds2<int> Bounds2i;
-typedef Bounds3<float> Bounds3f;
-typedef Bounds3<int> Bounds3i;
-
 class Bounds2iIterator : public std::forward_iterator_tag {
 public:
 	Bounds2iIterator(const Bounds2i &b, const Point2i &pt)
@@ -938,7 +920,7 @@ template <typename T>
 CIVET_CPU_GPU Vector2<T>::Vector2(const Point2<T>& p) :
 		x(p.x), y(p.y) {
 	if (!hasNaNs()) {
-		std::cerr << "ERROR::Vector2: NaN value assigned on initialization.\n";
+		printf("ERROR::Vector2: NaN value assigned on initialization.\n");
 	}
 }
 
@@ -946,7 +928,7 @@ template <typename T>
 CIVET_CPU_GPU Vector2<T>::Vector2(const Point3<T>& p) :
 		x(p.x), y(p.y) {
 	if (!hasNaNs()) {
-		std::cerr << "ERROR::Vector2: NaN value assigned on initialization.\n";
+		printf("ERROR::Vector2: NaN value assigned on initialization.\n");
 	}
 }
 
@@ -975,18 +957,12 @@ CIVET_CPU_GPU inline Vector2<T> normalize(const Vector2<T>& v) {
 	return v / v.length();
 }
 
-template <typename T>
-inline std::ostream& operator<<(std::ostream& os, const Vector2<T>& v) {
-	os << "[ " << v.x << ", " << v.y << " ]";
-	return os;
-}
-
 // Vector3
 template <typename T>
 CIVET_CPU_GPU Vector3<T>::Vector3(const Point3<T>& p) :
 		x(p.x), y(p.y), z(p.z) {
 	if (!hasNaNs()) {
-		std::cerr << "ERROR::Vector3: NaN value assigned on initialization.\n";
+		printf("ERROR::Vector3: NaN value assigned on initialization.\n");
 	}
 }
 
@@ -994,7 +970,7 @@ template <typename T>
 CIVET_CPU_GPU Vector3<T>::Vector3(const Normal3<T>& n) :
 		x(n.x), y(n.y), z(n.z) {
 	if (!hasNaNs()) {
-		std::cerr << "ERROR::Vector3: NaN value assigned on initialization.\n";
+		printf("ERROR::Vector3: NaN value assigned on initialization.\n");
 	}
 }
 
@@ -1072,12 +1048,6 @@ CIVET_CPU_GPU inline Vector3<T> coordinateSystem(const Vector3<T>& v1, Vector3<T
 	*v3 = cross(v1, *v2);
 }
 
-template <typename T>
-inline std::ostream& operator<<(std::ostream& os, const Vector3<T>& v) {
-	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
-	return os;
-}
-
 // Point2
 template <typename T>
 CIVET_CPU_GPU inline float distance(const Point2<T>& p1, const Point2<T>& p2) {
@@ -1117,12 +1087,6 @@ CIVET_CPU_GPU inline Point2<T> ceil(const Point2<T>& p) {
 template <typename T>
 CIVET_CPU_GPU inline Point2<T> abs(const Point2<T>& p) {
 	return Point2<T>(std::abs(p.x), std::abs(p.y));
-}
-
-template <typename T>
-inline std::ostream& operator<<(std::ostream& os, const Point2<T>& p) {
-	os << "[ " << p.x << ", " << p.y << " ]";
-	return os;
 }
 
 // Point3
@@ -1169,12 +1133,6 @@ CIVET_CPU_GPU inline Point3<T> abs(const Point3<T>& p) {
 template <typename T>
 CIVET_CPU_GPU inline Point3<T> permute(const Point3<T>& p, int x, int y, int z) {
 	return Point3<T>(p[x], p[y], p[z]);
-}
-
-template <typename T>
-inline std::ostream& operator<<(std::ostream& os, const Point3<T>& p) {
-	os << "[ " << p.x << ", " << p.y << ", " << p.z << " ]";
-	return os;
 }
 
 // Normal
@@ -1241,12 +1199,6 @@ CIVET_CPU_GPU inline Normal3<T> faceforward(const Vector3<T>& v, const Vector3<T
 template <typename T>
 CIVET_CPU_GPU inline Normal3<T> faceforward(const Vector3<T>& v, const Normal3<T>& n) {
 	return dot(v, n) < 0.0f ? -v : v;
-}
-
-template <typename T>
-inline std::ostream& operator<<(std::ostream& os, const Normal3<T>& v) {
-	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
-	return os;
 }
 
 // Bounds2
