@@ -1,5 +1,7 @@
 #include "transform.h"
 
+#include "interaction.h"
+
 namespace civet {
 
 bool solveLinearSystem(const float A[2][2], const float B[2], float* x0, float* x1) {
@@ -260,6 +262,40 @@ bool Transform::swapsHandedness() const {
 			m.m[0][1] * (m.m[1][0] * m.m[2][2] - m.m[1][2] * m.m[2][0]) +
 			m.m[0][2] * (m.m[1][0] * m.m[2][1] - m.m[1][1] * m.m[2][0]);
 	return det < 0;
+}
+
+CIVET_CPU_GPU
+SurfaceInteraction Transform::operator()(const SurfaceInteraction& si) const {
+	SurfaceInteraction ret;
+	const Transform& t = *this;
+	ret.p = t(si.p, si.p_error, &ret.p_error);
+	ret.n = normalize(t(si.n));
+	ret.wo = t(si.wo);
+	ret.time = si.time;
+	ret.medium_interface = si.medium_interface;
+	ret.uv = si.uv;
+	ret.shape = si.shape;
+	ret.dpdu = t(si.dpdu);
+	ret.dpdv = t(si.dpdv);
+	ret.dndu = t(si.dndu);
+	ret.dndv = t(si.dndv);
+	ret.shading.n = normalize(t(si.shading.n));
+	ret.shading.dpdu = t(si.shading.dpdu);
+	ret.shading.dpdv = t(si.shading.dpdv);
+	ret.shading.dndu = t(si.shading.dndu);
+	ret.shading.dndv = t(si.shading.dndv);
+	ret.dudx = si.dudx;
+	ret.dvdx = si.dvdx;
+	ret.dudy = si.dudy;
+	ret.dvdy = si.dvdy;
+	ret.dpdx = t(si.dpdx);
+	ret.dpdy = t(si.dpdy);
+	ret.bsdf = si.bsdf;
+	ret.bssrdf = si.bssrdf;
+	ret.primitive = si.primitive;
+	// ret.n = faceforward(ret.n, ret.shading.n);
+	ret.shading.n = faceforward(ret.shading.n, ret.n);
+	return ret;
 }
 
 } // namespace civet

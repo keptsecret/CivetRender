@@ -181,19 +181,21 @@ public:
 	CIVET_CPU_GPU
 	bool swapsHandedness() const;
 
+	CIVET_CPU_GPU
+	SurfaceInteraction operator()(const SurfaceInteraction& si) const;
+
 	// Apply transforms with rounding errors
+	// TODO: implement rounding error transforms
 	template <typename T>
-	inline Point3<T> operator()(const Point3<T>& pt, Vector3<T>* absError) const;
+	CIVET_CPU_GPU inline Point3<T> operator()(const Point3<T>& pt, Vector3<T>* absError) const;
 	template <typename T>
-	inline Point3<T> operator()(const Point3<T>& p, const Vector3<T>& pError, Vector3<T>* pTransError) const;
+	CIVET_CPU_GPU inline Point3<T> operator()(const Point3<T>& p, const Vector3<T>& pError, Vector3<T>* pTransError) const;
 	template <typename T>
-	inline Vector3<T> operator()(const Vector3<T>& v, Vector3<T>* vTransError) const;
+	CIVET_CPU_GPU inline Vector3<T> operator()(const Vector3<T>& v, Vector3<T>* vTransError) const;
 	template <typename T>
-	inline Vector3<T> operator()(const Vector3<T>& v, const Vector3<T>& vError, Vector3<T>* vTransError) const;
-	inline Ray operator()(const Ray& r, Vector3f* oError, Vector3f* dError) const;
-	inline Ray operator()(const Ray& r, const Vector3f& oErrorIn, const Vector3f& dErrorIn, Vector3f* oErrorOut, Vector3f* dErrorOut) const;
-
-
+	CIVET_CPU_GPU inline Vector3<T> operator()(const Vector3<T>& v, const Vector3<T>& vError, Vector3<T>* vTransError) const;
+	CIVET_CPU_GPU inline Ray operator()(const Ray& r, Vector3f* oError, Vector3f* dError) const;
+	CIVET_CPU_GPU inline Ray operator()(const Ray& r, const Vector3f& oErrorIn, const Vector3f& dErrorIn, Vector3f* oErrorOut, Vector3f* dErrorOut) const;
 
 private:
 	Matrix4 m, m_inv;
@@ -273,6 +275,8 @@ inline RayDifferential Transform::operator()(const RayDifferential& r) const {
 	ret.ry_direction = (*this)(r.ry_direction);
 	return ret;
 }
+
+// TODO: implement animated transforms from PBR book
 
 } // namespace civet
 
