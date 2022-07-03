@@ -1143,7 +1143,7 @@ CIVET_CPU_GPU inline Normal3<T> operator*(U f, const Normal3<T>& n) {
 
 template <typename T>
 CIVET_CPU_GPU inline Normal3<T> normalize(const Normal3<T>& n) {
-	return n / n.Length();
+	return n / n.length();
 }
 
 template <typename T>
