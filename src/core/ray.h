@@ -23,12 +23,6 @@ public:
 		return o.hasNaNs() || d.hasNaNs() || std::isnan(t_max);
 	}
 
-	friend std::ostream &operator<<(std::ostream &os, const Ray &r) {
-		os << "[o=" << r.o << ", d=" << r.d << ", tMax=" << r.t_max
-		   << ", time=" << r.time << "]";
-		return os;
-	}
-
 	Point3f o;
 	Vector3f d;
 	mutable float t_max;
@@ -60,14 +54,6 @@ public:
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
 		return Ray::hasNaNs() || (has_differentials && (rx_origin.hasNaNs() || ry_origin.hasNaNs() || rx_direction.hasNaNs() || ry_direction.hasNaNs()));
-	}
-
-	friend std::ostream &operator<<(std::ostream& os, const RayDifferential& r) {
-		os << "[ " << (Ray &)r << " has differentials: " <<
-				(r.has_differentials ? "true" : "false") << ", xo = " << r.rx_origin <<
-				", xd = " << r.rx_direction << ", yo = " << r.ry_origin << ", yd = " <<
-				r.ry_direction;
-		return os;
 	}
 
 	bool has_differentials;

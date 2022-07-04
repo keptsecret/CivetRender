@@ -2,7 +2,6 @@
 #define CIVET_H
 
 #include <stdint.h>
-#include <cstddef>
 
 #if defined(__CUDA_ARCH__)
 #define IS_GPU_CODE
@@ -29,6 +28,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstdio>
 #include <cstring>
 #include <initializer_list>
 #include <iterator>
@@ -107,7 +107,7 @@ static constexpr float Sqrt2 = 1.41421356237309504880;
 
 // Global inline functions
 template <typename T>
-CIVET_CPU_GPU inline void swap(T &a, T &b) {
+CIVET_CPU_GPU inline void swap(T& a, T& b) {
 	T tmp = std::move(a);
 	a = std::move(b);
 	b = std::move(tmp);
@@ -153,6 +153,36 @@ inline float radians(float deg) {
 CIVET_CPU_GPU
 inline float degrees(float rad) {
 	return (180 / Pi) * rad;
+}
+
+// Math functions to support both CPU and GPU
+
+template <typename T>
+inline CIVET_CPU_GPU typename std::enable_if_t<std::is_floating_point_v<T>, bool> isNaN(T v) {
+#ifdef IS_GPU_CODE
+	return isnan(v);
+#else
+	return std::isnan(v);
+#endif
+}
+
+template <typename T>
+inline CIVET_CPU_GPU typename std::enable_if_t<std::is_integral_v<T>, bool> isNaN(T v) {
+	return false;
+}
+
+template <typename T>
+inline CIVET_CPU_GPU typename std::enable_if_t<std::is_floating_point_v<T>, bool> isInf(T v) {
+#ifdef IS_GPU_CODE
+	return isinf(v);
+#else
+	return std::isinf(v);
+#endif
+}
+
+template <typename T>
+inline CIVET_CPU_GPU typename std::enable_if_t<std::is_integral_v<T>, bool> isInf(T v) {
+	return false;
 }
 
 } // namespace civet

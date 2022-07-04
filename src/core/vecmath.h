@@ -126,7 +126,7 @@ public:
 
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
-		return std::isnan(x) || std::isnan(y);
+		return civet::isNaN(x) || civet::isNaN(y);
 	}
 
 	T x, y;
@@ -255,11 +255,11 @@ public:
 	CIVET_CPU_GPU
 	float lengthSquared() const { return x * x + y * y + z * z; }
 	CIVET_CPU_GPU
-	float length() const { return std::sqrt(lengthSquared()); }
+	float length() const { return sqrt(lengthSquared()); }
 
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
-		return std::isnan(x) || std::isnan(y) || std::isnan(z);
+		return civet::isNaN(x) || civet::isNaN(y) || civet::isNaN(z);
 	}
 
 	T x, y, z;
@@ -412,7 +412,7 @@ public:
 
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
-		return std::isnan(x) || std::isnan(y) || std::isnan(z);
+		return civet::isNaN(x) || civet::isNaN(y) || civet::isNaN(z);
 	}
 
 	T x, y, z;
@@ -547,7 +547,7 @@ public:
 
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
-		return std::isnan(x) || std::isnan(y);
+		return civet::isNaN(x) || civet::isNaN(y);
 	}
 
 	T x, y;
@@ -682,7 +682,7 @@ public:
 
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
-		return std::isnan(x) || std::isnan(y) || std::isnan(z);
+		return civet::isNaN(x) || civet::isNaN(y) || civet::isNaN(z);
 	}
 
 	T x, y, z;
