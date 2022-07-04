@@ -83,6 +83,9 @@ class Medium;
 class MediumInteraction;
 class MediumInterface;
 
+class BSDF;
+class BSSRDF;
+
 // Global constants
 #ifdef _MSC_VER
 #define MaxFloat std::numeric_limits<float>::max()
@@ -117,6 +120,30 @@ CIVET_CPU_GPU inline void swap(T& a, T& b) {
 CIVET_CPU_GPU
 inline float lerp(float t, float v1, float v2) {
 	return (1 - t) * v1 + t * v2;
+}
+
+CIVET_CPU_GPU
+inline bool quadratic(const float a, const float b, const float c, float& t0, float& t1) {
+	// find discriminant
+	double discriminant = double(b) * double(b) - 4 * double(a) * double(c);
+	if (discriminant < 0) {
+		return false;
+	}
+	double rt_discrim = std::sqrt(discriminant);
+
+	// compute t values
+	double q;
+	if (b < 0) {
+		q = -0.5 * (b - rt_discrim);
+	} else {
+		q = -0.5 * (b + rt_discrim);
+	}
+	t0 = q / a;
+	t1 = c / q;
+	if (t0 > t1) {
+		swap(t0, t1);
+	}
+	return true;
 }
 
 CIVET_CPU_GPU
