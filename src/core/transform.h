@@ -1,9 +1,9 @@
 #ifndef CIVET_TRANSFORM_H
 #define CIVET_TRANSFORM_H
 
-#include "civet.h"
-#include "ray.h"
-#include "vecmath.h"
+#include <core/civet.h>
+#include <core/ray.h>
+#include <core/vecmath.h>
 
 namespace civet {
 

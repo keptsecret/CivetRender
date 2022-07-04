@@ -1,7 +1,7 @@
 #ifndef CIVET_VECMATH_H
 #define CIVET_VECMATH_H
 
-#include "civet.h"
+#include <core/civet.h>
 
 namespace civet {
 

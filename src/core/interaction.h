@@ -1,10 +1,10 @@
 #ifndef CIVET_INTERACTION_H
 #define CIVET_INTERACTION_H
 
-#include "civet.h"
-#include "vecmath.h"
-#include "transform.h"
-#include "shape.h"
+#include <core/civet.h>
+#include <core/vecmath.h>
+#include <core/transform.h>
+#include <core/shape.h>
 
 namespace civet {
 

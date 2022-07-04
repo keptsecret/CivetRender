@@ -1,8 +1,8 @@
 #ifndef CIVET_RAY_H
 #define CIVET_RAY_H
 
-#include "civet.h"
-#include "vecmath.h"
+#include <core/civet.h>
+#include <core/vecmath.h>
 
 namespace civet {
 

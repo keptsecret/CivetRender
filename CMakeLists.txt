@@ -159,21 +159,23 @@ endif()
 ###########################################################################
 # Main civet stuff
 
-set ( CIVET_SOURCE_HEADERS
+set ( CIVET_CORE_HEADERS
 		src/core/civet.h
 		src/core/vecmath.h
 		src/core/ray.h
 		src/core/transform.h
 		src/core/interaction.h
 		src/core/shape.h
-		src/shapes/sphere.h
 		)
 
-set ( CIVET_SOURCE
+set ( CIVET_CORE_SOURCE
 		src/core/transform.cpp
 		src/core/interaction.cpp
 		src/core/shape.cpp
-		src/shapes/sphere.cpp
+		)
+
+file ( GLOB CIVET_SOURCE
+		src/shapes/*
 		)
 
 if (CUDA_ENABLED)
@@ -183,21 +185,20 @@ if (CUDA_ENABLED)
 			)
 
 	set_source_files_properties(
-			${CIVET_SOURCE_HEADERS}
-			${CIVET_SOURCE}
+			${CIVET_CORE_HEADERS}
+			${CIVET_CORE_SOURCE}
 
 			PROPERTIES LANGUAGE CUDA
 	)
 endif()
 
-include_directories( src )
-include_directories( src/core )
-
 add_library ( civet_lib STATIC
 		${CIVET_SOURCE_HEADERS}
 		${CIVET_SOURCE}
 		${CIVET_GPU_SOURCE}
+		${CIVET_SOURCE}
 		)
+add_library (civet::civet_lib ALIAS civet_lib)
 if (CUDA_ENABLED)
 	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CUDA)
 else()
@@ -205,6 +206,10 @@ else()
 endif()
 
 target_compile_definitions (civet_lib PRIVATE ${CIVET_DEFINITIONS})
+
+target_include_directories( civet_lib PUBLIC
+		src
+		)
 
 set ( CIVET_CXX_FEATURES
 		cxx_auto_type
@@ -234,6 +239,7 @@ add_executable ( civet_exe src/civet.cpp )
 set_target_properties ( civet_exe PROPERTIES OUTPUT_NAME civet )
 target_compile_definitions (civet_exe PRIVATE ${CIVET_DEFINITIONS})
 target_compile_features ( civet_exe PRIVATE ${CIVET_CXX_FEATURES} )
+target_include_directories( civet_exe PRIVATE src )
 target_link_libraries ( civet_exe ${ALL_CIVET_LIBS} )
 
 # Installation

@@ -1,4 +1,4 @@
-#include "shape.h"
+#include <core/shape.h>
 
 namespace civet {
 Shape::Shape(const civet::Transform* otw, const civet::Transform* wto, bool _reverse_orientation) :
