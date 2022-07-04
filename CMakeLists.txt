@@ -165,11 +165,15 @@ set ( CIVET_SOURCE_HEADERS
 		src/core/ray.h
 		src/core/transform.h
 		src/core/interaction.h
+		src/core/shape.h
+		src/shapes/sphere.h
 		)
 
 set ( CIVET_SOURCE
 		src/core/transform.cpp
 		src/core/interaction.cpp
+		src/core/shape.cpp
+		src/shapes/sphere.cpp
 		)
 
 if (CUDA_ENABLED)
