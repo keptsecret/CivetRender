@@ -129,6 +129,12 @@ public:
 		return civet::isNaN(x) || civet::isNaN(y);
 	}
 
+	CIVET_CPU_GPU
+	friend std::ostream& operator<<(std::ostream& os, const Vector2<T>& v) {
+		os << "[ " << v.x << ", " << v.y << " ]";
+		return os;
+	}
+
 	T x, y;
 };
 
@@ -753,7 +759,7 @@ public:
 	}
 
 	CIVET_CPU_GPU
-	Vector2<T> offset(const Point2<T> &p) const {
+	Vector2<T> offset(const Point2<T>& p) const {
 		Vector2<T> o = p - p_min;
 		if (p_max.x > p_min.x) {
 			o.x /= p_max.x - p_min.x;
@@ -768,6 +774,12 @@ public:
 	void boundingSphere(Point2<T>* center, float* radius) const {
 		*center = (p_min + p_max) / 2;
 		*radius = bInside(*center, *this) ? distance(*center, p_max) : 0;
+	}
+
+	CIVET_CPU_GPU
+	friend std::ostream& operator<<(std::ostream& os, const Bounds2<T>& b) {
+		os << "[ " << b.pMin << " - " << b.pMax << " ]";
+		return os;
 	}
 
 	Point2<T> p_min, p_max;
@@ -849,7 +861,7 @@ public:
 	}
 
 	CIVET_CPU_GPU
-	Vector3<T> offset(const Point3<T> &p) const {
+	Vector3<T> offset(const Point3<T>& p) const {
 		Vector3<T> o = p - p_min;
 		if (p_max.x > p_min.x) {
 			o.x /= p_max.x - p_min.x;
@@ -869,36 +881,55 @@ public:
 		*radius = bInside(*center, *this) ? distance(*center, p_max) : 0;
 	}
 
+	CIVET_CPU_GPU
+	bool intersectP(Point3f o, Vector3f d, float t_max = Infinity, float* hitt0 = nullptr, float* hitt1 = nullptr) const;
+
+	CIVET_CPU_GPU
+	bool intersectP(Point3f o, Vector3f d, float t_max, Vector3f& inv_dir, const int dir_is_neg[3]) const;
+
+	CIVET_CPU_GPU
+	friend std::ostream& operator<<(std::ostream& os, const Bounds3<T>& b) {
+		os << "[ " << b.pMin << " - " << b.pMax << " ]";
+		return os;
+	}
+
 	Point3<T> p_min, p_max;
 };
 
 class Bounds2iIterator : public std::forward_iterator_tag {
 public:
-	Bounds2iIterator(const Bounds2i &b, const Point2i &pt)
-			: p(pt), bounds(&b) {}
+	CIVET_CPU_GPU
+	Bounds2iIterator(const Bounds2i& b, const Point2i& pt) :
+			p(pt), bounds(&b) {}
 
+	CIVET_CPU_GPU
 	Bounds2iIterator operator++() {
 		advance();
 		return *this;
 	}
 
+	CIVET_CPU_GPU
 	Bounds2iIterator operator++(int) {
 		Bounds2iIterator old = *this;
 		advance();
 		return old;
 	}
 
-	bool operator==(const Bounds2iIterator &bi) const {
+	CIVET_CPU_GPU
+	bool operator==(const Bounds2iIterator& bi) const {
 		return p == bi.p && bounds == bi.bounds;
 	}
 
-	bool operator!=(const Bounds2iIterator &bi) const {
+	CIVET_CPU_GPU
+	bool operator!=(const Bounds2iIterator& bi) const {
 		return p != bi.p || bounds != bi.bounds;
 	}
 
+	CIVET_CPU_GPU
 	Point2i operator*() const { return p; }
 
 private:
+	CIVET_CPU_GPU
 	void advance() {
 		++p.x;
 		if (p.x == bounds->p_max.x) {
@@ -906,8 +937,9 @@ private:
 			++p.y;
 		}
 	}
+
 	Point2i p;
-	const Bounds2i *bounds;
+	const Bounds2i* bounds;
 };
 
 /*---------------------------------------------------------------------------------*/
@@ -955,6 +987,12 @@ CIVET_CPU_GPU inline T absDot(const Vector2<T>& v1, const Vector2<T>& v2) {
 template <typename T>
 CIVET_CPU_GPU inline Vector2<T> normalize(const Vector2<T>& v) {
 	return v / v.length();
+}
+
+template <typename T>
+CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Vector2<T>& v) {
+	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
+	return os;
 }
 
 // Vector3
@@ -1006,6 +1044,12 @@ CIVET_CPU_GPU inline Vector3<T> cross(const Vector3<T>& v1, const Vector3<T>& v2
 template <typename T>
 CIVET_CPU_GPU inline Vector3<T> normalize(const Vector3<T>& v) {
 	return v / v.length();
+}
+
+template <typename T>
+CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Vector3<T>& v) {
+	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
+	return os;
 }
 
 template <typename T>
@@ -1089,6 +1133,12 @@ CIVET_CPU_GPU inline Point2<T> abs(const Point2<T>& p) {
 	return Point2<T>(std::abs(p.x), std::abs(p.y));
 }
 
+template <typename T>
+CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Point2<T>& v) {
+	os << "[ " << v.x << ", " << v.y << " ]";
+	return os;
+}
+
 // Point3
 template <typename T>
 CIVET_CPU_GPU inline float distance(const Point3<T>& p1, const Point3<T>& p2) {
@@ -1133,6 +1183,12 @@ CIVET_CPU_GPU inline Point3<T> abs(const Point3<T>& p) {
 template <typename T>
 CIVET_CPU_GPU inline Point3<T> permute(const Point3<T>& p, int x, int y, int z) {
 	return Point3<T>(p[x], p[y], p[z]);
+}
+
+template <typename T>
+CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Point3<T>& v) {
+	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
+	return os;
 }
 
 // Normal
@@ -1199,6 +1255,12 @@ CIVET_CPU_GPU inline Normal3<T> faceforward(const Vector3<T>& v, const Vector3<T
 template <typename T>
 CIVET_CPU_GPU inline Normal3<T> faceforward(const Vector3<T>& v, const Normal3<T>& n) {
 	return dot(v, n) < 0.0f ? -v : v;
+}
+
+template <typename T>
+CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Normal3<T>& v) {
+	os << "[ " << v.x << ", " << v.y << ", " << v.z << " ]";
+	return os;
 }
 
 // Bounds2
@@ -1288,6 +1350,72 @@ CIVET_CPU_GPU inline bool bInsideExclusive(const Point3<T>& p, const Bounds3<T>&
 template <typename T, typename U>
 CIVET_CPU_GPU inline bool bExpand(const Bounds3<T>& b, U delta) {
 	return Bounds3<T>(b.p_min - Vector3<T>(delta, delta, delta), b.p_max + Vector3<T>(delta, delta, delta));
+}
+
+template <typename T>
+CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float t_max = Infinity, float* hitt0 = nullptr, float* hitt1 = nullptr) const {
+	float t0 = 0, t1 = t_max;
+	for (int i = 0; i < 3; i++) {
+		float inv_dir = 1 / d[i];
+		float t_near = (p_min[i] - o[i]) * inv_dir;
+		float t_far = (p_max[i] - o[i]) * inv_dir;
+
+		if (t_near > t_far) {
+			swap(t_near, t_far);
+		}
+		t_far *= 1 + 2 * gamma(3);
+		t0 = t_near > t0 ? t_near : t0;
+		t1 = t_far < t1 ? t_far : t1;
+		if (t0 > t1) {
+			return false;
+		}
+	}
+	if (hitt0) {
+		*hitt0 = t0;
+	}
+	if (hitt1) {
+		*hitt1 = t1;
+	}
+	return true;
+}
+
+template <typename T>
+CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float ray_t_max, Vector3f& inv_dir, const int dir_is_neg[3]) const {
+	const Bounds3f& bounds = *this;
+	float t_min = (bounds[dir_is_neg[0]].x - o.x) * inv_dir.x;
+	float t_max = (bounds[1 - dir_is_neg[0]].x - o.x) * inv_dir.x;
+	float ty_min = (bounds[dir_is_neg[1]].y - o.y) * inv_dir.y;
+	float ty_max = (bounds[1 - dir_is_neg[1]].y - o.y) * inv_dir.y;
+
+	t_max *= 1 + 2 * gamma(3);
+	ty_max *= 1 + 2 * gamma(3);
+
+	if (t_min > ty_max || ty_min > t_max) {
+		return false;
+	}
+	if (ty_min > t_min) {
+		t_min = ty_min;
+	}
+	if (ty_max < t_max) {
+		t_max = ty_min;
+	}
+
+	float tz_min = (bounds[dir_is_neg[2]].z - o.z) * inv_dir.z;
+	float tz_max = (bounds[1 - dir_is_neg[2]].z - o.z) * inv_dir.z;
+
+	tz_max *= 1 + 2 * gamma(3);
+
+	if (t_min > tz_max || tz_min > t_max) {
+		return false;
+	}
+	if (tz_min > t_min) {
+		t_min = tz_min;
+	}
+	if (tz_max < t_max) {
+		t_max = tz_min;
+	}
+
+	return (t_min < ray_t_max) && (t_max > 0);
 }
 
 } // namespace civet
