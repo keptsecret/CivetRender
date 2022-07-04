@@ -33,6 +33,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <new>
+#include <ostream>
 #include <string>
 #include <thread>
 #include <type_traits>
