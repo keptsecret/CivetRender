@@ -8,6 +8,7 @@ namespace civet {
 
 class Ray {
 public:
+	CIVET_CPU_GPU
 	Ray() :
 			t_max(Infinity), time(0.f), medium(nullptr) {}
 
@@ -20,7 +21,7 @@ public:
 
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
-		return o.hasNaNs() || d.hasNaNs() || std::isnan(t_max);
+		return o.hasNaNs() || d.hasNaNs() || civet::isNaN(t_max);
 	}
 
 	Point3f o;
@@ -61,7 +62,6 @@ public:
 	Vector3f rx_direction, ry_direction;
 };
 
-}
-
+} // namespace civet
 
 #endif // CIVET_RAY_H
