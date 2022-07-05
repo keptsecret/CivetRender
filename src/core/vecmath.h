@@ -1083,7 +1083,7 @@ CIVET_CPU_GPU inline Vector3<T> permute(const Vector3<T>& v, int x, int y, int z
 }
 
 template <typename T>
-CIVET_CPU_GPU inline Vector3<T> coordinateSystem(const Vector3<T>& v1, Vector3<T>* v2, Vector3<T>* v3) {
+CIVET_CPU_GPU inline void coordinateSystem(const Vector3<T>& v1, Vector3<T>* v2, Vector3<T>* v3) {
 	if (std::abs(v1.x) > std::abs(v1.y)) {
 		*v2 = Vector3<T>(-v1.z, 0, v1.x) / std::sqrt(v1.x * v1.x + v1.z * v1.z);
 	} else {
