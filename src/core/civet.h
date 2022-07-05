@@ -79,12 +79,14 @@ class SurfaceInteraction;
 class Shape;
 class Primitive;
 
+template <typename T>
+class Texture;
+class BSDF;
+class BSSRDF;
+
 class Medium;
 class MediumInteraction;
 class MediumInterface;
-
-class BSDF;
-class BSSRDF;
 
 // Global constants
 #ifdef _MSC_VER
