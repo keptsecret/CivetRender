@@ -472,12 +472,12 @@ public:
 
 	CIVET_CPU_GPU
 	Vector2<T> operator-(const Point2<T>& p) const {
-		return Vector3<T>(x - p.x, y - p.y);
+		return Vector2<T>(x - p.x, y - p.y);
 	}
 
 	CIVET_CPU_GPU
 	Point2<T> operator-(const Vector2<T>& v) const {
-		return Point3<T>(x - v.x, y - v.y);
+		return Point2<T>(x - v.x, y - v.y);
 	}
 
 	CIVET_CPU_GPU
