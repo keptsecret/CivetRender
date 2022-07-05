@@ -14,7 +14,24 @@ public:
 
 	CIVET_CPU_GPU
 	Ray(const Point3f& origin, const Vector3f& direction, float tm = Infinity, float t = 0.f, const Medium* m = nullptr) :
-			o(origin), d(direction), t_max(tm), time(t), medium(m) {}
+			o(origin), d(direction), t_max(tm), time(t), medium(m) {
+		///< Moved ray-triangle intersect coefficients to be stored in the ray class instead
+		// Permute ray so largest ray dimension in z-axis (x and y axis arbitrary) --> +z direction
+		isect_coeff.kz = maxDimension(abs(d));
+		isect_coeff.kx = isect_coeff.kz + 1;
+		if (isect_coeff.kx == 3) {
+			isect_coeff.kx = 0;
+		}
+		isect_coeff.ky = isect_coeff.kx + 1;
+		if (isect_coeff.ky == 3) {
+			isect_coeff.ky = 0;
+		}
+
+		// Shear to align ray along z-axis
+		isect_coeff.Sx = -d.x / d.z;
+		isect_coeff.Sy = -d.y / d.z;
+		isect_coeff.Sz = 1 / d.z;
+	}
 
 	CIVET_CPU_GPU
 	Point3f operator()(const float t) const { return o + t * d; }
@@ -29,6 +46,11 @@ public:
 	mutable float t_max;
 	float time;
 	const Medium* medium;
+
+	struct {
+		int kx = 1, ky = 1, kz = 1;
+		float Sx = 0, Sy = 0, Sz = 0;
+	} isect_coeff;
 };
 
 class RayDifferential : public Ray {
