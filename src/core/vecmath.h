@@ -448,7 +448,7 @@ public:
 
 	CIVET_CPU_GPU
 	Point2<T> operator+(const Vector2<T>& v) const {
-		return Point3<T>(x + v.x, y + v.y);
+		return Point2<T>(x + v.x, y + v.y);
 	}
 
 	CIVET_CPU_GPU
@@ -460,7 +460,7 @@ public:
 
 	CIVET_CPU_GPU
 	Point2<T> operator+(const Point2<T>& v) const {
-		return Point3<T>(x + v.x, y + v.y);
+		return Point2<T>(x + v.x, y + v.y);
 	}
 
 	CIVET_CPU_GPU
@@ -487,15 +487,15 @@ public:
 		return *this;
 	}
 
-	CIVET_CPU_GPU
-	Vector2<T> operator*(T s) const {
-		return Vector2(s * x, s * y);
+	template <typename U>
+	CIVET_CPU_GPU Point2<T> operator*(U f) const {
+		return Point2<T>(f * x, f * y);
 	}
 
-	CIVET_CPU_GPU
-	Vector2<T>& operator*=(T s) const {
-		x *= s;
-		y *= s;
+	template <typename U>
+	CIVET_CPU_GPU Point2<T>& operator*=(U f) {
+		x *= f;
+		y *= f;
 		return *this;
 	}
 
@@ -1103,6 +1103,11 @@ CIVET_CPU_GPU inline float distanceSquared(const Point2<T>& p1, const Point2<T>&
 	return (p1 - p2).lengthSquared();
 }
 
+template <typename T, typename U>
+CIVET_CPU_GPU inline Point2<T> operator*(U f, const Point2<T>& p) {
+	return p * f;
+}
+
 template <typename T>
 CIVET_CPU_GPU inline Point2<T> lerp(float t, const Point2<T>& p1, const Point2<T>& p2) {
 	return (1 - t) * p1 + t * p2;
@@ -1148,6 +1153,11 @@ CIVET_CPU_GPU inline float distance(const Point3<T>& p1, const Point3<T>& p2) {
 template <typename T>
 CIVET_CPU_GPU inline float distanceSquared(const Point3<T>& p1, const Point3<T>& p2) {
 	return (p1 - p2).lengthSquared();
+}
+
+template <typename T, typename U>
+CIVET_CPU_GPU inline Point3<T> operator*(U f, const Point3<T>& p) {
+	return p * f;
 }
 
 template <typename T>
