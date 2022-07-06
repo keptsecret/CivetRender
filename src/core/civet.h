@@ -3,6 +3,10 @@
 
 #include <stdint.h>
 
+#ifndef CIVET_L1_CACHE_LINE_SIZE
+#define CIVET_L1_CACHE_LINE_SIZE 64
+#endif
+
 #if defined(__CUDA_ARCH__)
 #define IS_GPU_CODE
 #endif
@@ -35,10 +39,19 @@
 #include <new>
 #include <ostream>
 #include <string>
+#include <vector>
+#ifdef CIVET_HAVE_MALLOC_H
+#include <malloc.h>  // for _alloca, memalign
+#endif
+#ifdef CIVET_HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
 #include <thread>
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
+
+#define ALLOCA(TYPE, COUNT) (TYPE*)alloca((COUNT) * sizeof(TYPE))
 
 namespace civet {
 
@@ -93,8 +106,8 @@ class MediumInterface;
 #define MaxFloat std::numeric_limits<float>::max()
 #define Infinity std::numeric_limits<float>::infinity()
 #else
-static constexpr float MaxFloat = std::numeric_limits<float>::max();
-static constexpr float Infinity = std::numeric_limits<float>::infinity();
+static CIVET_CONSTEXPR float MaxFloat = std::numeric_limits<float>::max();
+static CIVET_CONSTEXPR float Infinity = std::numeric_limits<float>::infinity();
 #endif
 #ifdef _MSC_VER
 #define MachineEpsilon (std::numeric_limits<float>::epsilon() * 0.5)
@@ -102,14 +115,14 @@ static constexpr float Infinity = std::numeric_limits<float>::infinity();
 static constexpr float MachineEpsilon =
 		std::numeric_limits<float>::epsilon() * 0.5;
 #endif
-static constexpr float ShadowEpsilon = 0.0001f;
-static constexpr float Pi = 3.14159265358979323846;
-static constexpr float InvPi = 0.31830988618379067154;
-static constexpr float Inv2Pi = 0.15915494309189533577;
-static constexpr float Inv4Pi = 0.07957747154594766788;
-static constexpr float PiOver2 = 1.57079632679489661923;
-static constexpr float PiOver4 = 0.78539816339744830961;
-static constexpr float Sqrt2 = 1.41421356237309504880;
+static CIVET_CONSTEXPR float ShadowEpsilon = 0.0001f;
+static CIVET_CONSTEXPR float Pi = 3.14159265358979323846;
+static CIVET_CONSTEXPR float InvPi = 0.31830988618379067154;
+static CIVET_CONSTEXPR float Inv2Pi = 0.15915494309189533577;
+static CIVET_CONSTEXPR float Inv4Pi = 0.07957747154594766788;
+static CIVET_CONSTEXPR float PiOver2 = 1.57079632679489661923;
+static CIVET_CONSTEXPR float PiOver4 = 0.78539816339744830961;
+static CIVET_CONSTEXPR float Sqrt2 = 1.41421356237309504880;
 
 // Global inline functions
 template <typename T>
@@ -213,6 +226,11 @@ inline CIVET_CPU_GPU typename std::enable_if_t<std::is_floating_point_v<T>, bool
 template <typename T>
 inline CIVET_CPU_GPU typename std::enable_if_t<std::is_integral_v<T>, bool> isInf(T v) {
 	return false;
+}
+
+template <typename T>
+inline CIVET_CPU_GPU CIVET_CONSTEXPR bool isPowerOf2(T v) {
+	return v && !(v & (v - 1));
 }
 
 } // namespace civet
