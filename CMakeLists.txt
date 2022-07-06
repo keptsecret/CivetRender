@@ -19,6 +19,7 @@ if (MSVC)
 endif ()
 
 include ( CheckCXXSourceCompiles )
+include ( CheckCXXSourceRuns )
 
 ########################################
 # os-compiler stuff
@@ -49,6 +50,61 @@ target_compile_options (
 		"$<$<CXX_COMPILER_ID:MSVC>:$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler >/wd26495>" # uninitialized member variable
 		"$<$<CXX_COMPILER_ID:MSVC>:$<$<COMPILE_LANGUAGE:CUDA>:SHELL:-Xcompiler >/wd4334>" # 32 to 64 bit displacement
 )
+
+CHECK_CXX_SOURCE_COMPILES (
+		"int main() { constexpr int x = 0; }"
+		HAVE_CONSTEXPR )
+IF ( HAVE_CONSTEXPR )
+	add_definitions ( -D CIVET_HAVE_CONSTEXPR )
+	add_definitions ( -D CIVET_CONSTEXPR=constexpr )
+ELSE ()
+	add_definitions ( -D CIVET_CONSTEXPR=const )
+ENDIF ()
+
+CHECK_CXX_SOURCE_COMPILES (
+		"struct alignas(32) Foo { char x; }; int main() { }"
+		HAVE_ALIGNAS )
+IF ( HAVE_ALIGNAS )
+	add_definitions ( -D CIVET_HAVE_ALIGNAS )
+ENDIF ()
+
+CHECK_CXX_SOURCE_COMPILES (
+		"int main() { int x = alignof(double); }"
+		HAVE_ALIGNOF )
+IF ( HAVE_ALIGNOF )
+	add_definitions ( -D CIVET_HAVE_ALIGNOF )
+ENDIF ()
+
+########################################
+# Aligned memory allocation
+
+CHECK_CXX_SOURCE_COMPILES ( "
+#include <malloc.h>
+int main() { void * ptr = _aligned_malloc(1024, 32); }
+" HAVE__ALIGNED_MALLOC )
+
+CHECK_CXX_SOURCE_COMPILES ( "
+#include <stdlib.h>
+int main() {
+  void *ptr;
+  posix_memalign(&ptr, 32, 1024);
+} " HAVE_POSIX_MEMALIGN )
+
+CHECK_CXX_SOURCE_COMPILES ( "
+#include <malloc.h>
+int main() {
+    void *ptr = memalign(32, 1024);
+} " HAVE_MEMALIGN )
+
+IF ( HAVE__ALIGNED_MALLOC )
+	ADD_DEFINITIONS ( -D CIVET_HAVE__ALIGNED_MALLOC )
+ELSEIF ( HAVE_POSIX_MEMALIGN )
+	ADD_DEFINITIONS ( -D CIVET_HAVE_POSIX_MEMALIGN )
+ELSEIF ( HAVE_MEMALIGN )
+	ADD_DEFINITIONS ( -D CIVET_HAVE_MEMALIGN )
+ELSE ()
+	MESSAGE ( SEND_ERROR "Unable to find a way to allocate aligned memory" )
+ENDIF ()
 
 ###########################################################################
 # CUDA
@@ -199,11 +255,6 @@ add_library ( civet_lib STATIC
 		${CIVET_SOURCE}
 		)
 add_library (civet::civet_lib ALIAS civet_lib)
-if (CUDA_ENABLED)
-	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CUDA)
-else()
-	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CXX)
-endif()
 
 target_compile_definitions (civet_lib PRIVATE ${CIVET_DEFINITIONS})
 
@@ -220,6 +271,11 @@ set ( CIVET_CXX_FEATURES
 		cxx_static_assert
 		)
 target_compile_features ( civet_lib PRIVATE ${CIVET_CXX_FEATURES} )
+if (CUDA_ENABLED)
+	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CUDA)
+else()
+	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CXX)
+endif()
 
 if (WIN32)
 	# Avoid a name clash when building on Visual Studio
