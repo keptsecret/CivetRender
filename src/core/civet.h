@@ -91,7 +91,10 @@ class SurfaceInteraction;
 
 class Shape;
 class Primitive;
+class GeometricPrimitive;
+class TransformedPrimitve;
 
+class Material;
 template <typename T>
 class Texture;
 class BSDF;
@@ -99,7 +102,12 @@ class BSSRDF;
 
 class Medium;
 class MediumInteraction;
-class MediumInterface;
+struct MediumInterface;
+
+class Light;
+class AreaLight;
+
+class MemoryArena;
 
 // Global constants
 #ifdef _MSC_VER
