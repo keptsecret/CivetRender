@@ -222,12 +222,14 @@ set ( CIVET_CORE_HEADERS
 		src/core/transform.h
 		src/core/interaction.h
 		src/core/shape.h
+		src/core/primitive.h
 		)
 
 set ( CIVET_CORE_SOURCE
 		src/core/transform.cpp
 		src/core/interaction.cpp
 		src/core/shape.cpp
+		src/core/primitive.cpp
 		)
 
 file ( GLOB CIVET_SOURCE
