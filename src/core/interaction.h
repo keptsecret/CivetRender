@@ -2,8 +2,8 @@
 #define CIVET_INTERACTION_H
 
 #include <core/civet.h>
-#include <core/vecmath.h>
 #include <core/transform.h>
+#include <core/vecmath.h>
 
 namespace civet {
 
@@ -59,9 +59,9 @@ public:
 		Normal3f dndu, dndv;
 	} shading;
 
-	const Primitive *primitive = nullptr;
-	BSDF *bsdf = nullptr;
-	BSSRDF *bssrdf = nullptr;
+	const Primitive* primitive = nullptr;
+	BSDF* bsdf = nullptr;
+	BSSRDF* bssrdf = nullptr;
 	mutable Vector3f dpdx, dpdy;
 	mutable float dudx = 0, dvdx = 0, dudy = 0, dvdy = 0;
 

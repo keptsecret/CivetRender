@@ -3,6 +3,7 @@
 
 #include <core/civet.h>
 #include <core/transform.h>
+#include <core/memory.h>
 
 namespace civet {
 
