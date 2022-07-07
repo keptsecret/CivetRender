@@ -277,6 +277,7 @@ inline RayDifferential Transform::operator()(const RayDifferential& r) const {
 }
 
 // TODO: implement animated transforms from PBR book
+class AnimatedTransform;
 
 } // namespace civet
 
