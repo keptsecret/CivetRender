@@ -82,7 +82,7 @@ Matrix4 inverse(const Matrix4& mat) {
 		// Swap rows _irow_ and _icol_ for pivot
 		if (irow != icol) {
 			for (int k = 0; k < 4; ++k) {
-				swap(minv[irow][k], minv[icol][k]);
+				swapElem(minv[irow][k], minv[icol][k]);
 			}
 		}
 		indxr[i] = irow;
@@ -113,7 +113,7 @@ Matrix4 inverse(const Matrix4& mat) {
 	for (int j = 3; j >= 0; j--) {
 		if (indxr[j] != indxc[j]) {
 			for (int k = 0; k < 4; k++) {
-				swap(minv[k][indxr[j]], minv[k][indxc[j]]);
+				swapElem(minv[k][indxr[j]], minv[k][indxc[j]]);
 			}
 		}
 	}

@@ -1371,7 +1371,7 @@ CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float t_
 		float t_far = (p_max[i] - o[i]) * inv_dir;
 
 		if (t_near > t_far) {
-			swap(t_near, t_far);
+			swapElem(t_near, t_far);
 		}
 		t_far *= 1 + 2 * gamma(3);
 		t0 = t_near > t0 ? t_near : t0;
