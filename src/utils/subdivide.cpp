@@ -1,4 +1,4 @@
-#include <shapes/subdivide.h>
+#include <utils/subdivide.h>
 
 #include <shapes/triangle.h>
 #include <map>

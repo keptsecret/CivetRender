@@ -5,7 +5,7 @@
 #ifndef CIVET_MEMORY_H
 #define CIVET_MEMORY_H
 
-#include <core/civet.h>
+#include "core/civet.h"
 #include <stddef.h>
 #include <list>
 

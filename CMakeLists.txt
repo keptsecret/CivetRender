@@ -234,6 +234,7 @@ set ( CIVET_CORE_SOURCE
 
 file ( GLOB CIVET_SOURCE
 		src/shapes/*
+		src/utils/*
 		)
 
 if (CUDA_ENABLED)
