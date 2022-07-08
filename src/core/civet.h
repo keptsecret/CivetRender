@@ -133,8 +133,32 @@ static CIVET_CONSTEXPR float PiOver4 = 0.78539816339744830961;
 static CIVET_CONSTEXPR float Sqrt2 = 1.41421356237309504880;
 
 // Global inline functions
+inline uint32_t floatToBits(float f) {
+	uint32_t ui;
+	memcpy(&ui, &f, sizeof(float));
+	return ui;
+}
+
+inline float bitsToFloat(uint32_t ui) {
+	float f;
+	memcpy(&f, &ui, sizeof(uint32_t));
+	return f;
+}
+
+inline uint64_t floatToBits(double f) {
+	uint64_t ui;
+	memcpy(&ui, &f, sizeof(double));
+	return ui;
+}
+
+inline double bitsToFloat(uint64_t ui) {
+	double f;
+	memcpy(&f, &ui, sizeof(uint64_t));
+	return f;
+}
+
 template <typename T>
-CIVET_CPU_GPU inline void swap(T& a, T& b) {
+CIVET_CPU_GPU inline void swapElem(T& a, T& b) {
 	T tmp = std::move(a);
 	a = std::move(b);
 	b = std::move(tmp);
@@ -164,7 +188,7 @@ inline bool quadratic(const float a, const float b, const float c, float& t0, fl
 	t0 = q / a;
 	t1 = c / q;
 	if (t0 > t1) {
-		swap(t0, t1);
+		swapElem(t0, t1);
 	}
 	return true;
 }
