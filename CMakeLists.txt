@@ -106,6 +106,35 @@ ELSE ()
 	MESSAGE ( SEND_ERROR "Unable to find a way to allocate aligned memory" )
 ENDIF ()
 
+########################################
+# thread-local variables
+
+CHECK_CXX_SOURCE_COMPILES ( "
+#ifdef __CYGWIN__
+// Hack to work around https://gcc.gnu.org/bugzilla/show_bug.cgi?id=64697
+#error \"No thread_local on cygwin\"
+#endif  // __CYGWIN__
+thread_local int x; int main() { }
+" HAVE_THREAD_LOCAL )
+
+CHECK_CXX_SOURCE_COMPILES ( "
+__declspec(thread) int x; int main() { }
+" HAVE_DECLSPEC_THREAD )
+
+CHECK_CXX_SOURCE_COMPILES ( "
+__thread int x; int main() { }
+" HAVE___THREAD )
+
+IF ( HAVE_THREAD_LOCAL )
+	ADD_DEFINITIONS ( -D CIVET_THREAD_LOCAL=thread_local )
+ELSEIF ( HAVE___THREAD )
+	ADD_DEFINITIONS ( -D CIVET_THREAD_LOCAL=__thread )
+ELSEIF ( HAVE_DECLSPEC_THREAD )
+	ADD_DEFINITIONS ( -D "CIVET_THREAD_LOCAL=__declspec(thread)" )
+ELSE ()
+	MESSAGE ( SEND_ERROR "Unable to find a way to declare a thread-local variable")
+ENDIF ()
+
 ###########################################################################
 # CUDA
 
