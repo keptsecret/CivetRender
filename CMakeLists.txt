@@ -22,6 +22,13 @@ include ( CheckCXXSourceCompiles )
 include ( CheckCXXSourceRuns )
 
 ########################################
+# thirdparty libraries
+
+set (BUILD_SHARED_LIBS OFF)
+
+add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/src/thirdparty)
+
+########################################
 # os-compiler stuff
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
@@ -292,6 +299,7 @@ target_compile_definitions (civet_lib PRIVATE ${CIVET_DEFINITIONS})
 
 target_include_directories( civet_lib PUBLIC
 		src
+		src/thirdparty
 		)
 
 set ( CIVET_CXX_FEATURES
@@ -320,6 +328,9 @@ target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:c
 
 set ( ALL_CIVET_LIBS
 		civet_lib
+		glfw
+		glad
+		OpenGL::GL
 		)
 
 add_executable ( civet_exe src/civet.cpp )
@@ -327,7 +338,7 @@ add_executable ( civet_exe src/civet.cpp )
 set_target_properties ( civet_exe PROPERTIES OUTPUT_NAME civet )
 target_compile_definitions (civet_exe PRIVATE ${CIVET_DEFINITIONS})
 target_compile_features ( civet_exe PRIVATE ${CIVET_CXX_FEATURES} )
-target_include_directories( civet_exe PRIVATE src )
+target_include_directories( civet_exe PRIVATE src src/thirdparty )
 target_link_libraries ( civet_exe ${ALL_CIVET_LIBS} )
 
 # Installation
