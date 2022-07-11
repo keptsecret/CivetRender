@@ -7,6 +7,15 @@ if (MSVC)
 endif ()
 
 ###########################################################################
+# assimp
+
+set (ASSIMP_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/assimp/include PARENT_SCOPE)
+
+add_subdirectory (assimp)
+
+set_property (TARGET assimp PROPERTY FOLDER "thirdparty")
+
+###########################################################################
 # glfw / glad
 
 set (GLFW_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/glfw/include PARENT_SCOPE)
