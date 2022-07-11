@@ -8,9 +8,11 @@
 namespace civet {
 
 class Engine {
+protected:
+	Engine() {}
+
 public:
-	Engine();
-	virtual ~Engine() {}
+	static Engine& getSingleton();
 
 	int init();
 	int start();

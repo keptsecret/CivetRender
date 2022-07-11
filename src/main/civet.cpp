@@ -5,7 +5,7 @@
 using namespace civet;
 
 int main(int argc, char* argv[]) {
-	Engine engine;
+	Engine engine = Engine::getSingleton();
 	if (engine.init()) {
 		return -1;
 	}

@@ -6,8 +6,6 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
-Engine::Engine() {}
-
 int Engine::init() {
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -44,6 +42,11 @@ int Engine::start() {
 
 	glfwTerminate();
 	return 0;
+}
+
+Engine& Engine::getSingleton() {
+	static Engine singleton;
+	return singleton;
 }
 
 } // namespace civet
