@@ -9,6 +9,7 @@ namespace civet {
 
 class Shape {
 public:
+	CIVET_CPU_GPU
 	Shape(const Transform* otw, const Transform* wto, bool _reverse_orientation);
 
 	virtual ~Shape();
@@ -17,12 +18,14 @@ public:
 	 * Returns a bounding box in the object space
 	 * @return a Bounds3f object
 	 */
+	CIVET_CPU_GPU
 	virtual Bounds3f objectBound() const = 0;
 
 	/**
 	 * Returns a bounding box in the world space, using the object_to_world transform by default
 	 * @return a Bounds3f object
 	 */
+	CIVET_CPU_GPU
 	virtual Bounds3f worldBound() const;
 
 	/**
@@ -33,6 +36,7 @@ public:
 	 * @param test_alpha_texture
 	 * @return true if ray intersects shape
 	 */
+	CIVET_CPU_GPU
 	virtual bool intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect, bool test_alpha_texture = true) const = 0;
 
 	/**
@@ -41,10 +45,12 @@ public:
 	 * @param test_alpha_texture
 	 * @return true if ray intersects shape
 	 */
+	CIVET_CPU_GPU
 	virtual bool intersectP(const Ray& ray, bool test_alpha_texture = true) const {
 		return intersect(ray, nullptr, nullptr, test_alpha_texture);
 	}
 
+	CIVET_CPU_GPU
 	virtual float area() const = 0;
 
 	const Transform* object_to_world;
