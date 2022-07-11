@@ -1042,6 +1042,22 @@ CIVET_CPU_GPU inline Vector3<T> cross(const Vector3<T>& v1, const Vector3<T>& v2
 }
 
 template <typename T>
+CIVET_CPU_GPU inline Vector3<T> cross(const Vector3<T>& v, const Normal3<T>& n) {
+	double v1x = v.x, v1y = v.y, v1z = v.z;
+	double v2x = n.x, v2y = n.y, v2z = n.z;
+	return Vector3<T>((v1y * v2z) - (v1z * v2y), (v1z * v2x) - (v1x * v2z),
+			(v1x * v2y) - (v1y * v2x));
+}
+
+template <typename T>
+CIVET_CPU_GPU inline Vector3<T> cross(const Normal3<T>& n, const Vector3<T>& v) {
+	double v1x = n.x, v1y = n.y, v1z = n.z;
+	double v2x = v.x, v2y = v.y, v2z = v.z;
+	return Vector3<T>((v1y * v2z) - (v1z * v2y), (v1z * v2x) - (v1x * v2z),
+			(v1x * v2y) - (v1y * v2x));
+}
+
+template <typename T>
 CIVET_CPU_GPU inline Vector3<T> normalize(const Vector3<T>& v) {
 	return v / v.length();
 }
@@ -1363,7 +1379,7 @@ CIVET_CPU_GPU inline bool bExpand(const Bounds3<T>& b, U delta) {
 }
 
 template <typename T>
-CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float t_max = Infinity, float* hitt0 = nullptr, float* hitt1 = nullptr) const {
+CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float t_max, float* hitt0, float* hitt1) const {
 	float t0 = 0, t1 = t_max;
 	for (int i = 0; i < 3; i++) {
 		float inv_dir = 1 / d[i];
