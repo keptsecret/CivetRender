@@ -311,6 +311,7 @@ set_property ( TARGET civet_lib PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON )
 target_include_directories( civet_lib PUBLIC
 		src
 		src/thirdparty
+		${ASSIMP_INCLUDE}
 		${GLFW_INCLUDE}
 		${GLAD_INCLUDE}
 		)
@@ -327,6 +328,7 @@ endif()
 
 set ( ALL_CIVET_LIBS
 		civet_lib
+		assimp
 		glfw
 		glad
 		OpenGL::GL
