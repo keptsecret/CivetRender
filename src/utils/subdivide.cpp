@@ -62,9 +62,9 @@ struct SDFace {
 			if (v[i] != v0 && v[i] != v1) {
 				return v[i];
 			}
-			printf("ERROR::SDFace: Basic logic error in SDFace::otherVert()");
-			return nullptr;
 		}
+		printf("ERROR::SDFace: Basic logic error in SDFace::otherVert()");
+		return nullptr;
 	}
 
 	SDFace* next_face(SDVertex* vert) { return f[vnum(vert)]; }

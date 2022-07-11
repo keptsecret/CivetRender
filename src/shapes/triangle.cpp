@@ -174,9 +174,10 @@ bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect
 	if (test_alpha_texture && mesh->alpha_mask) {
 		SurfaceInteraction isect_local(p_hit, Vector3f(0, 0, 0), uv_hit, Vector3f(0, 0, 0),
 				dpdu, dpdv, Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time, this);
-		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
-			return false;
-		}
+		// TODO: implement texture class
+//		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
+//			return false;
+//		}
 	}
 
 	*isect = SurfaceInteraction(p_hit, p_error, uv_hit, -ray.d,
@@ -386,9 +387,10 @@ bool Triangle::intersectP(const Ray& ray, bool test_alpha_texture) const {
 	if (test_alpha_texture && mesh->alpha_mask) {
 		SurfaceInteraction isect_local(p_hit, Vector3f(0, 0, 0), uv_hit, Vector3f(0, 0, 0),
 				dpdu, dpdv, Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time, this);
-		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
-			return false;
-		}
+		// TODO: also implement texture class
+//		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
+//			return false;
+//		}
 	}
 
 	return true;
