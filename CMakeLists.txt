@@ -8,10 +8,15 @@ project (CIVET LANGUAGES CXX C)
 set (CMAKE_CXX_STANDARD 17)
 set (CMAKE_CXX_STANDARD_REQUIRED ON)
 
+list (INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/cmake_helpers")
+
 set (GPU_SHADER_MODEL "" CACHE STRING "")
 
+find_package( Sanitizers )
 find_package ( Threads )
 find_package( OpenGL REQUIRED )
+
+set_property (GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (MSVC)
 	list (APPEND CIVET_DEFINITIONS "CIVET_IS_MSVC" "_CRT_SECURE_NO_WARNINGS")
@@ -218,7 +223,8 @@ if (CMAKE_CUDA_COMPILER)
 				OUTPUT_VARIABLE CHECK_CUDA_OUTPUT)
 
 		if (NOT ${CUDA_RETURN_CODE} EQUAL 0)
-			message (SEND_ERROR ${CHECK_CUDA_OUTPUT})
+			message (STATUS ${CHECK_CUDA_OUTPUT})
+			set (CUDA_ENABLED OFF)
 		else ()
 			set (ARCH "${CHECK_CUDA_OUTPUT}")
 			message (STATUS "Detected CUDA Architecture: ${ARCH}")
@@ -253,6 +259,7 @@ endif()
 
 set ( CIVET_CORE_HEADERS
 		src/core/civet.h
+		src/core/engine.h
 		src/core/vecmath.h
 		src/core/ray.h
 		src/core/transform.h
@@ -262,6 +269,7 @@ set ( CIVET_CORE_HEADERS
 		)
 
 set ( CIVET_CORE_SOURCE
+		src/core/engine.cpp
 		src/core/transform.cpp
 		src/core/interaction.cpp
 		src/core/shape.cpp
@@ -282,49 +290,40 @@ if (CUDA_ENABLED)
 	set_source_files_properties(
 			${CIVET_CORE_HEADERS}
 			${CIVET_CORE_SOURCE}
+			${CIVET_SOURCE}
 
 			PROPERTIES LANGUAGE CUDA
 	)
 endif()
 
 add_library ( civet_lib STATIC
-		${CIVET_SOURCE_HEADERS}
-		${CIVET_SOURCE}
+		${CIVET_CORE_HEADERS}
+		${CIVET_CORE_SOURCE}
 		${CIVET_GPU_SOURCE}
 		${CIVET_SOURCE}
 		)
-add_library (civet::civet_lib ALIAS civet_lib)
+add_library ( civet::civet_lib ALIAS civet_lib )
 
-target_compile_definitions (civet_lib PRIVATE ${CIVET_DEFINITIONS})
+target_compile_definitions ( civet_lib PRIVATE ${CIVET_DEFINITIONS} )
+
+set_property ( TARGET civet_lib PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON )
 
 target_include_directories( civet_lib PUBLIC
 		src
 		src/thirdparty
+		${GLFW_INCLUDE}
+		${GLAD_INCLUDE}
 		)
 
-set ( CIVET_CXX_FEATURES
-		cxx_auto_type
-		cxx_explicit_conversions
-		cxx_lambdas
-		cxx_nullptr
-		cxx_range_for
-		cxx_static_assert
-		)
-target_compile_features ( civet_lib PRIVATE ${CIVET_CXX_FEATURES} )
-if (CUDA_ENABLED)
-	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CUDA)
-else()
-	set_target_properties(civet_lib PROPERTIES LINKER_LANGUAGE CXX)
-endif()
+target_compile_options (civet_lib PUBLIC ${CIVET_CXX_FLAGS})
+target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:cuda_build_configuration>)
+
+add_sanitizers ( civet_lib )
 
 if (WIN32)
 	# Avoid a name clash when building on Visual Studio
 	set_target_properties ( civet_lib PROPERTIES OUTPUT_NAME libcivet )
 endif()
-
-set_property(TARGET civet_lib PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-target_compile_options(civet_lib PUBLIC ${CIVET_CXX_FLAGS})
-target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:cuda_build_configuration>)
 
 set ( ALL_CIVET_LIBS
 		civet_lib
@@ -333,13 +332,30 @@ set ( ALL_CIVET_LIBS
 		OpenGL::GL
 		)
 
-add_executable ( civet_exe src/civet.cpp )
+if (CUDA_ENABLED)
+	set_property (TARGET civet_lib PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+endif()
+
+if (WIN32)
+	list (APPEND ALL_CIVET_LIBS "dbghelp" "wsock32" "ws2_32")
+endif ()
+
+###########################################################################
+# Main executable
+
+add_executable ( civet_exe src/main/civet.cpp )
+add_executable ( civet::civet_exe ALIAS civet_exe )
+
+target_compile_definitions ( civet_exe PRIVATE ${CIVET_DEFINITIONS} )
+target_compile_options ( civet_exe PRIVATE ${CIVET_CXX_FLAGS} )
+target_include_directories ( civet_exe PRIVATE src src/thirdparty )
+target_link_libraries ( civet_exe ${ALL_CIVET_LIBS} civet_warnings )
 
 set_target_properties ( civet_exe PROPERTIES OUTPUT_NAME civet )
-target_compile_definitions (civet_exe PRIVATE ${CIVET_DEFINITIONS})
-target_compile_features ( civet_exe PRIVATE ${CIVET_CXX_FEATURES} )
-target_include_directories( civet_exe PRIVATE src src/thirdparty )
-target_link_libraries ( civet_exe ${ALL_CIVET_LIBS} )
+
+add_sanitizers ( civet_exe )
+
+set_property (TARGET civet_exe PROPERTY FOLDER "main")
 
 # Installation
 
