@@ -11,6 +11,7 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 list (INSERT CMAKE_MODULE_PATH 0 "${CMAKE_SOURCE_DIR}/cmake_helpers")
 
 set (GPU_SHADER_MODEL "" CACHE STRING "")
+#add_definitions(-DCMAKE_TOOLCHAIN_FILE=C:/Users/Nut/vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 find_package( Sanitizers )
 find_package ( Threads )
@@ -37,7 +38,7 @@ add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/src/thirdparty)
 # os-compiler stuff
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-	list (APPEND CIVET_CXX_FLAGS "-std=c++17")
+	list (APPEND CIVET_CXX_FLAGS " -std=c++17")
 
 	# ICC will default to -fp-model fast=1, which performs value-unsafe optimizations which will
 	# cause pbrt_test to fail. For safety, -fp-model precise is explicitly set here by default.
@@ -46,7 +47,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
 
 	list (APPEND CIVET_CXX_FLAGS "-fp-model" "${FP_MODEL}")
 endif ()
-
 
 add_library (civet_warnings INTERFACE)
 target_compile_options (
@@ -109,13 +109,13 @@ int main() {
 } " HAVE_MEMALIGN )
 
 IF ( HAVE__ALIGNED_MALLOC )
-	ADD_DEFINITIONS ( -D CIVET_HAVE__ALIGNED_MALLOC )
+	add_definitions ( -D CIVET_HAVE__ALIGNED_MALLOC )
 ELSEIF ( HAVE_POSIX_MEMALIGN )
-	ADD_DEFINITIONS ( -D CIVET_HAVE_POSIX_MEMALIGN )
+	add_definitions ( -D CIVET_HAVE_POSIX_MEMALIGN )
 ELSEIF ( HAVE_MEMALIGN )
-	ADD_DEFINITIONS ( -D CIVET_HAVE_MEMALIGN )
+	add_definitions ( -D CIVET_HAVE_MEMALIGN )
 ELSE ()
-	MESSAGE ( SEND_ERROR "Unable to find a way to allocate aligned memory" )
+	message ( SEND_ERROR "Unable to find a way to allocate aligned memory" )
 ENDIF ()
 
 ########################################
@@ -266,6 +266,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/interaction.h
 		src/core/shape.h
 		src/core/primitive.h
+		src/core/mesh.h
 		)
 
 set ( CIVET_CORE_SOURCE
@@ -274,6 +275,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/interaction.cpp
 		src/core/shape.cpp
 		src/core/primitive.cpp
+		src/core/mesh.cpp
 		)
 
 file ( GLOB CIVET_SOURCE
@@ -308,6 +310,7 @@ target_compile_definitions ( civet_lib PRIVATE ${CIVET_DEFINITIONS} )
 
 set_property ( TARGET civet_lib PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON )
 
+
 target_include_directories( civet_lib PUBLIC
 		src
 		src/thirdparty
@@ -317,7 +320,7 @@ target_include_directories( civet_lib PUBLIC
 		)
 
 target_compile_options (civet_lib PUBLIC ${CIVET_CXX_FLAGS})
-target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:cuda_build_configuration>)
+target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:cuda_build_configuration> ${CMAKE_THREAD_LIBS_INIT})
 
 add_sanitizers ( civet_lib )
 
@@ -328,7 +331,8 @@ endif()
 
 set ( ALL_CIVET_LIBS
 		civet_lib
-		assimp
+		${CMAKE_THREAD_LIBS_INIT}
+		${CMAKE_CURRENT_SOURCE_DIR}/src/thirdparty/assimp/lib/assimpd.lib
 		glfw
 		glad
 		OpenGL::GL
