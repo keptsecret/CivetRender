@@ -1,10 +1,10 @@
 #ifndef CIVET_PRIMITIVE_H
 #define CIVET_PRIMITIVE_H
 
+#include <core/geometry/transform.h>
 #include <core/civet.h>
 #include <core/material.h>
 #include <core/shape.h>
-#include <core/transform.h>
 
 namespace civet {
 

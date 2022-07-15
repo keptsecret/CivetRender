@@ -1,6 +1,6 @@
 #include <core/interaction.h>
 
-#include <core/transform.h>
+#include <core/geometry/transform.h>
 #include <core/shape.h>
 
 namespace civet {

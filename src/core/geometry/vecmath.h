@@ -209,7 +209,7 @@ public:
 	}
 
 	CIVET_CPU_GPU
-	Vector3<T>& operator/=(T s) const {
+	Vector3<T>& operator/=(T s) {
 		if (s == 0.0f) {
 			printf("ERROR::Vector3: Divide by zero.\n");
 		}
@@ -1442,6 +1442,28 @@ CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float ra
 	}
 
 	return (t_min < ray_t_max) && (t_max > 0);
+}
+
+// Miscellaneous angle functions
+CIVET_CPU_GPU
+inline Vector3f sphericalDirection(float sin_theta, float cos_theta, float phi) {
+	return Vector3f(sin_theta * cos(phi), sin_theta * sin(phi), cos_theta);
+}
+
+CIVET_CPU_GPU
+inline Vector3f sphericalDirection(float sin_theta, float cos_theta, float phi, const Vector3f& x, const Vector3f& y, const Vector3f& z) {
+	return sin_theta * cos(phi) * x + sin_theta * sin(phi) * y + cos_theta * z;
+}
+
+CIVET_CPU_GPU
+inline float sphericalTheta(const Vector3f& v) {
+	return acos(clamp(v.z, -1, 1));
+}
+
+CIVET_CPU_GPU
+inline float sphericalPhi(const Vector3f& v) {
+	float p = atan2(v.y, v.x);
+	return (p < 0) ? (p + 2 * Pi) : p;
 }
 
 } // namespace civet

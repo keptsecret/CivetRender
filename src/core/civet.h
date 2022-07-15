@@ -107,6 +107,14 @@ struct MediumInterface;
 class Light;
 class AreaLight;
 
+template <int n_spectrum_samples>
+class CoefficientSpectrum;
+class RGBSpectrum;
+class SampledSpectrum;
+///< Choose between spectrum types by uncommenting the relevant line
+typedef RGBSpectrum Spectrum;
+//typedef SampeldSpectrum Spectrum;
+
 class MemoryArena;
 
 // Global constants
@@ -228,6 +236,21 @@ inline float radians(float deg) {
 CIVET_CPU_GPU
 inline float degrees(float rad) {
 	return (180 / Pi) * rad;
+}
+
+template <typename Predicate>
+CIVET_CPU_GPU int findInterval(int size, const Predicate& pred) {
+	int first = 0, len = size;
+	while (len > 0) {
+		int half = len >> 1, middle = first + half;
+		if (pred(middle)) {
+			first = middle + 1;
+			len -= half + 1;
+		} else {
+			len = half;
+		}
+	}
+	return clamp(first - 1, 0, size - 2);
 }
 
 // Math functions to support both CPU and GPU

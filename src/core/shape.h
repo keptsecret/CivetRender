@@ -1,9 +1,9 @@
 #ifndef CIVET_SHAPE_H
 #define CIVET_SHAPE_H
 
-#include <utils/memory.h>
+#include <core/geometry/transform.h>
 #include <core/civet.h>
-#include <core/transform.h>
+#include <utils/memory.h>
 
 namespace civet {
 

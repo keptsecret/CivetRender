@@ -2,8 +2,8 @@
 #define CIVET_TRANSFORM_H
 
 #include <core/civet.h>
-#include <core/vecmath.h>
-#include <core/ray.h>
+#include <core/geometry/ray.h>
+#include <core/geometry/vecmath.h>
 
 namespace civet {
 
@@ -197,7 +197,6 @@ public:
 	CIVET_CPU_GPU inline Ray operator()(const Ray& r, Vector3f* oError, Vector3f* dError) const;
 	CIVET_CPU_GPU inline Ray operator()(const Ray& r, const Vector3f& oErrorIn, const Vector3f& dErrorIn, Vector3f* oErrorOut, Vector3f* dErrorOut) const;
 
-private:
 	Matrix4 m, m_inv;
 };
 
