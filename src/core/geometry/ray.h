@@ -2,7 +2,7 @@
 #define CIVET_RAY_H
 
 #include <core/civet.h>
-#include <core/vecmath.h>
+#include <core/geometry/vecmath.h>
 
 namespace civet {
 

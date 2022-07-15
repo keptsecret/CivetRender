@@ -5,12 +5,12 @@
 #ifndef CIVET_PARALLEL_H
 #define CIVET_PARALLEL_H
 
+#include <core/geometry/vecmath.h>
 #include <core/civet.h>
-#include <core/vecmath.h>
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
-#include <atomic>
 
 namespace civet {
 

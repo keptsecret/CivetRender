@@ -4,33 +4,7 @@
 
 namespace civet {
 
-TriangleMesh::TriangleMesh(const Transform& otw, int n_tris, const int* v_idx, int n_verts,
-		const Point3f* _p, const Vector3f* _s, const Normal3f* _n, const Point2f* _uv,
-		std::shared_ptr<Texture<float>> am) :
-		n_triangles(n_tris), n_vertices(n_verts), vertex_indices(v_idx, v_idx + 3 * n_tris), alpha_mask(am) {
-	p.reset(new Point3f[n_verts]);
-	for (int i = 0; i < n_verts; i++) {
-		p[i] = otw(_p[i]);
-	}
-
-	if (_uv) {
-		uv.reset(new Point2f[n_verts]);
-		memcpy(uv.get(), _uv, n_verts * sizeof(Point2f));
-	}
-	if (_n) {
-		n.reset(new Normal3f[n_verts]);
-		for (int i = 0; i < n_verts; i++) {
-			n[i] = otw(_n[i]);
-		}
-	}
-	if (_s) {
-		s.reset(new Vector3f[n_verts]);
-		for (int i = 0; i < n_verts; i++) {
-			s[i] = otw(_s[i]);
-		}
-	}
-}
-
+CIVET_CPU_GPU
 Bounds3f Triangle::objectBound() const {
 	const Point3f& p0 = mesh->p[v[0]];
 	const Point3f& p1 = mesh->p[v[1]];
@@ -38,6 +12,7 @@ Bounds3f Triangle::objectBound() const {
 	return bUnion(Bounds3f((*world_to_object)(p0), (*world_to_object)(p1)), (*world_to_object)(p2));
 }
 
+CIVET_CPU_GPU
 Bounds3f Triangle::worldBound() const {
 	const Point3f& p0 = mesh->p[v[0]];
 	const Point3f& p1 = mesh->p[v[1]];
@@ -45,6 +20,7 @@ Bounds3f Triangle::worldBound() const {
 	return bUnion(Bounds3f(p0, p1), p2);
 }
 
+CIVET_CPU_GPU
 bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect, bool test_alpha_texture) const {
 	const Point3f& p0 = mesh->p[v[0]];
 	const Point3f& p1 = mesh->p[v[1]];
@@ -258,6 +234,7 @@ bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect
 	return true;
 }
 
+CIVET_CPU_GPU
 bool Triangle::intersectP(const Ray& ray, bool test_alpha_texture) const {
 	const Point3f& p0 = mesh->p[v[0]];
 	const Point3f& p1 = mesh->p[v[1]];
@@ -396,24 +373,12 @@ bool Triangle::intersectP(const Ray& ray, bool test_alpha_texture) const {
 	return true;
 }
 
+CIVET_CPU_GPU
 float Triangle::area() const {
 	const Point3f& p0 = mesh->p[v[0]];
 	const Point3f& p1 = mesh->p[v[1]];
 	const Point3f& p2 = mesh->p[v[2]];
 	return 0.5 * cross(p1 - p0, p2 - p0).length();
-}
-
-std::vector<std::shared_ptr<Shape>> createTriangleMesh(const Transform* otw, const Transform* wto, bool _reverse_orientation,
-		int n_tris, const int* v_idx, int n_verts,
-		const Point3f* _p, const Vector3f* _s, const Normal3f* _n, const Point2f* _uv,
-		std::shared_ptr<Texture<float>> am) {
-	auto _mesh = std::make_shared<TriangleMesh>(*otw, n_tris, v_idx, n_verts, _p, _s, _n, _uv, am);
-	std::vector<std::shared_ptr<Shape>> tris;
-	tris.reserve(n_tris);
-	for (int i = 0; i < n_tris; i++) {
-		tris.push_back(std::make_shared<Triangle>(otw, wto, _reverse_orientation, _mesh, i));
-	}
-	return tris;
 }
 
 } // namespace civet
