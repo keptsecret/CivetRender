@@ -268,6 +268,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/shape.h
 		src/core/primitive.h
 		src/core/mesh.h
+		src/core/spectrum.h
 		)
 
 set ( CIVET_CORE_SOURCE
@@ -278,6 +279,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/shape.cpp
 		src/core/primitive.cpp
 		src/core/mesh.cpp
+		src/core/spectrum.cpp
 		)
 
 file ( GLOB CIVET_SOURCE
