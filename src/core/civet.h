@@ -115,6 +115,12 @@ class SampledSpectrum;
 typedef RGBSpectrum Spectrum;
 //typedef SampeldSpectrum Spectrum;
 
+class Camera;
+struct CameraSample;
+class ProjectiveCamera;
+class Film;
+class FilmTile;
+
 class MemoryArena;
 
 // Global constants
