@@ -43,9 +43,28 @@ void GeometricPrimitive::computeScatteringFunction(SurfaceInteraction* isect, Me
 	}
 }
 
-TransformedPrimitve::TransformedPrimitve(std::shared_ptr<Primitive> _primitive) :
-		primitive(_primitive) {}
+TransformedPrimitve::TransformedPrimitve(std::shared_ptr<Primitive> _primitive, const AnimatedTransform& ptw) :
+		primitive(_primitive), primitive_to_world(ptw) {}
 
+bool TransformedPrimitve::intersect(const Ray& r, SurfaceInteraction* isect) const {
+	Transform interpolated_ptw;
+	primitive_to_world.interpolate(r.time, &interpolated_ptw);
+	Ray ray = inverse(interpolated_ptw)(r);
+	if (!primitive->intersect(ray, isect)) {
+		return false;
+	}
+	r.t_max = ray.t_max;
+	if (!interpolated_ptw.isIdentity()) {
+		*isect = interpolated_ptw(*isect);
+	}
+	return true;
+}
 
+bool TransformedPrimitve::intersectP(const Ray& r) const {
+	Transform interpolated_ptw;
+	primitive_to_world.interpolate(r.time, &interpolated_ptw);
+	Ray ray = inverse(interpolated_ptw)(r);
+	return !primitive->intersectP(ray);
+}
 
 } // namespace civet

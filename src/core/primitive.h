@@ -45,10 +45,11 @@ private:
 
 class TransformedPrimitve : public Primitive {
 public:
-	TransformedPrimitve(std::shared_ptr<Primitive> _primitive);
+	TransformedPrimitve(std::shared_ptr<Primitive> _primitive, const AnimatedTransform& ptw);
 
-	// TODO: implement these when animated transforms implemented
-	virtual Bounds3f worldBound() const override;
+	virtual Bounds3f worldBound() const override {
+		return primitive_to_world.motionBounds(primitive->worldBound());
+	}
 	virtual bool intersect(const Ray& r, SurfaceInteraction* isect) const override;
 	virtual bool intersectP(const Ray& r) const override;
 
@@ -60,8 +61,7 @@ public:
 
 private:
 	std::shared_ptr<Primitive> primitive;
-	// TODO: enable when animated transforms are implemented
-	// const AnimatedTransform primitive_to_world;
+	const AnimatedTransform primitive_to_world;
 };
 
 class Aggregate : public Primitive {

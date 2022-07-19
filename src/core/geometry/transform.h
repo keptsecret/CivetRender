@@ -4,6 +4,7 @@
 #include <core/civet.h>
 #include <core/geometry/ray.h>
 #include <core/geometry/vecmath.h>
+#include <core/geometry/quaternion.h>
 
 namespace civet {
 
@@ -215,6 +216,11 @@ Transform rotate(float theta, Vector3f& axis);
 CIVET_CPU_GPU
 Transform lookAt(const Point3f& position, const Point3f& target, const Vector3f& up);
 
+CIVET_CPU_GPU
+Transform orthographic(float z_near, float z_far);
+CIVET_CPU_GPU
+Transform perspective(float fov, float n, float f);
+
 // Transform Inline Functions
 template <typename T>
 CIVET_CPU_GPU inline Point3<T> Transform::operator()(const Point3<T>& p) const {
@@ -275,8 +281,43 @@ inline RayDifferential Transform::operator()(const RayDifferential& r) const {
 	return ret;
 }
 
-// TODO: implement animated transforms from PBR book
-class AnimatedTransform;
+class AnimatedTransform {
+public:
+	AnimatedTransform(const Transform* start_tr, float start_t, const Transform* end_tr, float end_t);
+
+	void decompose(const Matrix4& m, Vector3f* T, Quaternion* Rquat, Matrix4* S);
+
+	void interpolate(float time, Transform* t) const;
+
+	Ray operator()(const Ray &r) const;
+	RayDifferential operator()(const RayDifferential &r) const;
+	Point3f operator()(float time, const Point3f &p) const;
+	Vector3f operator()(float time, const Vector3f &v) const;
+
+	Bounds3f motionBounds(const Bounds3f& b) const;
+	Bounds3f boundPointMotion(const Point3f& p) const;
+
+private:
+	const Transform *start_transform, *end_transform;
+	const float start_time, end_time;
+	const bool is_animated;
+	Vector3f T[2];
+	Quaternion R[2];
+	Matrix4 S[2];
+	bool has_rotation;
+
+	struct DerivativeTerm {
+		DerivativeTerm() {}
+		DerivativeTerm(float c, float x, float y, float z)
+				: kc(c), kx(x), ky(y), kz(z) {}
+
+		float kc, kx, ky, kz;
+		float eval(const Point3f &p) const {
+			return kc + kx * p.x + ky * p.y + kz * p.z;
+		}
+	};
+	DerivativeTerm c1[3], c2[3], c3[3], c4[3], c5[3];
+};
 
 } // namespace civet
 
