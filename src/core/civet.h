@@ -83,6 +83,7 @@ class Bounds3;
 using Bounds3f = Bounds3<float>;
 using Bounds3i = Bounds3<int>;
 class Transform;
+class Matrix4;
 
 class Ray;
 class RayDifferential;
@@ -122,6 +123,7 @@ class Film;
 class FilmTile;
 
 class MemoryArena;
+class RNG;
 
 // Global constants
 #ifdef _MSC_VER
