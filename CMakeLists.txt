@@ -270,6 +270,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/mesh.h
 		src/core/spectrum.h
 		src/core/camera.h
+		src/core/sampler.h
 		)
 
 set ( CIVET_CORE_SOURCE
@@ -282,6 +283,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/mesh.cpp
 		src/core/spectrum.cpp
 		src/core/camera.cpp
+		src/core/sampler.cpp
 		)
 
 file ( GLOB CIVET_SOURCE
