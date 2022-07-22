@@ -26,7 +26,7 @@ void Sampler::startPixel(const Point2i& p) {
 
 CameraSample Sampler::getCameraSample(const Point2i& p_raster) {
 	CameraSample cs;
-	cs.p_film = Point2f(p_raster.x, p_raster.y) + get2D();
+	cs.p_film = Point2f(p_raster) + get2D();
 	cs.time = get1D();
 	cs.p_lens = get2D();
 	return cs;
