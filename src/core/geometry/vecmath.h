@@ -446,6 +446,23 @@ public:
 		}
 	}
 
+	template <typename U>
+	explicit Point2(const Point2<U>& p) {
+		x = (T)p.x;
+		y = (T)p.y;
+	}
+
+	template <typename U>
+	explicit Point2(const Vector2<U>& p) {
+		x = (T)p.x;
+		y = (T)p.y;
+	}
+
+	template <typename U>
+	explicit operator Vector2<U>() const {
+		return Vector2<U>(x, y);
+	}
+
 	CIVET_CPU_GPU
 	Point2<T> operator+(const Vector2<T>& v) const {
 		return Point2<T>(x + v.x, y + v.y);
@@ -712,6 +729,11 @@ public:
 	explicit Bounds2(const Point2<T>& p) :
 			p_min(p), p_max(p) {}
 
+	template <typename U>
+	explicit operator Bounds2<U>() const {
+		return Bounds2<U>((Point2<U>)p_min, (Point2<U>)p_max);
+	}
+
 	CIVET_CPU_GPU
 	Bounds2(const Point2<T>& p1, const Point2<T>& p2) :
 			p_min(std::min(p1.x, p2.x), std::min(p1.y, p2.y)), p_max(std::max(p1.x, p2.x), std::max(p1.y, p2.y)) {}
@@ -941,6 +963,23 @@ private:
 	Point2i p;
 	const Bounds2i* bounds;
 };
+
+inline Bounds2iIterator begin(const Bounds2i &b) {
+	return Bounds2iIterator(b, b.p_min);
+}
+
+inline Bounds2iIterator end(const Bounds2i &b) {
+	// Normally, the ending point is at the minimum x value and one past
+	// the last valid y value.
+	Point2i pEnd(b.p_min.x, b.p_max.y);
+	// However, if the bounds are degenerate, override the end point to
+	// equal the start point so that any attempt to iterate over the bounds
+	// exits out immediately.
+	if (b.p_min.x >= b.p_max.x || b.p_min.y >= b.p_max.y)	{
+		pEnd = b.p_min;
+	}
+	return Bounds2iIterator(b, pEnd);
+}
 
 /*---------------------------------------------------------------------------------*/
 /*
