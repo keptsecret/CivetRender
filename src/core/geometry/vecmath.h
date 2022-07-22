@@ -18,7 +18,7 @@ public:
 	CIVET_CPU_GPU
 	Vector2(T _x, T _y) :
 			x(_x), y(_y) {
-		if (!hasNaNs()) {
+		if (hasNaNs()) {
 			printf("ERROR::Vector2: NaN value assigned on initialization.\n");
 		}
 	}
@@ -147,7 +147,7 @@ public:
 	CIVET_CPU_GPU
 	Vector3(T _x, T _y, T _z) :
 			x(_x), y(_y), z(_z) {
-		if (!hasNaNs()) {
+		if (hasNaNs()) {
 			printf("ERROR::Vector3: NaN value assigned on initialization.\n");
 		}
 	}
@@ -261,7 +261,7 @@ public:
 	CIVET_CPU_GPU
 	float lengthSquared() const { return x * x + y * y + z * z; }
 	CIVET_CPU_GPU
-	float length() const { return sqrt(lengthSquared()); }
+	float length() const { return std::sqrt(lengthSquared()); }
 
 	CIVET_CPU_GPU
 	bool hasNaNs() const {
@@ -284,7 +284,7 @@ public:
 	CIVET_CPU_GPU
 	Point3<T>(T _x, T _y, T _z) :
 			x(_x), y(_y), z(_z) {
-		if (!hasNaNs()) {
+		if (hasNaNs()) {
 			printf("ERROR::Point3: NaN value assigned on initialization.\n");
 		}
 	}
@@ -433,7 +433,7 @@ public:
 	CIVET_CPU_GPU
 	Point2<T>(T _x, T _y) :
 			x(_x), y(_y) {
-		if (!hasNaNs()) {
+		if (hasNaNs()) {
 			printf("ERROR::Point2: NaN value assigned on initialization.\n");
 		}
 	}
@@ -441,7 +441,7 @@ public:
 	CIVET_CPU_GPU
 	explicit Point2(const Point3<T>& p) :
 			x(p.x), y(p.y) {
-		if (!hasNaNs()) {
+		if (hasNaNs()) {
 			printf("ERROR::Point2: NaN value assigned on initialization.\n");
 		}
 	}
@@ -589,7 +589,7 @@ public:
 	CIVET_CPU_GPU
 	Normal3<T>(T _x, T _y, T _z) :
 			x(_x), y(_y), z(_z) {
-		if (!hasNaNs()) {
+		if (hasNaNs()) {
 			printf("ERROR::Normal3: NaN value assigned on initialization.\n");
 		}
 	}
@@ -597,7 +597,7 @@ public:
 	CIVET_CPU_GPU
 	explicit Normal3<T>(const Vector3<T>& v) :
 			x(v.x), y(v.y), z(v.z) {
-		if (!hasNaNs()) {
+		if (hasNaNs()) {
 			printf("ERROR::Normal3: NaN value assigned on initialization.\n");
 		}
 	}
@@ -990,7 +990,7 @@ inline Bounds2iIterator end(const Bounds2i &b) {
 template <typename T>
 CIVET_CPU_GPU Vector2<T>::Vector2(const Point2<T>& p) :
 		x(p.x), y(p.y) {
-	if (!hasNaNs()) {
+	if (hasNaNs()) {
 		printf("ERROR::Vector2: NaN value assigned on initialization.\n");
 	}
 }
@@ -998,7 +998,7 @@ CIVET_CPU_GPU Vector2<T>::Vector2(const Point2<T>& p) :
 template <typename T>
 CIVET_CPU_GPU Vector2<T>::Vector2(const Point3<T>& p) :
 		x(p.x), y(p.y) {
-	if (!hasNaNs()) {
+	if (hasNaNs()) {
 		printf("ERROR::Vector2: NaN value assigned on initialization.\n");
 	}
 }
@@ -1038,7 +1038,7 @@ CIVET_CPU_GPU inline std::ostream& operator<<(std::ostream& os, const Vector2<T>
 template <typename T>
 CIVET_CPU_GPU Vector3<T>::Vector3(const Point3<T>& p) :
 		x(p.x), y(p.y), z(p.z) {
-	if (!hasNaNs()) {
+	if (hasNaNs()) {
 		printf("ERROR::Vector3: NaN value assigned on initialization.\n");
 	}
 }
@@ -1046,7 +1046,7 @@ CIVET_CPU_GPU Vector3<T>::Vector3(const Point3<T>& p) :
 template <typename T>
 CIVET_CPU_GPU Vector3<T>::Vector3(const Normal3<T>& n) :
 		x(n.x), y(n.y), z(n.z) {
-	if (!hasNaNs()) {
+	if (hasNaNs()) {
 		printf("ERROR::Vector3: NaN value assigned on initialization.\n");
 	}
 }
