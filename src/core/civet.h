@@ -121,6 +121,8 @@ struct CameraSample;
 class ProjectiveCamera;
 class Film;
 class FilmTile;
+class Filter;
+class Sampler;
 
 class MemoryArena;
 class RNG;
