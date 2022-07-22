@@ -271,6 +271,8 @@ set ( CIVET_CORE_HEADERS
 		src/core/spectrum.h
 		src/core/camera.h
 		src/core/sampler.h
+		src/core/filter.h
+		src/core/film.h
 		)
 
 set ( CIVET_CORE_SOURCE
@@ -284,6 +286,8 @@ set ( CIVET_CORE_SOURCE
 		src/core/spectrum.cpp
 		src/core/camera.cpp
 		src/core/sampler.cpp
+		src/core/filter.cpp
+		src/core/film.cpp
 		)
 
 file ( GLOB CIVET_SOURCE
