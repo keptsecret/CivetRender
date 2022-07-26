@@ -84,7 +84,7 @@ inline float dot(const Quaternion& q1, const Quaternion& q2) {
 }
 
 inline Quaternion normalize(const Quaternion& q) {
-	return q / sqrt(dot(q, q));
+	return q / std::sqrt(dot(q, q));
 }
 
 } // namespace civet

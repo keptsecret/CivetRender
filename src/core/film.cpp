@@ -28,7 +28,7 @@ Bounds2i Film::getSampleBounds() const {
 Bounds2f Film::getPhysicalExtent() const {
 	///< mainly used by unimplemented realistic camera
 	float aspect = float(full_resolution.y) / float(full_resolution.x);
-	float x = sqrt(diagonal * diagonal / (1 + aspect * aspect));
+	float x = std::sqrt(diagonal * diagonal / (1 + aspect * aspect));
 	float y = aspect * x;
 	return Bounds2f(Point2f(-x / 2, -y / 2), Point2f(x / 2, y / 2));
 }
