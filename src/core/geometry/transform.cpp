@@ -208,7 +208,7 @@ Transform rotate(float theta, Vector3f& axis) {
 }
 
 CIVET_CPU_GPU
-Transform lookAt(const Point3f& position, const Point3f& target, const Vector3f& up) {
+Transform lookAtLH(const Point3f& position, const Point3f& target, const Vector3f& up) {
 	Matrix4 camera_to_world;
 	camera_to_world.m[0][3] = position.x;
 	camera_to_world.m[1][3] = position.y;
@@ -217,7 +217,7 @@ Transform lookAt(const Point3f& position, const Point3f& target, const Vector3f&
 
 	Vector3f dir = normalize(target - position);
 	Vector3f right = normalize(cross(normalize(up), dir));
-	Vector3f new_up = normalize(cross(dir, right));
+	Vector3f new_up = cross(dir, right);
 
 	camera_to_world.m[0][0] = right.x;
 	camera_to_world.m[1][0] = right.y;
@@ -238,6 +238,21 @@ Transform lookAt(const Point3f& position, const Point3f& target, const Vector3f&
 }
 
 CIVET_CPU_GPU
+Transform lookAtRH(const Point3f& position, const Point3f& target, const Vector3f& up) {
+	Vector3f dir = normalize(target - position);
+	Vector3f right = normalize(cross(dir, normalize(up)));
+	Vector3f new_up = cross(right, dir);
+
+	Vector3f eye = Vector3f(position);
+	Matrix4 look_at = { right.x, right.y, right.z, -dot(right, eye),
+		new_up.x, new_up.y, new_up.z, -dot(new_up, eye),
+		-dir.x, -dir.y, -dir.z, dot(dir, eye),
+		0, 0, 0, 1 };
+
+	return Transform(look_at, inverse(look_at));
+}
+
+CIVET_CPU_GPU
 Transform orthographic(float z_near, float z_far) {
 	return scale(1, 1, 1 / (z_far - z_near)) * translate(Vector3f(0, 0, -z_near));
 }
@@ -251,6 +266,17 @@ Transform perspective(float fov, float n, float f) {
 
 	float inv_tan_ang = 1 / std::tan(radians(fov) / 2);
 	return scale(inv_tan_ang, inv_tan_ang, 1) * Transform(persp);
+}
+
+CIVET_CPU_GPU
+Transform perspective(float fov, float aspect, float n, float f) {
+	float inv_tan_ang = 1 / std::tan(radians(fov) / 2);
+	Matrix4 persp(inv_tan_ang / aspect, 0, 0, 0,
+			0, inv_tan_ang, 0, 0,
+			0, 0, -(f + n) / (f - n), -(2 * f * n) / (f - n),
+			0, 0, -1, 0);
+
+	return Transform(persp);
 }
 
 CIVET_CPU_GPU
