@@ -273,6 +273,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/sampler.h
 		src/core/filter.h
 		src/core/film.h
+		src/core/shader.h
 		)
 
 set ( CIVET_CORE_SOURCE
@@ -288,6 +289,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/sampler.cpp
 		src/core/filter.cpp
 		src/core/film.cpp
+		src/core/shader.cpp
 		)
 
 file ( GLOB CIVET_SOURCE
