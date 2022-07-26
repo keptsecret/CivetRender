@@ -200,6 +200,7 @@ public:
 		for (int i = 0; i < n_spectrum_samples; i++) {
 			ret.c[i] = civet::clamp(c[i], low, high);
 		}
+		return ret;
 	}
 
 	float maxComponentValue() const {
