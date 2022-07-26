@@ -2,9 +2,9 @@
 #define CIVET_TRANSFORM_H
 
 #include <core/civet.h>
+#include <core/geometry/quaternion.h>
 #include <core/geometry/ray.h>
 #include <core/geometry/vecmath.h>
-#include <core/geometry/quaternion.h>
 
 namespace civet {
 
@@ -81,6 +81,17 @@ struct Matrix4 {
 
 	CIVET_CPU_GPU
 	friend Matrix4 inverse(const Matrix4& mat);
+
+	friend std::ostream& operator<<(std::ostream& os, const Matrix4& mat) {
+		// clang-format off
+        os << "[ [ " << mat.m[0][0] << ", " << mat.m[0][1] << ", " << mat.m[0][2] << ", " << mat.m[0][3] << " ] \n"
+			<< "  [ " << mat.m[1][0] << ", " << mat.m[1][1] << ", " << mat.m[1][2] << ", " << mat.m[1][3] << " ] \n"
+			<< "  [ " << mat.m[2][0] << ", " << mat.m[2][1] << ", " << mat.m[2][2] << ", " << mat.m[2][3] << " ] \n"
+			<< "  [ " << mat.m[3][0] << ", " << mat.m[3][1] << ", " << mat.m[3][2] << ", " << mat.m[3][3] << " ] ]";
+
+		// clang-format on
+		return os;
+	}
 
 	float m[4][4];
 };
@@ -188,15 +199,15 @@ public:
 	// Apply transforms with rounding errors
 	// TODO: implement rounding error transforms
 	template <typename T>
-	CIVET_CPU_GPU inline Point3<T> operator()(const Point3<T>& pt, Vector3<T>* absError) const;
+	CIVET_CPU_GPU inline Point3<T> operator()(const Point3<T>& pt, Vector3<T>* p_error) const;
 	template <typename T>
-	CIVET_CPU_GPU inline Point3<T> operator()(const Point3<T>& p, const Vector3<T>& pError, Vector3<T>* pTransError) const;
-	template <typename T>
-	CIVET_CPU_GPU inline Vector3<T> operator()(const Vector3<T>& v, Vector3<T>* vTransError) const;
-	template <typename T>
-	CIVET_CPU_GPU inline Vector3<T> operator()(const Vector3<T>& v, const Vector3<T>& vError, Vector3<T>* vTransError) const;
-	CIVET_CPU_GPU inline Ray operator()(const Ray& r, Vector3f* oError, Vector3f* dError) const;
-	CIVET_CPU_GPU inline Ray operator()(const Ray& r, const Vector3f& oErrorIn, const Vector3f& dErrorIn, Vector3f* oErrorOut, Vector3f* dErrorOut) const;
+	CIVET_CPU_GPU inline Point3<T> operator()(const Point3<T>& pt, const Vector3<T>& pt_error, Vector3<T>* abs_error) const;
+	//	template <typename T>
+	//	CIVET_CPU_GPU inline Vector3<T> operator()(const Vector3<T>& v, Vector3<T>* vTransError) const;
+	//	template <typename T>
+	//	CIVET_CPU_GPU inline Vector3<T> operator()(const Vector3<T>& v, const Vector3<T>& vError, Vector3<T>* vTransError) const;
+	//	CIVET_CPU_GPU inline Ray operator()(const Ray& r, Vector3f* oError, Vector3f* dError) const;
+	//	CIVET_CPU_GPU inline Ray operator()(const Ray& r, const Vector3f& oErrorIn, const Vector3f& dErrorIn, Vector3f* oErrorOut, Vector3f* dErrorOut) const;
 
 	Matrix4 m, m_inv;
 };
@@ -213,13 +224,34 @@ CIVET_CPU_GPU
 Transform rotateZ(float theta);
 CIVET_CPU_GPU
 Transform rotate(float theta, Vector3f& axis);
+
+/**
+ * Generate a look-at matrix in left-handed coordinates\n
+ * For use with the PATH-TRACER
+ * @param position camera position
+ * @param target target the camera is facing
+ * @param up local up vector of camera, usually (0, 1, 0)
+ * @return a Transform view matrix in left-handed coordinates
+ */
 CIVET_CPU_GPU
-Transform lookAt(const Point3f& position, const Point3f& target, const Vector3f& up);
+Transform lookAtLH(const Point3f& position, const Point3f& target, const Vector3f& up);
+/**
+* Generate a look-at matrix in right-handed coordinates\n
+* Used primarily with OpenGL coordinate system
+* @param position camera position
+* @param target target the camera is facing
+* @param up local up vector of camera, usually (0, 1, 0)
+* @return a Transform view matrix in right-handed coordinates
+ */
+CIVET_CPU_GPU
+Transform lookAtRH(const Point3f& position, const Point3f& target, const Vector3f& up);
 
 CIVET_CPU_GPU
 Transform orthographic(float z_near, float z_far);
 CIVET_CPU_GPU
 Transform perspective(float fov, float n, float f);
+CIVET_CPU_GPU
+Transform perspective(float fov, float aspect, float n, float f);
 
 // Transform Inline Functions
 template <typename T>
@@ -281,6 +313,59 @@ inline RayDifferential Transform::operator()(const RayDifferential& r) const {
 	return ret;
 }
 
+template <typename T>
+CIVET_CPU_GPU inline Point3<T> Transform::operator()(const Point3<T>& p, Vector3<T>* p_error) const {
+	T x = p.x, y = p.y, z = p.z;
+	// Compute transformed coordinates from point _pt_
+	T xp = (m.m[0][0] * x + m.m[0][1] * y) + (m.m[0][2] * z + m.m[0][3]);
+	T yp = (m.m[1][0] * x + m.m[1][1] * y) + (m.m[1][2] * z + m.m[1][3]);
+	T zp = (m.m[2][0] * x + m.m[2][1] * y) + (m.m[2][2] * z + m.m[2][3]);
+	T wp = (m.m[3][0] * x + m.m[3][1] * y) + (m.m[3][2] * z + m.m[3][3]);
+
+	// Compute absolute error for transformed point
+	T xAbsSum = (std::abs(m.m[0][0] * x) + std::abs(m.m[0][1] * y) +
+			std::abs(m.m[0][2] * z) + std::abs(m.m[0][3]));
+	T yAbsSum = (std::abs(m.m[1][0] * x) + std::abs(m.m[1][1] * y) +
+			std::abs(m.m[1][2] * z) + std::abs(m.m[1][3]));
+	T zAbsSum = (std::abs(m.m[2][0] * x) + std::abs(m.m[2][1] * y) +
+			std::abs(m.m[2][2] * z) + std::abs(m.m[2][3]));
+	*p_error = gamma(3) * Vector3<T>(xAbsSum, yAbsSum, zAbsSum);
+	if (wp == 1) {
+		return Point3<T>(xp, yp, zp);
+	} else {
+		return Point3<T>(xp, yp, zp) / wp;
+	}
+}
+
+template <typename T>
+CIVET_CPU_GPU inline Point3<T> Transform::operator()(const Point3<T>& pt, const Vector3<T>& pt_error, Vector3<T>* abs_error) const {
+	T x = pt.x, y = pt.y, z = pt.z;
+	T xp = (m.m[0][0] * x + m.m[0][1] * y) + (m.m[0][2] * z + m.m[0][3]);
+	T yp = (m.m[1][0] * x + m.m[1][1] * y) + (m.m[1][2] * z + m.m[1][3]);
+	T zp = (m.m[2][0] * x + m.m[2][1] * y) + (m.m[2][2] * z + m.m[2][3]);
+	T wp = (m.m[3][0] * x + m.m[3][1] * y) + (m.m[3][2] * z + m.m[3][3]);
+	abs_error->x =
+			(gamma(3) + (T)1) *
+					(std::abs(m.m[0][0]) * pt_error.x + std::abs(m.m[0][1]) * pt_error.y +
+							std::abs(m.m[0][2]) * pt_error.z) +
+			gamma(3) * (std::abs(m.m[0][0] * x) + std::abs(m.m[0][1] * y) + std::abs(m.m[0][2] * z) + std::abs(m.m[0][3]));
+	abs_error->y =
+			(gamma(3) + (T)1) *
+					(std::abs(m.m[1][0]) * pt_error.x + std::abs(m.m[1][1]) * pt_error.y +
+							std::abs(m.m[1][2]) * pt_error.z) +
+			gamma(3) * (std::abs(m.m[1][0] * x) + std::abs(m.m[1][1] * y) + std::abs(m.m[1][2] * z) + std::abs(m.m[1][3]));
+	abs_error->z =
+			(gamma(3) + (T)1) *
+					(std::abs(m.m[2][0]) * pt_error.x + std::abs(m.m[2][1]) * pt_error.y +
+							std::abs(m.m[2][2]) * pt_error.z) +
+			gamma(3) * (std::abs(m.m[2][0] * x) + std::abs(m.m[2][1] * y) + std::abs(m.m[2][2] * z) + std::abs(m.m[2][3]));
+	if (wp == 1.) {
+		return Point3<T>(xp, yp, zp);
+	} else {
+		return Point3<T>(xp, yp, zp) / wp;
+	}
+}
+
 class AnimatedTransform {
 public:
 	AnimatedTransform(const Transform* start_tr, float start_t, const Transform* end_tr, float end_t);
@@ -289,10 +374,10 @@ public:
 
 	void interpolate(float time, Transform* t) const;
 
-	Ray operator()(const Ray &r) const;
-	RayDifferential operator()(const RayDifferential &r) const;
-	Point3f operator()(float time, const Point3f &p) const;
-	Vector3f operator()(float time, const Vector3f &v) const;
+	Ray operator()(const Ray& r) const;
+	RayDifferential operator()(const RayDifferential& r) const;
+	Point3f operator()(float time, const Point3f& p) const;
+	Vector3f operator()(float time, const Vector3f& v) const;
 
 	Bounds3f motionBounds(const Bounds3f& b) const;
 	Bounds3f boundPointMotion(const Point3f& p) const;
@@ -308,11 +393,11 @@ private:
 
 	struct DerivativeTerm {
 		DerivativeTerm() {}
-		DerivativeTerm(float c, float x, float y, float z)
-				: kc(c), kx(x), ky(y), kz(z) {}
+		DerivativeTerm(float c, float x, float y, float z) :
+				kc(c), kx(x), ky(y), kz(z) {}
 
 		float kc, kx, ky, kz;
-		float eval(const Point3f &p) const {
+		float eval(const Point3f& p) const {
 			return kc + kx * p.x + ky * p.y + kz * p.z;
 		}
 	};
