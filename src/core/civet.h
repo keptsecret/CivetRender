@@ -37,7 +37,7 @@
 #include <initializer_list>
 #include <iterator>
 #include <new>
-#include <ostream>
+#include <iostream>
 #include <string>
 #include <vector>
 #ifdef CIVET_HAVE_MALLOC_H
@@ -240,12 +240,12 @@ CIVET_CPU_GPU inline float mod(float a, float b) {
 
 CIVET_CPU_GPU
 inline float radians(float deg) {
-	return (Pi / 180) * deg;
+	return (Pi / 180.0f) * deg;
 }
 
 CIVET_CPU_GPU
 inline float degrees(float rad) {
-	return (180 / Pi) * rad;
+	return (180.0f / Pi) * rad;
 }
 
 template <typename Predicate>
