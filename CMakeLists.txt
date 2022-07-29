@@ -268,6 +268,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/shape.h
 		src/core/primitive.h
 		src/core/mesh.h
+		src/core/material.h
 		src/core/spectrum.h
 		src/core/camera.h
 		src/core/sampler.h
@@ -284,6 +285,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/shape.cpp
 		src/core/primitive.cpp
 		src/core/mesh.cpp
+		src/core/material.cpp
 		src/core/spectrum.cpp
 		src/core/camera.cpp
 		src/core/sampler.cpp
@@ -324,7 +326,7 @@ add_library ( civet::civet_lib ALIAS civet_lib )
 target_compile_definitions ( civet_lib PRIVATE ${CIVET_DEFINITIONS} )
 
 set_property ( TARGET civet_lib PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON )
-
+set_property ( TARGET civet_lib PROPERTY CUDA_ARCHITECTURES all-major )
 
 target_include_directories( civet_lib PUBLIC
 		src
