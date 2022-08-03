@@ -1,11 +1,13 @@
 #ifndef CIVET_MESH_H
 #define CIVET_MESH_H
 
+#include <assimp/scene.h>
 #include <core/civet.h>
 #include <core/shader.h>
-#include <assimp/scene.h>
 
 namespace civet {
+
+unsigned int loadTextureFromFile(const char* path, const std::string& directory, bool gamma = false);
 
 struct GLVertex {
 	Point3f position;
@@ -13,16 +15,22 @@ struct GLVertex {
 	Point2f uv;
 };
 
+struct GLTexture {
+	unsigned int id;
+	std::string type;
+	std::string path;
+};
+
 class GLMesh {
 public:
 	// TODO: implement this maybe when material class
-	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, bool _use_indices = true);
+	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, bool _use_indices = true);
 
 	void draw(Shader& shader);
 
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
-	//std::vector<Texture<float>> t;	///< TODO: review when image textures implemented
+	std::vector<GLTexture> textures; ///< TODO: review when image textures implemented
 
 private:
 	void setupMesh();
@@ -33,7 +41,8 @@ private:
 
 class GLModel {
 public:
-	GLModel(const char* path) {
+	GLModel(const char* path, bool gamma = false) :
+			gamma_correction(gamma) {
 		loadModel(path);
 	}
 
@@ -44,9 +53,12 @@ private:
 	void processNode(aiNode* node, const aiScene* scene);
 	GLMesh processMesh(aiMesh* mesh, const aiScene* scene);
 	///< TODO: needs method to load textures here
+	std::vector<GLTexture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name);
 
+	std::vector<GLTexture> loaded_textures;
 	std::vector<GLMesh> meshes;
 	std::string directory;
+	bool gamma_correction;
 };
 
 class TriangleMesh {
