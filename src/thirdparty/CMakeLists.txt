@@ -31,3 +31,8 @@ add_subdirectory (glad)
 
 set_property (TARGET glfw PROPERTY FOLDER "thirdparty")
 set_property (TARGET glad PROPERTY FOLDER "thirdparty")
+
+###########################################################################
+# stb
+
+set (STB_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/stb PARENT_SCOPE)
