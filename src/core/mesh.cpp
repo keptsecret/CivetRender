@@ -2,17 +2,72 @@
 
 #include <assimp/postprocess.h>
 #include <shapes/triangle.h>
+#include <stb/stb_image.h>
 #include <assimp/Importer.hpp>
 
 namespace civet {
 
-GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, bool _use_indices) :
-		vertices(_vertices), indices(_indices), use_indices(_use_indices) {
+unsigned int loadTextureFromFile(const char* path, const std::string& directory, bool gamma) {
+	std::string filename = std::string(path);
+	filename = directory + '/' + filename;
+
+	unsigned int texture_id;
+	glGenTextures(1, &texture_id);
+
+	int width, height, n_channels;
+	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &n_channels, 0);
+	if (data) {
+		GLenum format;
+		if (n_channels == 1) {
+			format = GL_RED;
+		} else if (n_channels == 3) {
+			format = GL_RGB;
+		} else if (n_channels == 4) {
+			format = GL_RGBA;
+		}
+
+		glBindTexture(GL_TEXTURE_2D, texture_id);
+		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	} else {
+		std::cout << "ERROR::loadTextureFromFile(): Texture failed to load at path: " << path << '\n';
+	}
+
+	stbi_image_free(data);
+
+	return texture_id;
+}
+
+GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, bool _use_indices) :
+		vertices(_vertices), indices(_indices), textures(_textures), use_indices(_use_indices), VAO(0), VBO(0), EBO(0) {
 	setupMesh();
 }
 
 void GLMesh::draw(Shader& shader) {
 	///< will probably have to add shader specific code, for different shader structures
+	// currently follows naming convention of material.texture_diffuse0 and so on or material.texture_specular0
+
+	unsigned int diffuse_no = 1;
+	unsigned int specular_no = 1;
+	for (unsigned int i = 0; i < textures.size(); i++) {
+		glActiveTexture(GL_TEXTURE0 + i);
+		std::string number;
+		std::string name = textures[i].type;
+		if (name == "texture_diffuse") {
+			number = std::to_string(diffuse_no++);
+		} else if (name == "texture_specular") {
+			number = std::to_string(specular_no++);
+		}
+
+		shader.setInt(("material." + name + number).c_str(), i);
+		glBindTexture(GL_TEXTURE_2D, textures[i].id);
+	}
+	glActiveTexture(GL_TEXTURE0);
 
 	glBindVertexArray(VAO);
 	if (use_indices) {
@@ -83,7 +138,7 @@ void GLModel::processNode(aiNode* node, const aiScene* scene) {
 GLMesh GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
-	///< std::vector<Texture> textures;
+	std::vector<GLTexture> textures;
 
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
 		GLVertex vertex;
@@ -111,8 +166,43 @@ GLMesh GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 	}
 
 	///< handle loading textures
+	if (mesh->mMaterialIndex >= 0) {
+		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+		std::vector<GLTexture> diffuse_maps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+		textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
+		std::vector<GLTexture> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+		textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
+	}
 
-	return GLMesh(vertices, indices);
+	return GLMesh(vertices, indices, textures);
+}
+
+std::vector<GLTexture> GLModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name) {
+	std::vector<GLTexture> textures;
+	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
+		aiString path;
+		mat->GetTexture(type, i, &path);
+		bool skip = false;
+		for (unsigned int j = 0; j < loaded_textures.size(); j++) {
+			if (std::strcmp(loaded_textures[j].path.data(), path.C_Str()) == 0) {
+				textures.push_back(loaded_textures[j]);
+				skip = true;
+				break;
+			}
+		}
+
+		if (!skip) {
+			// texture hasn't been loaded before
+			GLTexture texture;
+			texture.id = loadTextureFromFile(path.C_Str(), this->directory);
+			texture.type = type_name;
+			texture.path = path.C_Str();
+			textures.push_back(texture);
+			loaded_textures.push_back(texture);
+		}
+	}
+
+	return textures;
 }
 
 TriangleMesh::TriangleMesh(const Transform& otw, int n_tris, const int* v_idx, int n_verts,
