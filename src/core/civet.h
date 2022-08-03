@@ -98,6 +98,7 @@ class TransformedPrimitve;
 class Material;
 template <typename T>
 class Texture;
+class BxDF;
 class BSDF;
 class BSSRDF;
 
@@ -114,7 +115,7 @@ class RGBSpectrum;
 class SampledSpectrum;
 ///< Choose between spectrum types by uncommenting the relevant line
 typedef RGBSpectrum Spectrum;
-//typedef SampeldSpectrum Spectrum;
+// typedef SampledSpectrum Spectrum;
 
 class Camera;
 struct CameraSample;
