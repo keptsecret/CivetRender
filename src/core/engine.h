@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <core/camera.h>
 #include <core/shader.h>
+#include <core/mesh.h>
 
 namespace civet {
 
