@@ -138,13 +138,13 @@ __thread int x; int main() { }
 " HAVE___THREAD )
 
 IF ( HAVE_THREAD_LOCAL )
-	ADD_DEFINITIONS ( -D CIVET_THREAD_LOCAL=thread_local )
+	add_definitions ( -D CIVET_THREAD_LOCAL=thread_local )
 ELSEIF ( HAVE___THREAD )
-	ADD_DEFINITIONS ( -D CIVET_THREAD_LOCAL=__thread )
+	add_definitions ( -D CIVET_THREAD_LOCAL=__thread )
 ELSEIF ( HAVE_DECLSPEC_THREAD )
-	ADD_DEFINITIONS ( -D "CIVET_THREAD_LOCAL=__declspec(thread)" )
+	add_definitions ( -D "CIVET_THREAD_LOCAL=__declspec(thread)" )
 ELSE ()
-	MESSAGE ( SEND_ERROR "Unable to find a way to declare a thread-local variable")
+	message ( SEND_ERROR "Unable to find a way to declare a thread-local variable")
 ENDIF ()
 
 ###########################################################################
@@ -332,12 +332,13 @@ target_include_directories( civet_lib PUBLIC
 		src
 		src/thirdparty
 		${ASSIMP_INCLUDE}
+		${STB_INCLUDE}
 		${GLFW_INCLUDE}
 		${GLAD_INCLUDE}
 		)
 
 target_compile_options (civet_lib PUBLIC ${CIVET_CXX_FLAGS})
-target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:cuda_build_configuration> ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries (civet_lib PRIVATE civet_warnings $<$<BOOL:CUDA_ENABLED>:cuda_build_configuration>)
 
 add_sanitizers ( civet_lib )
 
@@ -349,7 +350,7 @@ endif()
 set ( ALL_CIVET_LIBS
 		civet_lib
 		${CMAKE_THREAD_LIBS_INIT}
-		${CMAKE_CURRENT_SOURCE_DIR}/src/thirdparty/assimp/lib/assimpd.lib
+		assimp
 		glfw
 		glad
 		OpenGL::GL
