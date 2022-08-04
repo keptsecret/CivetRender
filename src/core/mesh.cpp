@@ -1,9 +1,10 @@
 #include <core/mesh.h>
 
-#include <assimp/postprocess.h>
 #include <shapes/triangle.h>
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 #include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
 
 namespace civet {
 
@@ -117,7 +118,7 @@ void GLModel::loadModel(std::string path) {
 	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-		std::cout << "ERROR::GLModel: Assimp error: " << importer.GetErrorString() << '\n';
+		std::cout << "ERROR::GLModel: assimp error: " << importer.GetErrorString() << '\n';
 		return;
 	}
 	directory = path.substr(0, path.find_last_of('/'));
