@@ -9,9 +9,9 @@ uniform vec3 viewPos;
 
 void main() {
     vec3 lightColor = vec3(1.0, 1.0, 1.0);
-    vec3 objectColor = vec3(0.6, 0.6, 0.6);
+    vec3 objectColor = vec3(0.4, 0.4, 0.4);
 
-    vec3 ambient = 0.2 * lightColor;
+    vec3 ambient = 0.1 * lightColor;
 
     vec3 normal = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
@@ -19,5 +19,9 @@ void main() {
     vec3 diffuse = diff * lightColor;
 
     vec3 result = (ambient + diffuse) * objectColor;
-    FragColor = vec4(result, 1.0);
+    vec4 fragColor = vec4(result, 1.0);
+
+    // manual gamma correction
+    float gamma = 2.2;
+    FragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
 }
