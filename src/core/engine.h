@@ -23,7 +23,7 @@ public:
 	GLFWwindow* window = nullptr;
 	GLCamera view_camera;
 
-	float width = 800.0f, height = 600.0f;
+	float width = 1920.0f, height = 1080.0f;
 
 	float last_x = width / 2.0f;
 	float last_y = height / 2.0f;

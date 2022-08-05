@@ -76,6 +76,7 @@ int Engine::init() {
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_FRAMEBUFFER_SRGB);	///< enables automatic gamma correction
 
 	return 0;
 }
