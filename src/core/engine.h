@@ -1,18 +1,18 @@
 #ifndef CIVET_ENGINE_H
 #define CIVET_ENGINE_H
 
-#include <core/civet.h>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <core/camera.h>
-#include <core/shader.h>
+#include <core/civet.h>
+#include <core/input_manager.h>
 #include <core/mesh.h>
+#include <core/shader.h>
 
 namespace civet {
 
 class Engine {
 protected:
-	Engine() {}
+	Engine() :
+			input_manager(width, height) {}
 
 public:
 	static Engine* getSingleton();
@@ -20,15 +20,11 @@ public:
 	int init();
 	int start();
 
-	GLFWwindow* window = nullptr;
-	GLCamera view_camera;
-
 	float width = 1920.0f, height = 1080.0f;
 
-	float last_x = width / 2.0f;
-	float last_y = height / 2.0f;
-	bool first_mouse = true;
-	bool invert_y = false;
+	GLFWwindow* window = nullptr;
+	GLCamera view_camera;
+	InputManager input_manager;
 };
 
 } // namespace civet
