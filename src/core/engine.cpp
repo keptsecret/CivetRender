@@ -110,6 +110,7 @@ int Engine::start() {
 		Transform model = translate(Vector3f(0, 0, 0));
 		shader.setMat4("model", model.m);
 
+		shader.setVec3("viewPos", Vector3f(view_camera.position));
 		test_model.draw(shader);
 
 		glfwSwapBuffers(window);
