@@ -260,6 +260,7 @@ endif()
 set ( CIVET_CORE_HEADERS
 		src/core/civet.h
 		src/core/engine.h
+		src/core/input_manager.h
 		src/core/geometry/vecmath.h
 		src/core/geometry/ray.h
 		src/core/geometry/transform.h
@@ -279,6 +280,7 @@ set ( CIVET_CORE_HEADERS
 
 set ( CIVET_CORE_SOURCE
 		src/core/engine.cpp
+		src/core/input_manager.cpp
 		src/core/geometry/transform.cpp
 		src/core/geometry/quaternion.cpp
 		src/core/interaction.cpp

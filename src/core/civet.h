@@ -51,6 +51,9 @@
 #include <typeinfo>
 #include <utility>
 
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #define ALLOCA(TYPE, COUNT) (TYPE*)alloca((COUNT) * sizeof(TYPE))
 
 namespace civet {

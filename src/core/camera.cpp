@@ -59,7 +59,7 @@ ProjectiveCamera::ProjectiveCamera(const AnimatedTransform& ctw, const Transform
 }
 
 GLCamera::GLCamera(Point3f pos, Vector3f up, float _yaw, float _pitch) :
-		position(pos), front(Vector3f(0, 0, -1)), world_up(up), yaw(_yaw), pitch(_pitch), mvmt_speed(2.5f), sensitivity(0.1f), zoom(45.0f) {
+		position(pos), front(Vector3f(0, 0, -1)), world_up(up), yaw(_yaw), pitch(_pitch), mvmt_speed(2.5f), sensitivity(0.03f), zoom(45.0f) {
 	updateCameraVectors();
 }
 

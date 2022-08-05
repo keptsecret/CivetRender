@@ -7,45 +7,28 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 }
 
 void processInput(GLFWwindow* window, GLCamera& camera, float delta_time) {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+	InputManager::update();
+
+	Engine* e = Engine::getSingleton();
+	if (e->input_manager.isKeyDown(GLFW_KEY_ESCAPE)) {
 		glfwSetWindowShouldClose(window, true);
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	if (e->input_manager.isKeyDown(GLFW_KEY_W)) {
 		camera.translate(FORWARD, delta_time);
 	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	if (e->input_manager.isKeyDown(GLFW_KEY_S)) {
 		camera.translate(BACKWARD, delta_time);
 	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	if (e->input_manager.isKeyDown(GLFW_KEY_A)) {
 		camera.translate(LEFT, delta_time);
 	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	if (e->input_manager.isKeyDown(GLFW_KEY_D)) {
 		camera.translate(RIGHT, delta_time);
 	}
-}
 
-void mouseCallback(GLFWwindow* window, double x_pos_in, double y_pos_in) {
-	float x_pos = float(x_pos_in);
-	float y_pos = float(y_pos_in);
-
-	Engine* e = Engine::getSingleton();
-	if (e->first_mouse) {
-		e->last_x = x_pos;
-		e->last_y = y_pos;
-		e->first_mouse = false;
-	}
-
-	float xoff = x_pos - e->last_x;
-	float yoff = e->last_y - y_pos;
-
-	if (e->invert_y) {
-		yoff = -yoff;
-	}
-
-	e->last_x = x_pos;
-	e->last_y = y_pos;
-	e->view_camera.pan(xoff, yoff);
+	Vector2f mouse_offset = e->input_manager.getMouseOffset();
+	e->view_camera.pan(mouse_offset.x, mouse_offset.y);
 }
 
 int Engine::init() {
@@ -69,14 +52,17 @@ int Engine::init() {
 	glViewport(0, 0, width, height);
 
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-	glfwSetCursorPosCallback(window, mouseCallback);
 
+	InputManager::init(window);
 	view_camera = GLCamera(Point3f(0, 0, 3));
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	glEnable(GL_DEPTH_TEST);
-	//glEnable(GL_FRAMEBUFFER_SRGB);	///< enables automatic gamma correction
+	glEnable(GL_CULL_FACE);
+
+	glfwWindowHint(GLFW_SAMPLES, 4);
+	glEnable(GL_MULTISAMPLE);
 
 	return 0;
 }
