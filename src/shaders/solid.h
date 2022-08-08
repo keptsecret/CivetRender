@@ -8,7 +8,7 @@ namespace civet {
 class SolidShader : public Shader {
 public:
 	SolidShader() :
-			Shader("../civet/src/shaders/solid_shader.vert", "../civet/src/shaders/solid_shader.frag") {}
+			Shader("../civet/src/shaders/solid_smooth_vert.glsl", "../civet/src/shaders/solid_smooth_frag.glsl") {}
 };
 
 } // namespace civet
