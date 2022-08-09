@@ -34,7 +34,7 @@ Shader::Shader(const char* vertex_path, const char* fragment_path) {
 	glDeleteShader(fragment);
 }
 
-void Shader::use() {
+void Shader::use(std::vector<Point3f>&) {
 	glUseProgram(ID);
 }
 
