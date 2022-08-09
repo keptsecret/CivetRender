@@ -46,7 +46,7 @@ void main() {
     vec4 fragColor = vec4(result, 1.0);
 
     // manual gamma correction
-    float gamma = 2.24;
+    float gamma = 2.2;
     FragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
 }
 
@@ -58,9 +58,9 @@ vec3 calcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
     float diff = max(dot(normal, lightDir), 0.0);
     vec3 diffuse = light.diffuse * diff * vec3(texture(material.texture_diffuse1, TexCoords));
 
-    // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    // specular shading - using blinn-phong halfway vector
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
     vec3 specular = light.specular * spec * vec3(texture(material.texture_specular1, TexCoords));
 
     // attenuation
