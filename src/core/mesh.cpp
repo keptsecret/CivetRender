@@ -18,17 +18,19 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory,
 	int width, height, n_channels;
 	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &n_channels, 0);
 	if (data) {
-		GLenum format;
+		GLenum format_in;
+		GLenum format_out;
 		if (n_channels == 1) {
-			format = GL_RED;
+			format_in = format_out = GL_RED;
 		} else if (n_channels == 3) {
-			format = GL_RGB;
+			format_in = gamma ? GL_SRGB : GL_RGB;
+			format_out = GL_RGB;
 		} else if (n_channels == 4) {
-			format = GL_RGBA;
+			format_in = format_out = GL_RGBA;
 		}
 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, format_in, width, height, 0, format_out, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -194,8 +196,9 @@ std::vector<GLTexture> GLModel::loadMaterialTextures(aiMaterial* mat, aiTextureT
 
 		if (!skip) {
 			// texture hasn't been loaded before
+			bool gamma_correct = type == aiTextureType_DIFFUSE;
 			GLTexture texture;
-			texture.id = loadTextureFromFile(path.C_Str(), this->directory);
+			texture.id = loadTextureFromFile(path.C_Str(), this->directory, gamma_correct);
 			texture.type = type_name;
 			texture.path = path.C_Str();
 			textures.push_back(texture);
