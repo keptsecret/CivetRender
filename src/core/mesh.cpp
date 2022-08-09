@@ -2,9 +2,9 @@
 
 #include <shapes/triangle.h>
 #define STB_IMAGE_IMPLEMENTATION
+#include <assimp/postprocess.h>
 #include <stb/stb_image.h>
 #include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
 
 namespace civet {
 
@@ -26,7 +26,8 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory,
 			format_in = gamma ? GL_SRGB : GL_RGB;
 			format_out = GL_RGB;
 		} else if (n_channels == 4) {
-			format_in = format_out = GL_RGBA;
+			format_in = gamma ? GL_SRGB_ALPHA : GL_RGBA;
+			format_out = GL_RGBA;
 		}
 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
