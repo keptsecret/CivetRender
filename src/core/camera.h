@@ -68,7 +68,7 @@ public:
 
 	float mvmt_speed;
 	float sensitivity;
-	float zoom;
+	float zoom;		///< represents vertical FOV, default = 50deg
 
 private:
 	void updateCameraVectors();
