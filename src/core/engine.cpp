@@ -1,5 +1,9 @@
 #include <core/engine.h>
 
+#include <stb/stb_image.h>
+#include <shaders/solid.h>
+#include <shaders/simple_forward.h>
+
 namespace civet {
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
@@ -61,6 +65,8 @@ int Engine::init() {
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 
+	stbi_set_flip_vertically_on_load(true);
+
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glEnable(GL_MULTISAMPLE);
 
@@ -71,9 +77,11 @@ int Engine::start() {
 	/**
 	 * Test scene
 	 */
-	Shader shader("../civet/src/material/matte_shader.vert", "../civet/src/material/matte_shader.frag");
-
+	SimpleForwardShader shader;
 	GLModel test_model("../civet/resources/backpack/backpack.obj");
+
+	std::vector<Point3f> light_pos;
+	light_pos.push_back(Point3f(0, 5, 2));
 
 	float last_frame = 0.0f;
 
@@ -87,8 +95,8 @@ int Engine::start() {
 		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		shader.use();
-		Transform projection = perspective(view_camera.zoom, width / height, 0.1f, 100.0f);
+		shader.use(light_pos);
+		Transform projection = perspective(view_camera.zoom, width / height, 1e-2f, 1000.0f);
 		shader.setMat4("projection", projection.m);
 
 		Transform view = view_camera.getViewTransform();
@@ -98,6 +106,7 @@ int Engine::start() {
 		shader.setMat4("model", model.m);
 
 		shader.setVec3("viewPos", Vector3f(view_camera.position));
+		shader.setFloat("material.shininess", 32.0f);
 		test_model.draw(shader);
 
 		glfwSwapBuffers(window);
