@@ -13,6 +13,17 @@ public:
 	void use(std::vector<Point3f>& light_positions) override {
 		Shader::use(light_positions);
 
+		// TODO: temporary hardcoded directional light
+		for (int i = 0; i < 4; i++) {
+			if (i == 0) {
+				setBool(("dirLights[" + std::to_string(i) + "].valid").c_str(), true);
+				setVec3(("dirLights[" + std::to_string(i) + "].direction").c_str(), Vector3f(2, 3, -1));
+				setVec3(("dirLights[" + std::to_string(i) + "].ambient").c_str(), 0.05f, 0.05f, 0.05f);
+				setVec3(("dirLights[" + std::to_string(i) + "].diffuse").c_str(), 0.8f, 0.8f, 0.8f);
+				setVec3(("dirLights[" + std::to_string(i) + "].specular").c_str(), 1.0f, 1.0f, 1.0f);
+			}
+		}
+
 		for (int i = 0; i < light_positions.size(); i++) {
 			setBool(("pointLights[" + std::to_string(i) + "].valid").c_str(), true);
 			setVec3(("pointLights[" + std::to_string(i) + "].position").c_str(), Vector3f(light_positions[i]));
