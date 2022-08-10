@@ -258,6 +258,12 @@ Transform orthographic(float z_near, float z_far) {
 }
 
 CIVET_CPU_GPU
+Transform orthographic(float left, float right, float bottom, float top, float z_near, float z_far) {
+	return scale(2.f / (right - left), 2.f / (top - bottom), 2.f / (z_far - z_near)) *
+			translate(Vector3f(-0.5 * (left + right), -0.5 * (top + bottom), -0.5 * (z_near + z_far)));
+}
+
+CIVET_CPU_GPU
 Transform perspective(float fov, float n, float f) {
 	Matrix4 persp(1, 0, 0, 0,
 			0, 1, 0, 0,

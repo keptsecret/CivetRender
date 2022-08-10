@@ -249,6 +249,8 @@ Transform lookAtRH(const Point3f& position, const Point3f& target, const Vector3
 CIVET_CPU_GPU
 Transform orthographic(float z_near, float z_far);
 CIVET_CPU_GPU
+Transform orthographic(float left, float right, float bottom, float top, float z_near, float z_far);
+CIVET_CPU_GPU
 Transform perspective(float fov, float n, float f);
 CIVET_CPU_GPU
 Transform perspective(float fov, float aspect, float n, float f);
