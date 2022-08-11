@@ -55,11 +55,12 @@ GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indic
 void GLMesh::draw(Shader& shader) {
 	///< will probably have to add shader specific code, for different shader structures
 	// currently follows naming convention of material.texture_diffuse0 and so on or material.texture_specular0
+	///< shadow maps always bind to GL_TEXTURE0, i = 0
 
 	unsigned int diffuse_no = 1;
 	unsigned int specular_no = 1;
 	for (unsigned int i = 0; i < textures.size(); i++) {
-		glActiveTexture(GL_TEXTURE0 + i);
+		glActiveTexture(GL_TEXTURE0 + (i + 1));
 		std::string number;
 		std::string name = textures[i].type;
 		if (name == "texture_diffuse") {
@@ -68,7 +69,7 @@ void GLMesh::draw(Shader& shader) {
 			number = std::to_string(specular_no++);
 		}
 
-		shader.setInt(("material." + name + number).c_str(), i);
+		shader.setInt(("material." + name + number).c_str(), i + 1);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
 	glActiveTexture(GL_TEXTURE0);
