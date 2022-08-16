@@ -5,17 +5,25 @@
 
 namespace civet {
 
-Shader::Shader(const char* vertex_path, const char* fragment_path) {
-	unsigned int vertex, fragment;
+Shader::Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path) {
+	unsigned int vertex, fragment, geometry;
 	vertex = glCreateShader(GL_VERTEX_SHADER);
 	compileShader(vertex_path, vertex);
 	fragment = glCreateShader(GL_FRAGMENT_SHADER);
 	compileShader(fragment_path, fragment);
 
+	if (geometry_path != nullptr) {
+		geometry = glCreateShader(GL_GEOMETRY_SHADER);
+		compileShader(geometry_path, geometry);
+	}
+
 	// shader program
 	ID = glCreateProgram();
 	glAttachShader(ID, vertex);
 	glAttachShader(ID, fragment);
+	if (geometry_path != nullptr) {
+		glAttachShader(ID, geometry);
+	}
 	glLinkProgram(ID);
 
 	GLint success = 0;
@@ -32,6 +40,9 @@ Shader::Shader(const char* vertex_path, const char* fragment_path) {
 
 	glDeleteShader(vertex);
 	glDeleteShader(fragment);
+	if (geometry_path != nullptr) {
+		glDeleteShader(geometry);
+	}
 }
 
 void Shader::use(std::vector<Point3f>&) {
