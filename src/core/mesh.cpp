@@ -52,15 +52,16 @@ GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indic
 	setupMesh();
 }
 
-void GLMesh::draw(Shader& shader) {
+void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	///< will probably have to add shader specific code, for different shader structures
 	// currently follows naming convention of material.texture_diffuse0 and so on or material.texture_specular0
 	///< shadow maps always bind to GL_TEXTURE0, i = 0
+	// TODO: make checks that tex_offset and drawing active textures stay within texture limit, until alternative solution found
 
 	unsigned int diffuse_no = 1;
 	unsigned int specular_no = 1;
 	for (unsigned int i = 0; i < textures.size(); i++) {
-		glActiveTexture(GL_TEXTURE0 + (i + 1));
+		glActiveTexture(GL_TEXTURE0 + (i + tex_offset));
 		std::string number;
 		std::string name = textures[i].type;
 		if (name == "texture_diffuse") {
@@ -69,7 +70,7 @@ void GLMesh::draw(Shader& shader) {
 			number = std::to_string(specular_no++);
 		}
 
-		shader.setInt(("material." + name + number).c_str(), i + 1);
+		shader.setInt(("material." + name + number).c_str(), i + tex_offset);
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}
 	glActiveTexture(GL_TEXTURE0);
@@ -111,9 +112,9 @@ void GLMesh::setupMesh() {
 	glBindVertexArray(0);
 }
 
-void GLModel::draw(Shader& shader) {
+void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 	for (auto& mesh : meshes) {
-		mesh.draw(shader);
+		mesh.draw(shader, tex_offset);
 	}
 }
 

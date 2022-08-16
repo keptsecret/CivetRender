@@ -26,7 +26,7 @@ public:
 	// TODO: implement this maybe when material class
 	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, bool _use_indices = true);
 
-	void draw(Shader& shader);
+	void draw(Shader& shader, unsigned int tex_offset);
 
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
@@ -46,7 +46,7 @@ public:
 		loadModel(path);
 	}
 
-	void draw(Shader& shader);
+	void draw(Shader& shader, unsigned int tex_offset);
 
 private:
 	void loadModel(std::string path);
