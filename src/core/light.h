@@ -14,6 +14,11 @@ public:
 	virtual void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) = 0;
 
 	unsigned int shadow_map;
+	bool active;
+	bool cast_shadow;
+
+	Vector3f color;
+	float intensity;
 
 private:
 	virtual void init() = 0;
@@ -22,14 +27,14 @@ protected:
 	unsigned int FBO;
 	unsigned int resolution;
 
-	bool active;
-	bool cast_shadow;
+	bool should_update;
 };
 
 class GLDirectionalLight : public GLLight {
 public:
 	GLDirectionalLight(unsigned int res) {
 		resolution = res;
+		direction = Vector3f(1, 0, 0);
 	}
 
 	GLDirectionalLight(unsigned int res, Vector3f dir) :
@@ -48,7 +53,6 @@ private:
 
 class GLPointLight : public GLLight {
 public:
-	//TODO: needs fixing - cube shadow maps currently output black in testing
 	GLPointLight(unsigned int res) {
 		resolution = res;
 	}
