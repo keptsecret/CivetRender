@@ -45,7 +45,7 @@ Shader::Shader(const char* vertex_path, const char* fragment_path, const char* g
 	}
 }
 
-void Shader::use(std::vector<Point3f>&) {
+void Shader::use() {
 	glUseProgram(ID);
 }
 

@@ -12,7 +12,7 @@ class Shader {
 public:
 	Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path = nullptr);
 
-	virtual void use(std::vector<Point3f>&);
+	void use();
 
 	void setBool(const std::string& name, bool value) const;
 	void setInt(const std::string& name, int value) const;
