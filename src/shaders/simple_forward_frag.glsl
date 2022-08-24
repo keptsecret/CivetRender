@@ -41,11 +41,14 @@ uniform vec3 viewPos;
 uniform DirLight dirLights[NUM_DIR_LIGHTS];
 uniform PointLight pointLights[NUM_POINT_LIGHTS];
 uniform Material material;
+
 uniform sampler2D shadowMap;
+uniform samplerCube shadowMap2;
 
 vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir);
 vec3 calcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 float calcShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir);
+float calcShadowCube(vec3 fragPos, vec3 lightPos);
 
 void main() {
     vec3 normal = normalize(Normal);
@@ -53,7 +56,7 @@ void main() {
 
     vec3 result = vec3(0,0,0);
     for (int i = 0; i < NUM_DIR_LIGHTS; i++) {
-        if (dirLights[i].valid) {
+         if (dirLights[i].valid) {
             result += calcDirLight(dirLights[i], normal, viewDir);
         }
     }
@@ -69,6 +72,11 @@ void main() {
     // manual gamma correction
     float gamma = 2.2;
     FragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
+
+    // for debugging shadow maps
+    //vec3 fragToLight = FragPos - pointLights[0].position;
+    //float closestDepth = texture(shadowMap2, fragToLight).r;
+    //FragColor = vec4(vec3(closestDepth), 1.0);
 }
 
 vec3 calcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
@@ -112,7 +120,7 @@ vec3 calcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
     specular *= attenuation;
 
     // shadow
-    float shadow = calcShadow(FragPosLightSpace, normal, lightDir);
+    float shadow = calcShadowCube(fragPos, light.position);
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
@@ -136,6 +144,18 @@ float calcShadow(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
         }
         shadow /= 9.0;
     }
+
+    return shadow;
+}
+
+float calcShadowCube(vec3 fragPos, vec3 lightPos) {
+    vec3 fragToLight = fragPos - lightPos;
+    float closestDepth = texture(shadowMap2, fragToLight).r;
+    closestDepth *= 25.0;
+
+    float currentDepth = length(fragToLight);
+    float bias = 0.05;
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
     return shadow;
 }

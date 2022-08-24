@@ -34,10 +34,6 @@ public:
 			setFloat(("pointLights[" + std::to_string(i) + "].linear").c_str(), 0.09f);
 			setFloat(("pointLights[" + std::to_string(i) + "].quadratic").c_str(), 0.032f);
 		}
-
-		for (int i = light_positions.size(); i < 32; i++) {
-			setBool(("pointLights[" + std::to_string(i) + "].valid").c_str(), false);
-		}
 	}
 };
 
