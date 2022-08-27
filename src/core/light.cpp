@@ -46,6 +46,7 @@ void GLDirectionalLight::init() {
 }
 
 void GLPointLight::generateShadowMap(Shader& shader, float near_plane, float far_plane) {
+	this->far_plane = far_plane;
 	Transform point_projection = perspective(90.0f, 1.0f, near_plane, far_plane);
 	std::vector<Transform> point_transforms;
 	point_transforms.push_back(point_projection * lookAtRH(position, position + Vector3f(1, 0, 0), Vector3f(0, -1, 0)));
