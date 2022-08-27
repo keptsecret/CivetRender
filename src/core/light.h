@@ -21,7 +21,7 @@ public:
 	Vector3f color;
 	float intensity;
 
-	bool should_update;
+	bool should_update;	///< true only if need to regenerate shadow map, e.g. position or direction changes
 
 protected:
 	unsigned int FBO;
@@ -37,6 +37,7 @@ public:
 		intensity = 0.5f;
 		active = true;
 		cast_shadow = true;
+		should_update = true;
 	}
 
 	GLDirectionalLight(Vector3f dir, unsigned int res = 2048) :
@@ -46,6 +47,7 @@ public:
 		intensity = 0.5f;
 		active = true;
 		cast_shadow = true;
+		should_update = true;
 	}
 
 	void generateShadowMap(civet::Shader& shader, float near_plane, float far_plane) override;
@@ -65,6 +67,7 @@ public:
 		intensity = 0.8f;
 		active = true;
 		cast_shadow = true;
+		should_update = true;
 	}
 
 	GLPointLight(Point3f pos, unsigned int res = 2048) :
@@ -74,6 +77,7 @@ public:
 		intensity = 0.8f;
 		active = true;
 		cast_shadow = true;
+		should_update = true;
 	}
 
 	void generateShadowMap(civet::Shader& shader, float near_plane, float far_plane) override;
