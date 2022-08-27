@@ -18,7 +18,7 @@ void SimpleForwardShader::setPointLights(std::vector<GLPointLight>& lights) {
 }
 
 void SimpleForwardShader::setDirectionalLights(std::vector<GLDirectionalLight>& lights) {
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < lights.size(); i++) {
 		auto diffuse = lights[i].color * lights[i].intensity;
 
 		setBool(("dirLights[" + std::to_string(i) + "].valid").c_str(), lights[i].active && lights[i].cast_shadow);
