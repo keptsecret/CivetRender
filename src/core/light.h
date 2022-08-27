@@ -20,7 +20,6 @@ public:
 	Vector3f color;
 	float intensity;
 
-private:
 	virtual void init() = 0;
 
 protected:
@@ -32,34 +31,50 @@ protected:
 
 class GLDirectionalLight : public GLLight {
 public:
-	GLDirectionalLight(unsigned int res) {
+	GLDirectionalLight(unsigned int res = 2048) {
 		resolution = res;
 		direction = Vector3f(1, 0, 0);
+		color = Vector3f(1, 1, 1);
+		intensity = 0.5f;
+		active = true;
+		cast_shadow = true;
 	}
 
-	GLDirectionalLight(unsigned int res, Vector3f dir) :
+	GLDirectionalLight(Vector3f dir, unsigned int res = 2048) :
 			direction(dir) {
 		resolution = res;
+		color = Vector3f(1, 1, 1);
+		intensity = 0.5f;
+		active = true;
+		cast_shadow = true;
 	}
 
 	void generateShadowMap(civet::Shader& shader, float near_plane, float far_plane) override;
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
 	Vector3f direction;
+	Transform light_space_mat;
 
-private:
 	void init() override;
 };
 
 class GLPointLight : public GLLight {
 public:
-	GLPointLight(unsigned int res) {
+	GLPointLight(unsigned int res = 2048) {
 		resolution = res;
+		color = Vector3f(1, 1, 1);
+		intensity = 0.8f;
+		active = true;
+		cast_shadow = true;
 	}
 
-	GLPointLight(unsigned int res, Point3f pos) :
+	GLPointLight(Point3f pos, unsigned int res = 2048) :
 			position(pos) {
 		resolution = res;
+		color = Vector3f(1, 1, 1);
+		intensity = 0.8f;
+		active = true;
+		cast_shadow = true;
 	}
 
 	void generateShadowMap(civet::Shader& shader, float near_plane, float far_plane) override;
@@ -67,7 +82,6 @@ public:
 
 	Point3f position;
 
-private:
 	void init() override;
 };
 

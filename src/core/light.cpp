@@ -4,12 +4,13 @@ namespace civet {
 
 void GLDirectionalLight::generateShadowMap(Shader& shader, float near_plane, float far_plane) {
 	Transform projection = orthographic(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	Transform view = lookAtRH(Point3f(2, -1, -1), Point3f(0, 0, 0), Vector3f(0, 1, 0));
-	Transform light_space_tf = projection * view;
+	Transform view = lookAtRH(Point3f(direction.x, direction.y, direction.z), Point3f(0, 0, 0), Vector3f(0, 1, 0));
+	light_space_mat = projection * view;
 
-	shader.setMat4("lightSpaceMatrix", light_space_tf.m);
+	shader.setMat4("lightSpaceMatrix", light_space_mat.m);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
+	glCheckError("ERROR::GLDirectionalLight::bindShadowMap: OpenGL error code");
 	///< maybe change to draw scene in here immediately at some point (pass in scene object)
 	///< currently needs to call draw and unbind framebuffer
 }
@@ -19,12 +20,14 @@ void GLDirectionalLight::bindShadowMap(Shader& shader, const std::string& name, 
 
 	glActiveTexture(GL_TEXTURE0 + tex_offset);
 	glBindTexture(GL_TEXTURE_2D, shadow_map);
+	glCheckError("ERROR::GLDirectionalLight::bindShadowMap: OpenGL error code");
 }
 
 void GLDirectionalLight::init() {
 	glGenFramebuffers(1, &FBO);
 	glGenTextures(1, &shadow_map);
 
+	glBindTexture(GL_TEXTURE_2D, shadow_map);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, resolution, resolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -39,6 +42,7 @@ void GLDirectionalLight::init() {
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glCheckError("ERROR::GLDirectionalLight::init: OpenGL error code");
 }
 
 void GLPointLight::generateShadowMap(Shader& shader, float near_plane, float far_plane) {
@@ -55,10 +59,11 @@ void GLPointLight::generateShadowMap(Shader& shader, float near_plane, float far
 		shader.setMat4("shadowMatrices[" + std::to_string(i) + "]", point_transforms[i].m);
 	}
 	shader.setFloat("far_plane", far_plane);
-	shader.setVec3("lightPos", Vector3f(position));
+	shader.setVec3("lightPos", position.x, position.y, position.z);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	///< same for this as above
+	glCheckError("ERROR::GLPointLight::generateShadowMap: OpenGL error code");
 }
 
 void GLPointLight::bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) {
@@ -66,6 +71,7 @@ void GLPointLight::bindShadowMap(Shader& shader, const std::string& name, unsign
 
 	glActiveTexture(GL_TEXTURE0 + tex_offset);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_map);
+	glCheckError("ERROR::GLPointLight::bindShadowMap: OpenGL error code");
 }
 
 void GLPointLight::init() {
@@ -88,6 +94,7 @@ void GLPointLight::init() {
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glCheckError("ERROR::GLPointLight::init: OpenGL error code");
 }
 
 } // namespace civet
