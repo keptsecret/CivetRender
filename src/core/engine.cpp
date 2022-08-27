@@ -82,62 +82,22 @@ int Engine::start() {
 	Shader depth_cube_shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
 	GLModel test_model("../civet/resources/backpack/backpack.obj");
 
-	std::vector<Point3f> light_pos;
-	light_pos.push_back(Point3f(0, 0, 2));
+	const unsigned int SHADOW_RES = 2048;
+	std::vector<GLDirectionalLight> dir_lights;
+	dir_lights.push_back(GLDirectionalLight(Vector3f(2, -1, -2), SHADOW_RES));
+	dir_lights[0].init();
+
+	std::vector<GLPointLight> point_lights;
+	point_lights.push_back(GLPointLight(Point3f(0, 0, 2), SHADOW_RES));
+	point_lights[0].init();
+
+	shader.use();
+	shader.setDirectionalLights(dir_lights);
+	shader.setPointLights(point_lights);
 
 	float last_frame = 0.0f;
 
-	// Generate framebuffer and texture to store depth map (for directional light)
-	unsigned int depth_map_FBO;
-	glGenFramebuffers(1, &depth_map_FBO);
-
 	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
-	unsigned int depth_map;
-	glGenTextures(1, &depth_map);
-	glBindTexture(GL_TEXTURE_2D, depth_map);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-	float border_color[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, depth_map_FBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_map, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	shader.use(light_pos);
-	shader.setInt("shadowMap", 0);
-
-	// Framebuffer and texture for depth map (for one point light) -- using cube map
-	unsigned int depth_cube_map_FBO;
-	glGenFramebuffers(1, &depth_cube_map_FBO);
-
-	unsigned int depth_cube_map;
-	glGenTextures(1, &depth_cube_map);
-
-	glBindTexture(GL_TEXTURE_CUBE_MAP, depth_cube_map);
-	for (unsigned int i = 0; i < 6; i++) {
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, depth_cube_map_FBO);
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depth_cube_map, 0);
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	shader.setInt("shadowMap2", 1);
 
 	while (!glfwWindowShouldClose(window)) {
 		float current_frame = float(glfwGetTime());
@@ -151,55 +111,43 @@ int Engine::start() {
 
 		// Render depth map
 		float near_plane = -5.0f, far_plane = 5.0f;
-		Transform light_projection = orthographic(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		Transform light_view = lookAtRH(Point3f(2, -1, -1), Point3f(0, 0, 0), Vector3f(0, 1, 0));
-		Transform light_space_tf = light_projection * light_view;
-
 		Transform model = translate(Vector3f(0, 0, 0));
 
-		depth_shader.use(light_pos);
-		depth_shader.setMat4("model", model.m);
-		depth_shader.setMat4("lightSpaceMatrix", light_space_tf.m);
-
+		depth_shader.use();
+		// loop through lights and generate shadow maps
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
-		glBindFramebuffer(GL_FRAMEBUFFER, depth_map_FBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		test_model.draw(depth_shader, 2);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		for (auto& light : dir_lights) {
+			if (light.should_update) {
+				depth_shader.setMat4("model", model.m);
+				light.generateShadowMap(depth_shader, near_plane, far_plane);
+				test_model.draw(depth_shader, 2); ///< change tex_offset possibly
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			}
+		}
 
 		// Render depth cube map
 		float near = 1.0f, far = 25.0f;
-		Transform point_projection = perspective(90.0f, 1.0f, near, far);
-		std::vector<Transform> point_transforms;
-		point_transforms.push_back(point_projection * lookAtRH(light_pos[0], light_pos[0] + Vector3f(1, 0, 0), Vector3f(0, -1, 0)));
-		point_transforms.push_back(point_projection * lookAtRH(light_pos[0], light_pos[0] + Vector3f(-1, 0, 0), Vector3f(0, -1, 0)));
-		point_transforms.push_back(point_projection * lookAtRH(light_pos[0], light_pos[0] + Vector3f(0, 1, 0), Vector3f(0, 0, 1)));
-		point_transforms.push_back(point_projection * lookAtRH(light_pos[0], light_pos[0] + Vector3f(0, -1, 0), Vector3f(0, 0, -1)));
-		point_transforms.push_back(point_projection * lookAtRH(light_pos[0], light_pos[0] + Vector3f(0, 0, 1), Vector3f(0, -1, 0)));
-		point_transforms.push_back(point_projection * lookAtRH(light_pos[0], light_pos[0] + Vector3f(0, 0, -1), Vector3f(0, -1, 0)));
 
-		depth_cube_shader.use(light_pos);
-		for (unsigned int i = 0; i < 6; i++) {
-			depth_cube_shader.setMat4("shadowMatrices[" + std::to_string(i) + "]", point_transforms[i].m);
-		}
-		depth_cube_shader.setMat4("model", model.m);
-		depth_cube_shader.setFloat("far_plane", far);
-		depth_cube_shader.setVec3("lightPos", Vector3f(light_pos[0]));
-
+		depth_cube_shader.use();
+		// loop through lights and generate shadow maps for point lights
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
-		glBindFramebuffer(GL_FRAMEBUFFER, depth_cube_map_FBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		test_model.draw(depth_cube_shader, 2);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		for (auto& light : point_lights) {
+			if (light.should_update) {
+				depth_cube_shader.setMat4("model", model.m);
+				light.generateShadowMap(depth_cube_shader, near, far);
+				test_model.draw(depth_cube_shader, 2);
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			}
+		}
 
 		// Render the scene
 		glViewport(0, 0, width, height);
 		glCullFace(GL_BACK);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		shader.use(light_pos);
+		shader.use();
 		Transform projection = perspective(view_camera.zoom, width / height, 1e-2f, 1000.0f);
 		shader.setMat4("projection", projection.m);
 
@@ -210,15 +158,23 @@ int Engine::start() {
 
 		shader.setVec3("viewPos", Vector3f(view_camera.position));
 		shader.setFloat("material.shininess", 64.0f);
-		shader.setMat4("lightSpaceMatrix", light_space_tf.m);
 
-		// temp shadows, need to move
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, depth_map);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, depth_cube_map);
+		int tex_offset = 0;
+		///< put this into bind lights function in shader, possibly
+		{
+			for (int i = 0; i < dir_lights.size(); i++) {
+				shader.setMat4(("dirLights[" + std::to_string(i) + "].light_space_mat").c_str(), dir_lights[i].light_space_mat.m);
+				dir_lights[i].bindShadowMap(shader, ("dirLights[" + std::to_string(i) + "].shadow_map").c_str(), tex_offset++);
+			}
 
-		test_model.draw(shader, 2);
+			for (int i = 0; i < point_lights.size(); i++) {
+				shader.setFloat(("pointLights[" + std::to_string(i) + "].far_plane").c_str(), point_lights[i].far_plane);
+				point_lights[i].bindShadowMap(shader, ("pointLights[" + std::to_string(i) + "].shadow_map").c_str(), tex_offset++);
+			}
+		}
+
+		test_model.draw(shader, tex_offset);
+		glCheckError("After draw");
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
