@@ -35,13 +35,13 @@
 #include <cstdio>
 #include <cstring>
 #include <initializer_list>
+#include <iostream>
 #include <iterator>
 #include <new>
-#include <iostream>
 #include <string>
 #include <vector>
 #ifdef CIVET_HAVE_MALLOC_H
-#include <malloc.h>  // for _alloca, memalign
+#include <malloc.h> // for _alloca, memalign
 #endif
 #ifdef CIVET_HAVE_ALLOCA_H
 #include <alloca.h>
@@ -300,6 +300,35 @@ inline CIVET_CPU_GPU typename std::enable_if_t<std::is_integral_v<T>, bool> isIn
 template <typename T>
 inline CIVET_CPU_GPU CIVET_CONSTEXPR bool isPowerOf2(T v) {
 	return v && !(v & (v - 1));
+}
+
+inline GLenum glCheckError(const char* func_def) {
+	GLenum error;
+	while ((error = glGetError()) != GL_NO_ERROR) {
+		std::string error_message;
+		switch (error) {
+			case GL_INVALID_ENUM:
+				error_message = "INVALID_ENUM";
+				break;
+			case GL_INVALID_VALUE:
+				error_message = "INVALID_VALUE";
+				break;
+			case GL_INVALID_OPERATION:
+				error_message = "INVALID_OPERATION";
+				break;
+			case GL_OUT_OF_MEMORY:
+				error_message = "OUT_OF_MEMORY";
+				break;
+			case GL_INVALID_FRAMEBUFFER_OPERATION:
+				error_message = "INVALID_FRAMEBUFFER_OPERATION";
+				break;
+			default:
+				error_message = "UNKNOWN_ERROR";
+				break;
+		}
+		std::cout << func_def << " " << error << '\n';
+	}
+	return error;
 }
 
 } // namespace civet
