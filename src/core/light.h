@@ -10,8 +10,9 @@ namespace civet {
 class GLLight {
 public:
 	virtual void generateShadowMap(Shader& shader, float near_plane, float far_plane) = 0;
-
 	virtual void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) = 0;
+
+	virtual void init() = 0;
 
 	unsigned int shadow_map;
 	bool active;
@@ -20,13 +21,11 @@ public:
 	Vector3f color;
 	float intensity;
 
-	virtual void init() = 0;
+	bool should_update;
 
 protected:
 	unsigned int FBO;
 	unsigned int resolution;
-
-	bool should_update;
 };
 
 class GLDirectionalLight : public GLLight {
@@ -81,6 +80,7 @@ public:
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
 	Point3f position;
+	float far_plane;
 
 	void init() override;
 };
