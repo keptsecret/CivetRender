@@ -13,6 +13,8 @@ void GLDirectionalLight::generateShadowMap(Shader& shader, float near_plane, flo
 	glCheckError("ERROR::GLDirectionalLight::bindShadowMap: OpenGL error code");
 	///< maybe change to draw scene in here immediately at some point (pass in scene object)
 	///< currently needs to call draw and unbind framebuffer
+
+	should_update = false;
 }
 
 void GLDirectionalLight::bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) {
@@ -65,6 +67,8 @@ void GLPointLight::generateShadowMap(Shader& shader, float near_plane, float far
 	glClear(GL_DEPTH_BUFFER_BIT);
 	///< same for this as above
 	glCheckError("ERROR::GLPointLight::generateShadowMap: OpenGL error code");
+
+	should_update = false;
 }
 
 void GLPointLight::bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) {
