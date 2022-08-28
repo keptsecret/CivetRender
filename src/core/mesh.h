@@ -13,6 +13,7 @@ struct GLVertex {
 	Point3f position;
 	Normal3f normal;
 	Point2f uv;
+	Normal3f tangent;
 };
 
 struct GLTexture {
@@ -59,6 +60,7 @@ private:
 	std::vector<GLMesh> meshes;
 	std::string directory;
 	bool gamma_correction;
+	bool use_normal_map;
 };
 
 class TriangleMesh {

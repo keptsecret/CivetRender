@@ -68,6 +68,9 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 			number = std::to_string(diffuse_no++);
 		} else if (name == "texture_specular") {
 			number = std::to_string(specular_no++);
+		} else if (name == "texture_normal") {
+			// TODO: might change depending on how many normal maps provided
+			number = "";
 		}
 
 		shader.setInt(("material." + name + number).c_str(), i + tex_offset);
@@ -109,10 +112,14 @@ void GLMesh::setupMesh() {
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (void*)offsetof(GLVertex, uv));
 	glEnableVertexAttribArray(2);
 
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertex), (void*)offsetof(GLVertex, tangent));
+	glEnableVertexAttribArray(3);
+
 	glBindVertexArray(0);
 }
 
 void GLModel::draw(Shader& shader, unsigned int tex_offset) {
+	shader.setBool("material.use_normal_map", use_normal_map);
 	for (auto& mesh : meshes) {
 		mesh.draw(shader, tex_offset);
 	}
@@ -120,7 +127,7 @@ void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 
 void GLModel::loadModel(std::string path) {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		std::cout << "ERROR::GLModel: assimp error: " << importer.GetErrorString() << '\n';
@@ -154,6 +161,9 @@ GLMesh GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 		Normal3f normal(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
 		vertex.normal = normal;
 
+		Normal3f tangent(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
+		vertex.tangent = tangent;
+
 		if (mesh->mTextureCoords[0]) {
 			Point2f uv(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
 			vertex.uv = uv;
@@ -178,6 +188,11 @@ GLMesh GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 		textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
 		std::vector<GLTexture> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
+
+		// TODO: make checks for file types; obj stores normals in HEIGHT
+		std::vector<GLTexture> normal_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+		use_normal_map = normal_maps.size() > 0;
+		textures.insert(textures.end(), normal_maps.begin(), normal_maps.end());
 	}
 
 	return GLMesh(vertices, indices, textures);
