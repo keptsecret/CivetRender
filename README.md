@@ -27,6 +27,8 @@ It is yet to be seen as to how far the author gets with this project.
 * _(UD) forward+ rendering to support \[theoretically\] infinite lights and alpha blending_
 * _(UD) Disney PBR based on Epic's Unreal Engine implementation_
 
+![Early screenshot](./resources/screenshots/sht_76ceb66.png)
+
 ### _Ray-tracer (UD)_
 
 * Acceleration structure with BVH
