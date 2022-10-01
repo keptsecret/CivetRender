@@ -89,14 +89,14 @@ enum BxDFType {
 };
 
 struct FourierBSDFTable {
-	float eta;		// relative index of refraction between two medium
-	int m_max;		// max order m for any pair of mu
-	int n_channels;	// no. of spectral channels
+	float eta; // relative index of refraction between two medium
+	int m_max; // max order m for any pair of mu
+	int n_channels; // no. of spectral channels
 	int n_mu;
-	float* mu;		// array of zenith angles
-	int* m;			// order of fourier representation
-	int* a_offset;	// table of offsets for a
-	float* a;		// ak values for a pair of directions
+	float* mu; // array of zenith angles
+	int* m; // order of fourier representation
+	int* a_offset; // table of offsets for a
+	float* a; // ak values for a pair of directions
 
 	~FourierBSDFTable() {
 		delete[] mu;
@@ -115,6 +115,56 @@ struct FourierBSDFTable {
 	bool getWeightsAndOffset(float cos_theta, int* offset, float weights[4]) const;
 };
 
+/**
+ * BSDF class contains a group of BRDFs and BTDFs\n
+ * Handles shading normals (per-vertex or normal maps) and world-local transformations
+ */
+class BSDF {
+public:
+	BSDF(const SurfaceInteraction& si, float eta = 1) :
+			eta(eta), ns(si.shading.n), ng(si.n), ss(normalize(si.shading.dpdu)), ts(cross(ns, ss)) {}
+
+	void add(BxDF* b) {
+		if (num_BxDFs < Max_BxDFs) {
+			bxdfs[num_BxDFs++] = b;
+		} else {
+			printf("WARNING::BSDF::add: reached BxDF limit");
+		}
+	}
+
+	int numComponents(BxDFType flags = BSDF_ALL) const;
+
+	Vector3f worldToLocal(const Vector3f& v) const {
+		return Vector3f(dot(v, ss), dot(v, ts), dot(v, ns));
+	}
+
+	Vector3f localToWorld(const Vector3f& v) const {
+		// uses the transpose of M from worldToLocal
+		return Vector3f(ss.x * v.x + ts.x * v.y + ns.x * v.z,
+				ss.y * v.x + ts.y * v.y + ns.y * v.z,
+				ss.z * v.x + ts.z * v.y + ns.z * v.z);
+	}
+
+	Spectrum f(const Vector3f& wo_world, const Vector3f& wi_world, BxDFType flags) const;
+
+	Spectrum rho(const Vector3f& wo, int num_samples, const Point2f* samples, BxDFType flags = BSDF_ALL) const;
+	Spectrum rho(int num_samples, const Point2f* samples1, const Point2f* samples2, BxDFType flags = BSDF_ALL) const;
+
+	const float eta;
+
+private:
+	const Normal3f ns, ng;
+	const Vector3f ss, ts;
+
+	int num_BxDFs = 0;
+	static CIVET_CONSTEXPR int Max_BxDFs = 8;
+	BxDF* bxdfs[Max_BxDFs];
+};
+
+/**
+ * Base BxDF interface for all reflection and transmission models (BRDFs and BTDFs)\n
+ * All interactions happen in local space
+ */
 class BxDF {
 public:
 	BxDF(BxDFType _type) :
@@ -122,12 +172,44 @@ public:
 
 	virtual ~BxDF() {}
 
+	/**
+	 * Returns value of the distribution function for given pair of directions
+	 * @param wo outgoing direction
+	 * @param wi incoming direction
+	 * @return value of the distribution function as a Spectrum
+	 */
 	virtual Spectrum f(const Vector3f& wo, const Vector3f& wi) const = 0;
 
+	/**
+	 * Computes direction of incident light given outgoing direction
+	 * and returns value of the distribution function for given pair of directions
+	 * @param wo outgoing direction
+	 * @param wi new incoming direction
+	 * @param sample
+	 * @param pdf
+	 * @param sampled_type
+	 * @return value of the distribution function as a Spectrum (incident direction stored in wi)
+	 */
 	virtual Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type = nullptr) const;
 
+	/**
+	 * Computes hemispherical-directional reflectance:\n
+	 * total reflection in given direction wo from constant illumination over hemisphere (direct illumination)
+	 * @param wo
+	 * @param n_samples
+	 * @param samples
+	 * @return
+	 */
 	virtual Spectrum rho(const Vector3f& wo, int n_samples, const Point2f* samples) const;
 
+	/**
+	 * Computes hemispherical-hemispherical reflectance:\n
+	 * fraction of incident light reflected by a surface from diffuse illumination (no direct sources)
+	 * @param n_samples
+	 * @param samples1
+	 * @param samples2
+	 * @return
+	 */
 	virtual Spectrum rho(int n_samples, const Point2f* samples1, const Point2f* samples2) const;
 
 	bool matchesFlags(BxDFType t) const {
@@ -322,7 +404,7 @@ public:
 		return CoefficientSpectrum(Rs) + pow5(1 - cos_theta) * (Spectrum(1.0f) - Rs);
 	}
 
-	Spectrum f(const Vector3f &wo, const Vector3f &wi) const override;
+	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
 
 private:
 	const Spectrum Rd, Rs;
@@ -334,7 +416,7 @@ public:
 	FourierBSDF(const FourierBSDFTable& table, TransportMode m) :
 			BxDF(BxDFType(BSDF_REFLECTION | BSDF_TRANSMISSION | BSDF_GLOSSY)), bsdf_table(table), mode(m) {}
 
-	Spectrum f(const Vector3f &wo, const Vector3f &wi) const override;
+	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
 
 private:
 	const FourierBSDFTable& bsdf_table;

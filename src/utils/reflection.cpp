@@ -53,6 +53,41 @@ bool FourierBSDFTable::getWeightsAndOffset(float cos_theta, int* offset, float w
 	return catmullRomWeights(n_mu, mu, cos_theta, offset, weights);
 }
 
+Spectrum BSDF::f(const Vector3f& wo_world, const Vector3f& wi_world, BxDFType flags) const {
+	Vector3f wi = worldToLocal(wi_world), wo = worldToLocal(wo_world);
+	bool reflect = dot(wi_world, ng) * dot(wo_world, ng) > 0;
+
+	Spectrum f(0.0f);
+	for (int i = 0; i < num_BxDFs; i++) {
+		if (bxdfs[i]->matchesFlags(flags) &&
+				((reflect && (bxdfs[i]->type & BSDF_REFLECTION)) ||
+						(!reflect && (bxdfs[i]->type & BSDF_TRANSMISSION)))) {
+			f += bxdfs[i]->f(wo, wi);
+		}
+	}
+	return f;
+}
+
+Spectrum BSDF::rho(const Vector3f& wo, int num_samples, const Point2f* samples, BxDFType flags) const {
+	Spectrum val(0.0f);
+	for (int i = 0; i < num_BxDFs; i++) {
+		if (bxdfs[i]->matchesFlags(flags)) {
+			val += bxdfs[i]->rho(wo, num_samples, samples);
+		}
+	}
+	return val;
+}
+
+Spectrum BSDF::rho(int num_samples, const Point2f* samples1, const Point2f* samples2, BxDFType flags) const {
+	Spectrum val(0.0f);
+	for (int i = 0; i < num_BxDFs; i++) {
+		if (bxdfs[i]->matchesFlags(flags)) {
+			val += bxdfs[i]->rho(num_samples, samples1, samples2);
+		}
+	}
+	return val;
+}
+
 Spectrum ScaledBxDF::f(const Vector3f& wo, const Vector3f& wi) const {
 	return scale * bxdf->f(wo, wi);
 }
