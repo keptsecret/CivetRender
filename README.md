@@ -37,4 +37,12 @@ It is yet to be seen as to how far the author gets with this project.
 * _(UD) Disney BSDF materials: diffuse, specular, glossy, transmission_
 * _(UD) Path integrator and build scenes from realtime version_
 
+### _CUDA support (UD)_
+
+The CUDA library does not have alternatives for structures used in the ray-tracer such as `std::vector`
+and smart-pointers (e.g. `std::shared_ptr`, `std::unique_ptr`).
+As such, the author will have to implement custom alternatives or use different solutions altogether.
+Since the current goal is to get the entire project up and running as a useable product first,
+GPU compute will probably be saved for a rainy day, or until those have been completed. 
+
 _UD: under development_
