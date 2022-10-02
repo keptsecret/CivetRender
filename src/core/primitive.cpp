@@ -37,7 +37,7 @@ const Material* GeometricPrimitive::getMaterial() const {
 	return material.get();
 }
 
-void GeometricPrimitive::computeScatteringFunction(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const {
+void GeometricPrimitive::computeScatteringFunctions(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const {
 	if (material) {
 		material->computeScatteringFunctions(isect, arena, mode, allow_multiple_lobes);
 	}
