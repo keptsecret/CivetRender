@@ -18,7 +18,7 @@ public:
 	virtual const AreaLight* getAreaLight() const = 0;
 	virtual const Material* getMaterial() const = 0;
 
-	virtual void computeScatteringFunction(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const = 0;
+	virtual void computeScatteringFunctions(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const = 0;
 };
 
 class GeometricPrimitive : public Primitive {
@@ -56,7 +56,7 @@ public:
 	const AreaLight* getAreaLight() const override { return nullptr; }
 	const Material* getMaterial() const override { return nullptr; }
 	void computeScatteringFunction(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const override {
-		printf("ERROR::TransformedPrimitive: computeScatteringFunction shouldn't be called");
+		printf("ERROR::TransformedPrimitive: computeScatteringFunctions shouldn't be called");
 	}
 
 private:
@@ -74,7 +74,7 @@ class Aggregate : public Primitive {
 		return nullptr;
 	}
 	void computeScatteringFunction(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const override {
-		printf("ERROR::Aggregate: computeScatteringFunction shouldn't be called");
+		printf("ERROR::Aggregate: computeScatteringFunctions shouldn't be called");
 	}
 };
 
