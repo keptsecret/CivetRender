@@ -270,6 +270,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/primitive.h
 		src/core/mesh.h
 		src/core/material.h
+		src/core/texture.h
 		src/core/spectrum.h
 		src/core/camera.h
 		src/core/sampler.h
@@ -289,6 +290,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/primitive.cpp
 		src/core/mesh.cpp
 		src/core/material.cpp
+		src/core/texture.cpp
 		src/core/spectrum.cpp
 		src/core/camera.cpp
 		src/core/sampler.cpp
@@ -303,6 +305,7 @@ file ( GLOB CIVET_SOURCE
 		src/utils/*
 		src/cameras/*
 		src/shaders/*
+		src/materials/*
 		)
 
 if (CUDA_ENABLED)
