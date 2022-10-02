@@ -11,7 +11,7 @@ class Material {
 public:
 	virtual ~Material();
 
-	virtual void computeScatteringFunction(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const = 0;
+	virtual void computeScatteringFunctions(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const = 0;
 };
 
 } // namespace civet

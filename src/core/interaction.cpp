@@ -2,6 +2,7 @@
 
 #include <core/geometry/transform.h>
 #include <core/shape.h>
+#include <core/primitive.h>
 
 namespace civet {
 CIVET_CPU_GPU
@@ -45,6 +46,12 @@ void SurfaceInteraction::setShadingGeometry(const Vector3f& s_dpdu, const Vector
 	shading.dpdv = s_dpdv;
 	shading.dndu = s_dndu;
 	shading.dndv = s_dndv;
+}
+
+CIVET_CPU_GPU
+void SurfaceInteraction::computeScatteringFunctions(const RayDifferential& ray, MemoryArena& arena, bool allow_multiple_lobes, TransportMode mode) {
+	computeDifferentials(ray);
+	primitive->computeScatteringFunctions(this, arena, mode, allow_multiple_lobes);
 }
 
 } // namespace civet

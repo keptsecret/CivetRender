@@ -48,6 +48,12 @@ public:
 	CIVET_CPU_GPU
 	void setShadingGeometry(const Vector3f& s_dpdu, const Vector3f& s_dpdv, const Normal3f& s_dndu, const Normal3f& s_dndv, bool orientation_is_authoritative);
 
+	CIVET_CPU_GPU
+	void computeDifferentials(const RayDifferential& ray);
+
+	CIVET_CPU_GPU
+	void computeScatteringFunctions(const RayDifferential& ray, MemoryArena& arena, bool allow_multiple_lobes, TransportMode mode);
+
 	Point2f uv;
 	Vector3f dpdu, dpdv;
 	Normal3f dndu, dndv;
