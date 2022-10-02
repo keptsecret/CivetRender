@@ -12,7 +12,7 @@
 namespace civet {
 
 // Memory Declarations
-#define ARENA_ALLOC(arena, Type) new ((arena).Alloc(sizeof(Type))) Type
+#define ARENA_ALLOC(arena, Type) new ((arena).alloc(sizeof(Type))) Type
 void* allocAligned(size_t size);
 template <typename T>
 T* allocAligned(size_t size) {
