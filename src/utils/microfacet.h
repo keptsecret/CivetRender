@@ -68,6 +68,7 @@ private:
 };
 
 class TrowbridgeReitzDistribution : public MicrofacetDistribution {
+public:
 	TrowbridgeReitzDistribution(const float x, const float y, bool sample_visible_area = true) :
 			MicrofacetDistribution(sample_visible_area), alphax(x), alphay(y) {}
 
