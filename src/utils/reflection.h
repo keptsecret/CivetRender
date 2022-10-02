@@ -153,6 +153,8 @@ public:
 	const float eta;
 
 private:
+	~BSDF() {}
+
 	const Normal3f ns, ng;
 	const Vector3f ss, ts;
 
