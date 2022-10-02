@@ -154,6 +154,7 @@ public:
 
 private:
 	~BSDF() {}
+	friend class MixMaterial;
 
 	const Normal3f ns, ng;
 	const Vector3f ss, ts;
