@@ -75,6 +75,19 @@ inline bool sameHemisphere(const Vector3f& w, const Normal3f& wp) {
 	return w.z * wp.z > 0;
 }
 
+inline float schlickWeight(float cos_theta) {
+	float m = clamp(1- cos_theta, 0, 1);
+	return m * m * m * m * m;
+}
+
+inline float frSchlick(float R0, float cos_theta) {
+	return lerp(schlickWeight(cos_theta), R0, 1);
+}
+
+inline Spectrum frSchlick(const Spectrum& R0, float cos_theta) {
+	return lerp(schlickWeight(cos_theta), R0, Spectrum(1.f));
+}
+
 float frDielectric(float cos_theta_I, float eta_I, float eta_T);
 Spectrum frConductor(float cos_theta_I, const Spectrum& eta_I, const Spectrum& eta_T, const Spectrum& k);
 
