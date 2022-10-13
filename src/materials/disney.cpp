@@ -145,6 +145,49 @@ public:
 	}
 };
 
+// Implements Generalized Trowbridge-Reitz, using fixed gamma in its normalized form
+inline float GTR1(float cos_theta, float alpha) {
+	float alpha2 = alpha * alpha;
+	return (alpha2 - 1) / (Pi * std::log(alpha2) * (1 + (alpha2 - 1) * cos_theta * cos_theta));
+}
+
+// Smith masking-shadowing term for GGX
+inline float smithGGXG1(float cos_theta, float alpha) {
+	float cos_theta2 = cos_theta * cos_theta;
+	float alpha2 = alpha * alpha;
+	return 1 / (cos_theta + sqrt(alpha2 + cos_theta2 - alpha2 * cos_theta2));
+}
+
+class DisneyClearcoat : public BxDF {
+public:
+	DisneyClearcoat(float weight, float gloss) :
+			BxDF(BxDFType(BSDF_REFLECTION | BSDF_DIFFUSE)),
+			weight(weight),
+			gloss(gloss) {}
+
+	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type = nullptr) const override;
+	// TODO: implement sample_f and pdf when there
+
+private:
+	float weight, gloss;
+};
+
+Spectrum DisneyClearcoat::f(const Vector3f& wo, const Vector3f& wi) const {
+	Vector3f wh = wi + wo;
+	if (wh.x == 0 && wh.y == 0 && wh.z == 0) {
+		return Spectrum(0.f);
+	}
+	wh = normalize(wh);
+
+	float Dr = GTR1(absCosTheta(wh), gloss);
+	// Fresnel term uses Schlick approximation with hardcoded IOR of 1.5 -> F0 = 0.04
+	float Fr = frSchlick(0.04f, dot(wo, wh));
+	// Fixed roughness of 0.25 for masking-shadowing
+	float Gr = smithGGXG1(absCosTheta(wo), 0.25f) * smithGGXG1(absCosTheta(wi), 0.25f);
+	return weight * Gr * Fr * Dr * 0.25f;
+}
+
 void DisneyMaterial::computeScatteringFunctions(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const {
 }
 
