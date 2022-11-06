@@ -49,6 +49,11 @@ void SurfaceInteraction::setShadingGeometry(const Vector3f& s_dpdu, const Vector
 }
 
 CIVET_CPU_GPU
+void SurfaceInteraction::computeDifferentials(const RayDifferential& ray) {
+	// TODO: implement this
+}
+
+CIVET_CPU_GPU
 void SurfaceInteraction::computeScatteringFunctions(const RayDifferential& ray, MemoryArena& arena, bool allow_multiple_lobes, TransportMode mode) {
 	computeDifferentials(ray);
 	primitive->computeScatteringFunctions(this, arena, mode, allow_multiple_lobes);

@@ -3,6 +3,7 @@
 #include <core/interaction.h>
 #include <core/spectrum.h>
 #include <utils/reflection.h>
+#include <core/texture.h>
 
 namespace civet {
 
