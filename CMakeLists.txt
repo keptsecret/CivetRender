@@ -306,6 +306,7 @@ file ( GLOB CIVET_SOURCE
 		src/cameras/*
 		src/shaders/*
 		src/materials/*
+		src/rendering/*
 		)
 
 if (CUDA_ENABLED)

@@ -95,6 +95,8 @@ int Engine::start() {
 	shader.setDirectionalLights(dir_lights);
 	shader.setPointLights(point_lights);
 
+	renderer.setCamera(&view_camera);
+
 	float last_frame = 0.0f;
 
 	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
@@ -106,74 +108,14 @@ int Engine::start() {
 
 		processInput(window, view_camera, delta_time);
 
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		// Render depth map
-		float near_plane = -5.0f, far_plane = 5.0f;
 		Transform model = translate(Vector3f(0, 0, 0));
-
-		depth_shader.use();
-		// loop through lights and generate shadow maps
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
-		for (auto& light : dir_lights) {
-			if (light.should_update) {
-				depth_shader.setMat4("model", model.m);
-				light.generateShadowMap(depth_shader, near_plane, far_plane);
-				test_model.draw(depth_shader, 2); ///< change tex_offset possibly
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			}
-		}
-
-		// Render depth cube map
-		float near = 1.0f, far = 25.0f;
-
-		depth_cube_shader.use();
-		// loop through lights and generate shadow maps for point lights
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
-		for (auto& light : point_lights) {
-			if (light.should_update) {
-				depth_cube_shader.setMat4("model", model.m);
-				light.generateShadowMap(depth_cube_shader, near, far);
-				test_model.draw(depth_cube_shader, 2);
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			}
-		}
-
-		// Render the scene
-		glViewport(0, 0, width, height);
-		glCullFace(GL_BACK);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		shader.use();
+		renderer.setModelMat(model);
+		renderer.setViewMat(view_camera.getViewTransform());
 		Transform projection = perspective(view_camera.zoom, width / height, 1e-2f, 1000.0f);
-		shader.setMat4("projection", projection.m);
+		renderer.setProjectionMat(projection);
 
-		Transform view = view_camera.getViewTransform();
-		shader.setMat4("view", view.m);
+		renderer.draw(test_model, dir_lights, point_lights, &shader, SHADOW_RES, &depth_shader, &depth_cube_shader);
 
-		shader.setMat4("model", model.m);
-
-		shader.setVec3("viewPos", Vector3f(view_camera.position));
-		shader.setFloat("material.shininess", 64.0f);
-
-		int tex_offset = 0;
-		///< put this into bind lights function in shader, possibly
-		{
-			for (int i = 0; i < dir_lights.size(); i++) {
-				shader.setMat4(("dirLights[" + std::to_string(i) + "].light_space_mat").c_str(), dir_lights[i].light_space_mat.m);
-				dir_lights[i].bindShadowMap(shader, ("dirLights[" + std::to_string(i) + "].shadow_map").c_str(), tex_offset++);
-			}
-
-			for (int i = 0; i < point_lights.size(); i++) {
-				shader.setFloat(("pointLights[" + std::to_string(i) + "].far_plane").c_str(), point_lights[i].far_plane);
-				point_lights[i].bindShadowMap(shader, ("pointLights[" + std::to_string(i) + "].shadow_map").c_str(), tex_offset++);
-			}
-		}
-
-		test_model.draw(shader, tex_offset);
 		glCheckError("After draw");
 
 		glfwSwapBuffers(window);
