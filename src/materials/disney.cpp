@@ -155,7 +155,7 @@ inline float GTR1(float cos_theta, float alpha) {
 inline float smithGGXG1(float cos_theta, float alpha) {
 	float cos_theta2 = cos_theta * cos_theta;
 	float alpha2 = alpha * alpha;
-	return 1 / (cos_theta + sqrt(alpha2 + cos_theta2 - alpha2 * cos_theta2));
+	return 1 / (cos_theta + std::sqrt(alpha2 + cos_theta2 - alpha2 * cos_theta2));
 }
 
 class DisneyClearcoat : public BxDF {
