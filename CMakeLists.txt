@@ -26,11 +26,14 @@ endif ()
 
 include ( CheckCXXSourceCompiles )
 include ( CheckCXXSourceRuns )
+include ( CMakeDependentOption )
 
 ########################################
 # thirdparty libraries
 
 set (BUILD_SHARED_LIBS OFF)
+cmake_dependent_option(USE_HYBRID_GRAPHICS "Compile GLFW for systems with hybrid graphics" OFF
+		"WIN32" OFF)
 
 add_subdirectory (${CMAKE_CURRENT_SOURCE_DIR}/src/thirdparty)
 
