@@ -84,7 +84,13 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	} else {
 		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 	}
+
 	glBindVertexArray(0);
+	for (unsigned int i = 0; i < textures.size(); i++) {
+		glActiveTexture(GL_TEXTURE0 + (i + tex_offset));
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	glCheckError("ERROR::GLMesh::draw: OpenGL error code");
 }
 
 void GLMesh::setupMesh() {
@@ -116,6 +122,7 @@ void GLMesh::setupMesh() {
 	glEnableVertexAttribArray(3);
 
 	glBindVertexArray(0);
+	glCheckError("ERROR::GLMesh::setupMesh: OpenGL error code");
 }
 
 void GLModel::draw(Shader& shader, unsigned int tex_offset) {
@@ -127,7 +134,7 @@ void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 
 void GLModel::loadModel(std::string path) {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		std::cout << "ERROR::GLModel: assimp error: " << importer.GetErrorString() << '\n';
