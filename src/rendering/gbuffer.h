@@ -23,10 +23,11 @@ public:
 	void bindWrite();
 	void bindRead();
 
+	unsigned int num_textures = GBUFFER_NUM_TEXTURES;
+
 private:
 	unsigned int FBO;
 	unsigned int textures[GBUFFER_NUM_TEXTURES];
-	unsigned int num_textures = GBUFFER_NUM_TEXTURES;
 	unsigned int depth_map;
 };
 
