@@ -26,9 +26,16 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	dirlight_pass_shader.setInt("DiffuseMap", GBuffer::GBUFFER_TEXTURE_DIFFUSE);
 	dirlight_pass_shader.setInt("SpecularMap", GBuffer::GBUFFER_TEXTURE_SPECULAR);
 	dirlight_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
+
+	depth_shader = Shader("../civet/src/shaders/light_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl");
+	depth_cube_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
 }
 
 void DeferredRenderer::draw(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights) {
+	generateShadowMaps(model, dir_lights, point_lights);
+
+	glViewport(0, 0, width, height);
+	glCullFace(GL_BACK);
 	geometryPass(model);
 	lightsPass(model, dir_lights, point_lights);
 }
@@ -95,14 +102,15 @@ void DeferredRenderer::pointLightsPass(GLModel& model, std::vector<GLPointLight>
 		pointlight_pass_shader.setFloat("light.constant", lights[i].attenuation.constant);
 		pointlight_pass_shader.setFloat("light.linear", lights[i].attenuation.quadratic);
 		pointlight_pass_shader.setFloat("light.quadratic", lights[i].attenuation.quadratic);
-
 		pointlight_pass_shader.setFloat("light.far_plane", lights[i].far_plane);
+
+		lights[i].bindShadowMap(pointlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
 
 		// draw bounding sphere of light
 		float r = getBoundingSphere(lights[i]);
 		Transform bs_model = translate(Vector3f(lights[i].position)) * scale(r, r, r); ///< verify correct order of transformation
 		pointlight_pass_shader.setMat4("model", bs_model.m);
-		bounding_sphere.draw(pointlight_pass_shader, 0);	///< there shouldn't be any shadows?
+		bounding_sphere.draw(pointlight_pass_shader, gbuffer.num_textures + 1);	///< there shouldn't be any shadows?
 	}
 }
 
@@ -115,11 +123,11 @@ void DeferredRenderer::dirLightsPass(GLModel& model, std::vector<GLDirectionalLi
 		dirlight_pass_shader.setVec3("light.ambient", diffuse * 0.1f);
 		dirlight_pass_shader.setVec3("light.diffuse", diffuse);
 		dirlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-
 		dirlight_pass_shader.setMat4("light.light_space_mat", lights[i].light_space_mat.m);
 
-		// TODO: draw screen space quad
-		bounding_quad.draw(dirlight_pass_shader, 0);
+		lights[i].bindShadowMap(dirlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
+
+		bounding_quad.draw(dirlight_pass_shader, gbuffer.num_textures + 1);
 	}
 }
 
@@ -132,6 +140,40 @@ float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
 			/ (2 * light.attenuation.quadratic);
 
 	return result;
+}
+
+void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights) {
+	// Render depth map
+	float near_plane = -5.0f, far_plane = 5.0f;
+
+	depth_shader.use();
+	// loop through lights and generate shadow maps
+	glViewport(0, 0, shadow_res, shadow_res);
+	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
+	for (auto& light : dir_lights) {
+		if (light.should_update) {
+			depth_shader.setMat4("model", model_mat.m);
+			light.generateShadowMap(depth_shader, near_plane, far_plane);
+			model.draw(depth_shader, 2); ///< change tex_offset possibly
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+	}
+
+	// Render depth cube map
+	float near = 1.0f, far = 25.0f;
+
+	depth_cube_shader.use();
+	// loop through lights and generate shadow maps for point lights
+	glViewport(0, 0, shadow_res, shadow_res);
+	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
+	for (auto& light : point_lights) {
+		if (light.should_update) {
+			depth_cube_shader.setMat4("model", model_mat.m);
+			light.generateShadowMap(depth_cube_shader, near, far);
+			model.draw(depth_cube_shader, 2);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+	}
 }
 
 DeferredRenderer* DeferredRenderer::getSingleton() {
