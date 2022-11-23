@@ -33,8 +33,10 @@ private:
 	void dirLightsPass(GLModel& model, std::vector<GLDirectionalLight>& lights);
 
 	float getBoundingSphere(GLPointLight& light);
+	void generateShadowMaps(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights);
 
 	unsigned int width, height;
+	const unsigned int shadow_res = 4096;
 	Transform model_mat, view_mat, projection_mat;
 	GLCamera* camera;
 	GBuffer gbuffer;
@@ -42,6 +44,9 @@ private:
 	Shader geometry_pass_shader;
 	Shader pointlight_pass_shader;
 	Shader dirlight_pass_shader;
+
+	Shader depth_shader;
+	Shader depth_cube_shader;
 
 	GLModel bounding_sphere;
 	GLModel bounding_quad;
