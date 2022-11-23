@@ -7,6 +7,12 @@
 
 namespace civet {
 
+struct AttenuationFactor {
+	float constant = 1.f;
+	float linear = 0.09f;
+	float quadratic = 0.032f;
+};
+
 class GLLight {
 public:
 	virtual void generateShadowMap(Shader& shader, float near_plane, float far_plane) = 0;
@@ -85,6 +91,7 @@ public:
 
 	Point3f position;
 	float far_plane;
+	AttenuationFactor attenuation;
 
 	void init() override;
 };
