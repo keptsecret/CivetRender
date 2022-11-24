@@ -19,9 +19,12 @@ public:
 	~GBuffer();
 
 	bool init(unsigned int width, unsigned int height);
+	void start();
 
-	void bindWrite();
-	void bindRead();
+	void bindGeomPass();
+	void bindStencilPass();
+	void bindLightPass();
+	void bindFinalPass();
 
 	unsigned int num_textures = GBUFFER_NUM_TEXTURES;
 
@@ -29,6 +32,8 @@ private:
 	unsigned int FBO;
 	unsigned int textures[GBUFFER_NUM_TEXTURES];
 	unsigned int depth_map;
+
+	unsigned int final_texture;
 };
 
 } // namespace civet
