@@ -7,6 +7,7 @@
 #include <core/mesh.h>
 #include <core/shader.h>
 #include <rendering/forward_renderer.h>
+#include <rendering/deferred_renderer.h>
 
 namespace civet {
 
@@ -14,7 +15,8 @@ class Engine {
 protected:
 	Engine() :
 			input_manager(width, height),
-			renderer(width, height) {}
+			//renderer(width, height),
+			frame_time(1.f / MAX_FPS) {}
 
 public:
 	static Engine* getSingleton();
@@ -23,16 +25,13 @@ public:
 	int start();
 
 	float width = 1920.0f, height = 1080.0f;
+	float MAX_FPS = 120.f;
+	float frame_time;
 
 	GLFWwindow* window = nullptr;
 	GLCamera view_camera;
 	InputManager input_manager;
-	ForwardRenderer renderer;
-
-private:
-	void renderGeometry();
-
-	void renderLights();
+	//DeferredRenderer* renderer;
 };
 
 } // namespace civet

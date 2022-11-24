@@ -42,6 +42,8 @@ private:
 
 class GLModel {
 public:
+	GLModel() {}
+
 	GLModel(const char* path, bool gamma = false) :
 			gamma_correction(gamma) {
 		loadModel(path);
