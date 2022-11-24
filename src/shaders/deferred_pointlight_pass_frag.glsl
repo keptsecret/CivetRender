@@ -69,7 +69,7 @@ float calcShadowCube(vec3 fragPos) {
     float bias = 0.15;
     int samples = 20;
     float viewDistance = length(viewPos - fragPos);
-    float radius = 0.05;
+    float radius = (1.0 + (viewDistance / light.far_plane)) / 25.0;;
 
     for (int i = 0; i < samples; i++) {
         float closestDepth = texture(light.shadow_map, fragToLight + sampleOffsetDirections[i] * radius).r;
