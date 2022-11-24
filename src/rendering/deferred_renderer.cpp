@@ -8,12 +8,17 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 		printf("ERROR::DeferredRenderer: GBuffer init error");
 	}
 
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCheckError("ERROR::Engine::init: OpenGL error code");
+
 	bounding_sphere = GLModel("../civet/resources/basic-meshes/sphere.obj");
 	bounding_quad = GLModel("../civet/resources/basic-meshes/quad.obj");
 
 	geometry_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_geometry_frag.glsl");
 	pointlight_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_pointlight_pass_frag.glsl");
 	dirlight_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_dirlight_pass_frag.glsl");
+	stencil_pass_shader = Shader("../civet/src/shaders/null_vert.glsl", "../civet/src/shaders/null_frag.glsl");
 
 	pointlight_pass_shader.use();
 	pointlight_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
@@ -32,22 +37,23 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 }
 
 void DeferredRenderer::draw(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights) {
+	gbuffer.start();
 	generateShadowMaps(model, dir_lights, point_lights);
 
 	glViewport(0, 0, width, height);
 	glCullFace(GL_BACK);
 	geometryPass(model);
 	lightsPass(model, dir_lights, point_lights);
+	finalPass();
 }
 
 void DeferredRenderer::geometryPass(GLModel& model) {
 	geometry_pass_shader.use();
-	gbuffer.bindWrite();
+	gbuffer.bindGeomPass();
 
 	glDepthMask(GL_TRUE); // only update depth buffer on geometry pass
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
-	glDisable(GL_BLEND);
 
 	geometry_pass_shader.use();
 	geometry_pass_shader.setMat4("projection", projection_mat.m);
@@ -56,18 +62,15 @@ void DeferredRenderer::geometryPass(GLModel& model) {
 	model.draw(geometry_pass_shader, 0);
 
 	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
 }
 
 void DeferredRenderer::lightsPass(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights) {
-	glEnable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_ONE, GL_ONE);
-
-	gbuffer.bindRead();
-	glClear(GL_COLOR_BUFFER_BIT);
-
+	glEnable(GL_STENCIL_TEST);	///< render light only if it passes test
 	// handle point lights
+	stencil_pass_shader.use();
+	stencil_pass_shader.setMat4("projection", projection_mat.m);
+	stencil_pass_shader.setMat4("view", view_mat.m);
+
 	pointlight_pass_shader.use();
 	pointlight_pass_shader.setMat4("projection", projection_mat.m);
 	pointlight_pass_shader.setMat4("view", view_mat.m);
@@ -75,7 +78,11 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<GLDirectionalLight
 	pointlight_pass_shader.setVec3("viewPos", Vector3f(camera->position));
 	pointlight_pass_shader.setVec2("screenSize", width, height);
 	pointlight_pass_shader.setFloat("material.shininess", 64.0f);
-	pointLightsPass(model, point_lights);
+	for (auto& light : point_lights) {
+		stencilPass(model, light);
+		pointLightPass(model, light);
+	}
+	glDisable(GL_STENCIL_TEST);
 
 	// handle directional lights
 	Transform identity;
@@ -87,48 +94,96 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<GLDirectionalLight
 	dirlight_pass_shader.setVec3("viewPos", Vector3f(camera->position));
 	dirlight_pass_shader.setVec2("screenSize", width, height);
 	dirlight_pass_shader.setFloat("material.shininess", 64.0f);
-	dirLightsPass(model, dir_lights);
-}
-
-void DeferredRenderer::pointLightsPass(GLModel& model, std::vector<GLPointLight>& lights) {
-	for (int i = 0; i < lights.size(); i++) {
-		auto diffuse = lights[i].color * lights[i].intensity;
-
-		pointlight_pass_shader.setBool("light.valid", lights[i].active && lights[i].cast_shadow);
-		pointlight_pass_shader.setVec3("light.ambient", diffuse * 0.1f);
-		pointlight_pass_shader.setVec3("light.position", Vector3f(lights[i].position));
-		pointlight_pass_shader.setVec3("light.diffuse", diffuse);
-		pointlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-		pointlight_pass_shader.setFloat("light.constant", lights[i].attenuation.constant);
-		pointlight_pass_shader.setFloat("light.linear", lights[i].attenuation.quadratic);
-		pointlight_pass_shader.setFloat("light.quadratic", lights[i].attenuation.quadratic);
-		pointlight_pass_shader.setFloat("light.far_plane", lights[i].far_plane);
-
-		lights[i].bindShadowMap(pointlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
-
-		// draw bounding sphere of light
-		float r = getBoundingSphere(lights[i]);
-		Transform bs_model = translate(Vector3f(lights[i].position)) * scale(r, r, r); ///< verify correct order of transformation
-		pointlight_pass_shader.setMat4("model", bs_model.m);
-		bounding_sphere.draw(pointlight_pass_shader, gbuffer.num_textures + 1);	///< there shouldn't be any shadows?
+	for (auto& light : dir_lights) {
+		dirLightPass(model, light);
 	}
 }
 
-void DeferredRenderer::dirLightsPass(GLModel& model, std::vector<GLDirectionalLight>& lights) {
-	for (int i = 0; i < lights.size(); i++) {
-		auto diffuse = lights[i].color * lights[i].intensity;
+void DeferredRenderer::finalPass() {
+	gbuffer.bindFinalPass();
+	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+}
 
-		dirlight_pass_shader.setBool("light.valid", lights[i].active && lights[i].cast_shadow);
-		dirlight_pass_shader.setVec3("light.direction", lights[i].direction);
-		dirlight_pass_shader.setVec3("light.ambient", diffuse * 0.1f);
-		dirlight_pass_shader.setVec3("light.diffuse", diffuse);
-		dirlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
-		dirlight_pass_shader.setMat4("light.light_space_mat", lights[i].light_space_mat.m);
+void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
+	pointlight_pass_shader.use();
+	gbuffer.bindLightPass();
 
-		lights[i].bindShadowMap(dirlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
+	glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
 
-		bounding_quad.draw(dirlight_pass_shader, gbuffer.num_textures + 1);
-	}
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);
+
+	auto diffuse = light.color * light.intensity;
+	pointlight_pass_shader.setBool("light.valid", light.active && light.cast_shadow);
+	pointlight_pass_shader.setVec3("light.position", Vector3f(light.position));
+	pointlight_pass_shader.setVec3("light.ambient", diffuse * 0.1f);
+	pointlight_pass_shader.setVec3("light.diffuse", diffuse);
+	pointlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	pointlight_pass_shader.setFloat("light.constant", light.attenuation.constant);
+	pointlight_pass_shader.setFloat("light.linear", light.attenuation.quadratic);
+	pointlight_pass_shader.setFloat("light.quadratic", light.attenuation.quadratic);
+	pointlight_pass_shader.setFloat("light.far_plane", light.far_plane);
+
+	light.bindShadowMap(pointlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
+
+	// draw bounding sphere of light
+	float r = getBoundingSphere(light);
+	Transform bs_model = translate(Vector3f(light.position)) * scale(r, r, r);
+	pointlight_pass_shader.setMat4("model", bs_model.m);
+	bounding_sphere.draw(pointlight_pass_shader, gbuffer.num_textures + 1);
+
+	glCullFace(GL_BACK);
+	glDisable(GL_BLEND);
+}
+
+void DeferredRenderer::stencilPass(GLModel& model, GLPointLight& light) {
+	stencil_pass_shader.use();
+	gbuffer.bindStencilPass();
+
+	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
+	glClear(GL_STENCIL_BUFFER_BIT);
+
+	glStencilFunc(GL_ALWAYS, 0, 0);	///< always succeeds
+	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
+	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
+
+	float r = getBoundingSphere(light);
+	Transform bs_model = translate(Vector3f(light.position)) * scale(r, r, r);
+	stencil_pass_shader.setMat4("model", bs_model.m);
+	bounding_sphere.draw(stencil_pass_shader, 0);
+}
+
+void DeferredRenderer::dirLightPass(GLModel& model, GLDirectionalLight& light) {
+	dirlight_pass_shader.use();
+	gbuffer.bindLightPass();
+
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT);	///< quad is facing the wrong way, so we do this
+
+	auto diffuse = light.color * light.intensity;
+	dirlight_pass_shader.setBool("light.valid", light.active && light.cast_shadow);
+	dirlight_pass_shader.setVec3("light.direction", light.direction);
+	dirlight_pass_shader.setVec3("light.ambient", diffuse * 0.1f);
+	dirlight_pass_shader.setVec3("light.diffuse", diffuse);
+	dirlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	dirlight_pass_shader.setMat4("light.light_space_mat", light.light_space_mat.m);
+
+	light.bindShadowMap(dirlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
+	bounding_quad.draw(dirlight_pass_shader, gbuffer.num_textures + 1);
+
+	glCullFace(GL_BACK);
+	glDisable(GL_BLEND);
 }
 
 float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
@@ -160,7 +215,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<GLDirectio
 	}
 
 	// Render depth cube map
-	float near = 1.0f, far = 25.0f;
+	float near = 0.01f, far = 25.0f;
 
 	depth_cube_shader.use();
 	// loop through lights and generate shadow maps for point lights

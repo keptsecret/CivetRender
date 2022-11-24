@@ -28,9 +28,11 @@ public:
 private:
 	void geometryPass(GLModel& model);
 	void lightsPass(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights);
+	void finalPass();
 
-	void pointLightsPass(GLModel& model, std::vector<GLPointLight>& lights);
-	void dirLightsPass(GLModel& model, std::vector<GLDirectionalLight>& lights);
+	void pointLightPass(GLModel& model, GLPointLight& light);
+	void stencilPass(GLModel& model, GLPointLight& light);
+	void dirLightPass(GLModel& model, GLDirectionalLight& light);
 
 	float getBoundingSphere(GLPointLight& light);
 	void generateShadowMaps(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights);
@@ -44,6 +46,7 @@ private:
 	Shader geometry_pass_shader;
 	Shader pointlight_pass_shader;
 	Shader dirlight_pass_shader;
+	Shader stencil_pass_shader; ///< doesn't actually do anything except population depth and stencil
 
 	Shader depth_shader;
 	Shader depth_cube_shader;
