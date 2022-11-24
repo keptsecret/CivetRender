@@ -125,7 +125,7 @@ void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
 	pointlight_pass_shader.setVec3("light.diffuse", diffuse);
 	pointlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 	pointlight_pass_shader.setFloat("light.constant", light.attenuation.constant);
-	pointlight_pass_shader.setFloat("light.linear", light.attenuation.quadratic);
+	pointlight_pass_shader.setFloat("light.linear", light.attenuation.linear);
 	pointlight_pass_shader.setFloat("light.quadratic", light.attenuation.quadratic);
 	pointlight_pass_shader.setFloat("light.far_plane", light.far_plane);
 
