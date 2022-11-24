@@ -10,6 +10,7 @@ namespace civet {
 
 class Shader {
 public:
+	Shader() {}
 	Shader(const char* vertex_path, const char* fragment_path, const char* geometry_path = nullptr);
 
 	void use();
@@ -18,6 +19,7 @@ public:
 	void setInt(const std::string& name, int value) const;
 	void setFloat(const std::string& name, float value) const;
 
+	void setVec2(const std::string& name, float x, float y);
 	void setVec3(const std::string& name, float x, float y, float z);
 	void setVec3(const std::string& name, const Vector3f& value);
 	void setVec4(const std::string& name, float x, float y, float z, float w);
