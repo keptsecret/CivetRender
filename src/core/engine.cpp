@@ -62,13 +62,14 @@ int Engine::init() {
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-
 	stbi_set_flip_vertically_on_load(true);
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glEnable(GL_MULTISAMPLE);
+	glCheckError("ERROR::Engine::init: OpenGL error code");
+
+	DeferredRenderer::getSingleton()->init(width, height);
+	//renderer.init();
 
 	return 0;
 }
@@ -77,12 +78,13 @@ int Engine::start() {
 	/**
 	 * Test scene
 	 */
-	SimpleForwardShader shader;
+	//SimpleForwardShader shader;
+	//Shader shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_geometry_frag.glsl");
 	Shader depth_shader("../civet/src/shaders/light_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl");
 	Shader depth_cube_shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
 	GLModel test_model("../civet/resources/backpack/backpack.obj");
 
-	const unsigned int SHADOW_RES = 2048;
+	const unsigned int SHADOW_RES = 4096;
 	std::vector<GLDirectionalLight> dir_lights;
 	dir_lights.push_back(GLDirectionalLight(Vector3f(2, -1, -2), SHADOW_RES));
 	dir_lights[0].init();
@@ -91,15 +93,15 @@ int Engine::start() {
 	point_lights.push_back(GLPointLight(Point3f(0, 0, 2), SHADOW_RES));
 	point_lights[0].init();
 
-	shader.use();
-	shader.setDirectionalLights(dir_lights);
-	shader.setPointLights(point_lights);
+//	shader.use();
+//	shader.setDirectionalLights(dir_lights);
+//	shader.setPointLights(point_lights);
 
-	renderer.setCamera(&view_camera);
+	DeferredRenderer* renderer = DeferredRenderer::getSingleton();
+
+	renderer->setCamera(&view_camera);
 
 	float last_frame = 0.0f;
-
-	const unsigned int SHADOW_WIDTH = 2048, SHADOW_HEIGHT = 2048;
 
 	while (!glfwWindowShouldClose(window)) {
 		float current_frame = float(glfwGetTime());
@@ -108,18 +110,19 @@ int Engine::start() {
 
 		processInput(window, view_camera, delta_time);
 
-		Transform model = translate(Vector3f(0, 0, 0));
-		renderer.setModelMat(model);
-		renderer.setViewMat(view_camera.getViewTransform());
+		Transform model = scale(0.5f, 0.5f, 0.5f);
+		renderer->setModelMat(model);
+		renderer->setViewMat(view_camera.getViewTransform());
 		Transform projection = perspective(view_camera.zoom, width / height, 1e-2f, 1000.0f);
-		renderer.setProjectionMat(projection);
+		renderer->setProjectionMat(projection);
 
-		renderer.draw(test_model, dir_lights, point_lights, &shader, SHADOW_RES, &depth_shader, &depth_cube_shader);
+		renderer->draw(test_model, dir_lights, point_lights);
+		//renderer.draw(test_model, dir_lights, point_lights, &shader, SHADOW_RES, &depth_shader, &depth_cube_shader);
 
 		glCheckError("After draw");
 
-		glfwSwapBuffers(window);
 		glfwPollEvents();
+		glfwSwapBuffers(window);
 	}
 
 	glfwTerminate();
