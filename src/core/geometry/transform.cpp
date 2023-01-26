@@ -173,7 +173,7 @@ Transform rotateZ(float theta) {
 	float sin_theta = std::sin(radians(theta));
 	float cos_theta = std::cos(radians(theta));
 	Matrix4 m(cos_theta, -sin_theta, 0, 0,
-			0, sin_theta, cos_theta, 0,
+			sin_theta, cos_theta, 0, 0,
 			0, 0, 1, 0,
 			0, 0, 0, 1);
 	return Transform(m, transpose(m));
