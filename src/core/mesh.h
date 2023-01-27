@@ -44,15 +44,17 @@ class GLModel {
 public:
 	GLModel() {}
 
-	GLModel(const char* path, bool gamma = false) :
+	GLModel(const char* path, bool gamma = false);
+
+	GLModel(aiScene* scene, const char* path, bool gamma = false) :
 			gamma_correction(gamma) {
-		loadModel(path);
+		loadModel(scene, path);
 	}
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
 private:
-	void loadModel(std::string path);
+	void loadModel(const aiScene* scene, std::string path);
 	void processNode(aiNode* node, const aiScene* scene);
 	GLMesh processMesh(aiMesh* mesh, const aiScene* scene);
 	///< TODO: needs method to load textures here
