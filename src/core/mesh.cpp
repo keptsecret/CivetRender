@@ -2,8 +2,8 @@
 
 #include <shapes/triangle.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include <assimp/postprocess.h>
 #include <stb/stb_image.h>
+#include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
 namespace civet {
@@ -125,14 +125,8 @@ void GLMesh::setupMesh() {
 	glCheckError("ERROR::GLMesh::setupMesh: OpenGL error code");
 }
 
-void GLModel::draw(Shader& shader, unsigned int tex_offset) {
-	shader.setBool("material.use_normal_map", use_normal_map);
-	for (auto& mesh : meshes) {
-		mesh.draw(shader, tex_offset);
-	}
-}
-
-void GLModel::loadModel(std::string path) {
+GLModel::GLModel(const char* path, bool gamma) :
+		gamma_correction(gamma) {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 
@@ -140,6 +134,18 @@ void GLModel::loadModel(std::string path) {
 		std::cout << "ERROR::GLModel: assimp error: " << importer.GetErrorString() << '\n';
 		return;
 	}
+
+	loadModel(scene, path);
+}
+
+void GLModel::draw(Shader& shader, unsigned int tex_offset) {
+	shader.setBool("material.use_normal_map", use_normal_map);
+	for (auto& mesh : meshes) {
+		mesh.draw(shader, tex_offset);
+	}
+}
+
+void GLModel::loadModel(const aiScene* scene, std::string path) {
 	directory = path.substr(0, path.find_last_of('/'));
 
 	processNode(scene->mRootNode, scene);
