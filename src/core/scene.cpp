@@ -27,6 +27,7 @@ void Scene::loadScene(const char* path) {
 			case aiLightSource_DIRECTIONAL: {
 				GLDirectionalLight new_light(Vector3f(light->mDirection.x, light->mDirection.y, light->mDirection.z));
 				new_light.color = Vector3f(light->mColorDiffuse.r, light->mColorDiffuse.g, light->mColorDiffuse.b);
+				new_light.init();
 				dir_lights.push_back(new_light);
 				break;
 			}
@@ -36,6 +37,7 @@ void Scene::loadScene(const char* path) {
 				new_light.attenuation.constant = light->mAttenuationConstant;
 				new_light.attenuation.linear = light->mAttenuationLinear;
 				new_light.attenuation.quadratic = light->mAttenuationQuadratic;
+				new_light.init();
 				point_lights.push_back(new_light);
 				break;
 			}
