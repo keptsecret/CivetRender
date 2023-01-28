@@ -18,7 +18,7 @@ public:
 
 	void init(unsigned int w, unsigned int h);
 
-	void draw(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights);
+	void draw(Scene& scene);
 
 	void setModelMat(const Transform& model) { model_mat = model; }
 	void setViewMat(const Transform& view) { view_mat = view; }
