@@ -4,9 +4,8 @@
 #include <core/camera.h>
 #include <core/civet.h>
 #include <core/input_manager.h>
-#include <core/mesh.h>
 #include <core/shader.h>
-#include <rendering/forward_renderer.h>
+#include <core/scene.h>
 #include <rendering/deferred_renderer.h>
 
 namespace civet {
@@ -15,7 +14,6 @@ class Engine {
 protected:
 	Engine() :
 			input_manager(width, height),
-			//renderer(width, height),
 			frame_time(1.f / MAX_FPS) {}
 
 public:
@@ -28,10 +26,11 @@ public:
 	float MAX_FPS = 120.f;
 	float frame_time;
 
+	Scene active_scene;
+
 	GLFWwindow* window = nullptr;
 	GLCamera view_camera;
 	InputManager input_manager;
-	//DeferredRenderer* renderer;
 };
 
 } // namespace civet
