@@ -271,6 +271,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/interaction.h
 		src/core/shape.h
 		src/core/primitive.h
+		src/core/scene.h
 		src/core/mesh.h
 		src/core/material.h
 		src/core/texture.h
@@ -291,6 +292,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/interaction.cpp
 		src/core/shape.cpp
 		src/core/primitive.cpp
+		src/core/scene.cpp
 		src/core/mesh.cpp
 		src/core/material.cpp
 		src/core/texture.cpp
