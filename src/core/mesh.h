@@ -46,7 +46,7 @@ public:
 
 	GLModel(const char* path, bool gamma = false);
 
-	GLModel(aiScene* scene, const char* path, bool gamma = false) :
+	GLModel(const aiScene* scene, const char* path, bool gamma = false) :
 			gamma_correction(gamma) {
 		loadModel(scene, path);
 	}
