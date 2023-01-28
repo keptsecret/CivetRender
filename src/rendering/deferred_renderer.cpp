@@ -1,3 +1,4 @@
+#include "core/scene.h"
 #include <rendering/deferred_renderer.h>
 
 namespace civet {
@@ -36,14 +37,18 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	depth_cube_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
 }
 
-void DeferredRenderer::draw(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights) {
+void DeferredRenderer::draw(civet::Scene& scene) {
 	gbuffer.start();
-	generateShadowMaps(model, dir_lights, point_lights);
 
-	glViewport(0, 0, width, height);
-	glCullFace(GL_BACK);
-	geometryPass(model);
-	lightsPass(model, dir_lights, point_lights);
+	// TODO: support multiple models?
+	for (auto model : scene.models) {
+		generateShadowMaps(model, scene.dir_lights, scene.point_lights);
+
+		glViewport(0, 0, width, height);
+		glCullFace(GL_BACK);
+		geometryPass(model);
+		lightsPass(model, scene.dir_lights, scene.point_lights);
+	}
 	finalPass();
 }
 
