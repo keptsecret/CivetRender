@@ -27,7 +27,7 @@ public:
 
 private:
 	void geometryPass(GLModel& model);
-	void lightsPass(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights);
+	void lightsPass(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights);
 	void finalPass();
 
 	void pointLightPass(GLModel& model, GLPointLight& light);
@@ -35,7 +35,7 @@ private:
 	void dirLightPass(GLModel& model, GLDirectionalLight& light);
 
 	float getBoundingSphere(GLPointLight& light);
-	void generateShadowMaps(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights);
+	void generateShadowMaps(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights);
 
 	unsigned int width, height;
 	const unsigned int shadow_res = 4096;
