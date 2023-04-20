@@ -47,8 +47,8 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory,
 	return texture_id;
 }
 
-GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, bool _use_indices) :
-		vertices(_vertices), indices(_indices), textures(_textures), use_indices(_use_indices), VAO(0), VBO(0), EBO(0) {
+GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, const std::string& name, bool _use_indices) :
+		vertices(_vertices), indices(_indices), textures(_textures), use_indices(_use_indices), VAO(0), VBO(0), EBO(0), Node(name, Mesh) {
 	setupMesh();
 }
 
@@ -125,8 +125,8 @@ void GLMesh::setupMesh() {
 	glCheckError("ERROR::GLMesh::setupMesh: OpenGL error code");
 }
 
-GLModel::GLModel(const char* path, bool gamma) :
-		gamma_correction(gamma) {
+GLModel::GLModel(const char* path, const std::string& name, bool gamma) :
+		gamma_correction(gamma), Node(name, Model) {
 	Assimp::Importer importer;
 	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 
@@ -143,6 +143,10 @@ void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 	for (auto& mesh : meshes) {
 		mesh.draw(shader, tex_offset);
 	}
+}
+
+std::vector<GLMesh> GLModel::getMeshes() {
+	return meshes;
 }
 
 void GLModel::loadModel(const aiScene* scene, std::string path) {
@@ -208,7 +212,7 @@ GLMesh GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 		textures.insert(textures.end(), normal_maps.begin(), normal_maps.end());
 	}
 
-	return GLMesh(vertices, indices, textures);
+	return GLMesh(vertices, indices, textures, "Mesh");
 }
 
 std::vector<GLTexture> GLModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name) {

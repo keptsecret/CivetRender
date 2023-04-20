@@ -4,6 +4,7 @@
 #include <assimp/scene.h>
 #include <core/civet.h>
 #include <core/shader.h>
+#include <core/node.h>
 
 namespace civet {
 
@@ -22,10 +23,10 @@ struct GLTexture {
 	std::string path;
 };
 
-class GLMesh {
+class GLMesh : public Node {
 public:
 	// TODO: implement this maybe when material class
-	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, bool _use_indices = true);
+	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, const std::string& name, bool _use_indices = true);
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
@@ -40,18 +41,21 @@ private:
 	bool use_indices;
 };
 
-class GLModel {
+class GLModel : public Node {
 public:
-	GLModel() {}
+	GLModel() :
+			Node("GLModel", Model) {}
 
-	GLModel(const char* path, bool gamma = false);
+	GLModel(const char* path, const std::string& name, bool gamma = false);
 
-	GLModel(const aiScene* scene, const char* path, bool gamma = false) :
-			gamma_correction(gamma) {
+	GLModel(const aiScene* scene, const std::string& name, const char* path, bool gamma = false) :
+			gamma_correction(gamma), Node(name, Model) {
 		loadModel(scene, path);
 	}
 
 	void draw(Shader& shader, unsigned int tex_offset);
+
+	std::vector<GLMesh> getMeshes();
 
 private:
 	void loadModel(const aiScene* scene, std::string path);

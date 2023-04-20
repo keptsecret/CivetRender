@@ -13,8 +13,8 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	glEnable(GL_CULL_FACE);
 	glCheckError("ERROR::Engine::init: OpenGL error code");
 
-	bounding_sphere = GLModel("../civet/resources/basic-meshes/sphere.obj");
-	bounding_quad = GLModel("../civet/resources/basic-meshes/quad.obj");
+	bounding_sphere = GLModel("../civet/resources/basic-meshes/sphere.obj", "bounding_sphere");
+	bounding_quad = GLModel("../civet/resources/basic-meshes/quad.obj", "bounding_quad");
 
 	geometry_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_geometry_frag.glsl");
 	pointlight_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_pointlight_pass_frag.glsl");
@@ -42,12 +42,12 @@ void DeferredRenderer::draw(civet::Scene& scene) {
 
 	// TODO: support multiple models?
 	for (auto model : scene.models) {
-		generateShadowMaps(model, scene.dir_lights, scene.point_lights);
+		generateShadowMaps(*model, scene.dir_lights, scene.point_lights);
 
 		glViewport(0, 0, width, height);
 		glCullFace(GL_BACK);
-		geometryPass(model);
-		lightsPass(model, scene.dir_lights, scene.point_lights);
+		geometryPass(*model);
+		lightsPass(*model, scene.dir_lights, scene.point_lights);
 	}
 	finalPass();
 }
@@ -69,7 +69,7 @@ void DeferredRenderer::geometryPass(GLModel& model) {
 	glDepthMask(GL_FALSE);
 }
 
-void DeferredRenderer::lightsPass(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights) {
+void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights) {
 	glEnable(GL_STENCIL_TEST);	///< render light only if it passes test
 	// handle point lights
 	stencil_pass_shader.use();
@@ -83,9 +83,9 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<GLDirectionalLight
 	pointlight_pass_shader.setVec3("viewPos", Vector3f(camera->position));
 	pointlight_pass_shader.setVec2("screenSize", width, height);
 	pointlight_pass_shader.setFloat("material.shininess", 64.0f);
-	for (auto& light : point_lights) {
-		stencilPass(model, light);
-		pointLightPass(model, light);
+	for (auto light : point_lights) {
+		stencilPass(model, *light);
+		pointLightPass(model, *light);
 	}
 	glDisable(GL_STENCIL_TEST);
 
@@ -99,8 +99,8 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<GLDirectionalLight
 	dirlight_pass_shader.setVec3("viewPos", Vector3f(camera->position));
 	dirlight_pass_shader.setVec2("screenSize", width, height);
 	dirlight_pass_shader.setFloat("material.shininess", 64.0f);
-	for (auto& light : dir_lights) {
-		dirLightPass(model, light);
+	for (auto light : dir_lights) {
+		dirLightPass(model, *light);
 	}
 }
 
@@ -202,7 +202,7 @@ float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
 	return result;
 }
 
-void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<GLDirectionalLight>& dir_lights, std::vector<GLPointLight>& point_lights) {
+void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights) {
 	// Render depth map
 	float near_plane = -5.0f, far_plane = 5.0f;
 
@@ -210,10 +210,10 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<GLDirectio
 	// loop through lights and generate shadow maps
 	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
-	for (auto& light : dir_lights) {
-		if (light.should_update) {
+	for (auto light : dir_lights) {
+		if (light->should_update) {
 			depth_shader.setMat4("model", model_mat.m);
-			light.generateShadowMap(depth_shader, near_plane, far_plane);
+			light->generateShadowMap(depth_shader, near_plane, far_plane);
 			model.draw(depth_shader, 2); ///< change tex_offset possibly
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
@@ -226,10 +226,10 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<GLDirectio
 	// loop through lights and generate shadow maps for point lights
 	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
-	for (auto& light : point_lights) {
-		if (light.should_update) {
+	for (auto light : point_lights) {
+		if (light->should_update) {
 			depth_cube_shader.setMat4("model", model_mat.m);
-			light.generateShadowMap(depth_cube_shader, near, far);
+			light->generateShadowMap(depth_cube_shader, near, far);
 			model.draw(depth_cube_shader, 2);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}

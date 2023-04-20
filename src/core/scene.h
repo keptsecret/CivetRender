@@ -14,11 +14,22 @@ public:
 	Scene(const char* path);
 
 	void loadScene(const char* path);
+	void drawSceneTree();
 
-	std::vector<GLModel> models;
+	void addNode(std::shared_ptr<Node> node, NodeType type);
 
-	std::vector<GLDirectionalLight> dir_lights;
-	std::vector<GLPointLight> point_lights;
+public:
+	std::vector<std::shared_ptr<GLModel>> models;
+
+	std::vector<std::shared_ptr<GLDirectionalLight>> dir_lights;
+	std::vector<std::shared_ptr<GLPointLight>> point_lights;
+
+	std::vector<std::shared_ptr<Node>> nodes;
+
+private:
+	void drawTreeChildren(ImGuiTreeNodeFlags node_flags, bool node_open, int index);
+
+	bool showSceneTree = true;
 };
 
 } // namespace civet

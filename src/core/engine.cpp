@@ -94,20 +94,19 @@ int Engine::start() {
 	active_scene = Scene("../civet/resources/backpack/backpack.obj");
 
 	const unsigned int SHADOW_RES = 4096;
-	active_scene.dir_lights.push_back(GLDirectionalLight(Vector3f(2, -1, -2), SHADOW_RES));
-	active_scene.dir_lights[0].init();
+	auto dir_light = std::make_shared<GLDirectionalLight>("Light_1", Vector3f(2, -1, -2), SHADOW_RES);
+	dir_light->init();
+	active_scene.addNode(dir_light, DirectionalLight);
 
-	active_scene.point_lights.push_back(GLPointLight(Point3f(0, 1, 2), SHADOW_RES));
-	active_scene.point_lights[0].init();
+	auto point_light = std::make_shared<GLPointLight>("Light_2", Point3f(0, 1, 2), SHADOW_RES);
+	point_light->init();
+	active_scene.addNode(point_light, PointLight);
 
 	DeferredRenderer* renderer = DeferredRenderer::getSingleton();
 
 	renderer->setCamera(&view_camera);
 
 	float last_frame = 0.0f;
-
-	bool show_demo_window = true;
-	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	while (!glfwWindowShouldClose(window)) {
 		float current_frame = float(glfwGetTime());
@@ -116,38 +115,6 @@ int Engine::start() {
 
 		processInput(window, view_camera, delta_time);
 
-		// TODO: implement as editor class + subclasses
-		{
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
-
-			if (show_demo_window)
-				ImGui::ShowDemoWindow(&show_demo_window);
-
-			{
-				static float f = 0.0f;
-				static int counter = 0;
-
-				ImGui::Begin("Hello, world!"); // Create a window called "Hello, world!" and append into it.
-
-				ImGui::Text("This is some useful text."); // Display some text (you can use a format strings too)
-				ImGui::Checkbox("Demo Window", &show_demo_window); // Edit bools storing our window open/close state
-
-				ImGui::SliderFloat("float", &f, 0.0f, 1.0f); // Edit 1 float using a slider from 0.0f to 1.0f
-				ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
-
-				if (ImGui::Button("Button")) // Buttons return true when clicked (most widgets return true when edited/activated)
-					counter++;
-				ImGui::SameLine();
-				ImGui::Text("counter = %d", counter);
-
-				ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-				ImGui::End();
-			}
-			ImGui::Render();
-		}
-
 		Transform model = scale(0.5f, 0.5f, 0.5f);
 		renderer->setModelMat(model);
 		renderer->setViewMat(view_camera.getViewTransform());
@@ -155,9 +122,19 @@ int Engine::start() {
 		renderer->setProjectionMat(projection);
 
 		renderer->draw(active_scene);
-		//renderer.draw(test_model, dir_lights, point_lights, &shader, SHADOW_RES, &depth_shader, &depth_cube_shader);
 
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); ///< here as well
+		// TODO: implement as editor class + subclasses
+		{
+			ImGui_ImplOpenGL3_NewFrame();
+			ImGui_ImplGlfw_NewFrame();
+			ImGui::NewFrame();
+
+			ImGui::SetNextWindowSize(ImVec2(150, 500));
+			active_scene.drawSceneTree();
+
+			ImGui::Render();
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); ///< here as well
+		}
 
 		glCheckError("After draw");
 
@@ -165,6 +142,11 @@ int Engine::start() {
 		glfwSwapBuffers(window);
 	}
 
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
+	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
 }
