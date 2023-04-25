@@ -1413,7 +1413,7 @@ CIVET_CPU_GPU inline bool bInsideExclusive(const Point3<T>& p, const Bounds3<T>&
 }
 
 template <typename T, typename U>
-CIVET_CPU_GPU inline bool bExpand(const Bounds3<T>& b, U delta) {
+CIVET_CPU_GPU inline Bounds3<T> bExpand(const Bounds3<T>& b, U delta) {
 	return Bounds3<T>(b.p_min - Vector3<T>(delta, delta, delta), b.p_max + Vector3<T>(delta, delta, delta));
 }
 

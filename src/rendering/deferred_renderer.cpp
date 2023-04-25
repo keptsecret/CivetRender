@@ -60,10 +60,12 @@ void DeferredRenderer::geometryPass(GLModel& model) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
+	model_mat = model.transformData.transform;
+
 	geometry_pass_shader.use();
 	geometry_pass_shader.setMat4("projection", projection_mat.m);
 	geometry_pass_shader.setMat4("view", view_mat.m);
-	geometry_pass_shader.setMat4("model", model_mat.m);
+	geometry_pass_shader.setMat4("model", model.transformData.transform.m);
 	model.draw(geometry_pass_shader, 0);
 
 	glDepthMask(GL_FALSE);
@@ -204,7 +206,10 @@ float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
 
 void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights) {
 	// Render depth map
-	float near_plane = -5.0f, far_plane = 5.0f;
+	float near_plane = std::floor(model.bounds.p_min.z - 1), far_plane = std::ceil(model.bounds.p_max.z + 1);
+	int max_axis = model.bounds.maximumAxis();
+	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.2;	// TODO: reorient frustum to light direction
+	Bounds3f frustum = bExpand(model.bounds, fmax(expand, 10.f));
 
 	depth_shader.use();
 	// loop through lights and generate shadow maps
@@ -212,8 +217,8 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : dir_lights) {
 		if (light->should_update) {
-			depth_shader.setMat4("model", model_mat.m);
-			light->generateShadowMap(depth_shader, near_plane, far_plane);
+			depth_shader.setMat4("model", model.transformData.transform.m);
+			light->generateShadowMap(depth_shader, frustum);
 			model.draw(depth_shader, 2); ///< change tex_offset possibly
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
@@ -228,7 +233,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : point_lights) {
 		if (light->should_update) {
-			depth_cube_shader.setMat4("model", model_mat.m);
+			depth_cube_shader.setMat4("model", model.transformData.transform.m);
 			light->generateShadowMap(depth_cube_shader, near, far);
 			model.draw(depth_cube_shader, 2);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);

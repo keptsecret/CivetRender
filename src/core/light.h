@@ -62,6 +62,7 @@ public:
 	}
 
 	void generateShadowMap(civet::Shader& shader, float near_plane, float far_plane) override;
+	void generateShadowMap(civet::Shader& shader, Bounds3f frustum);
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
 	Vector3f direction;

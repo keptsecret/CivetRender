@@ -2,6 +2,8 @@
 #define CIVET_NODE_H
 
 #include <core/civet.h>
+#include <core/geometry/vecmath.h>
+#include <core/geometry/transform.h>
 
 namespace civet {
 
@@ -14,6 +16,8 @@ enum NodeType {
 
 struct TransformData {
 	// TODO: scene graph type transform data
+
+	Transform transform;
 };
 
 class Node {
@@ -23,8 +27,17 @@ public:
 		type = t;
 	}
 
+	virtual void updateBounds() {}
+	virtual void setTransform(Transform t) {
+		transformData.transform = t;
+		updateBounds();
+	}
+
 	std::string name;
 	NodeType type;
+
+	Bounds3f bounds;
+	TransformData transformData;
 };
 
 } // namespace civet

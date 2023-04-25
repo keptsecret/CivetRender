@@ -91,16 +91,17 @@ int Engine::start() {
 	/**
 	 * Test scene
 	 */
-	active_scene = Scene("../civet/resources/backpack/backpack.obj");
+	active_scene = Scene("../civet/resources/sponza/sponza.obj");
+	active_scene.models[0]->setTransform(scale(0.1, 0.1, 0.1));
 
 	const unsigned int SHADOW_RES = 4096;
 	auto dir_light = std::make_shared<GLDirectionalLight>("Light_1", Vector3f(2, -1, -2), SHADOW_RES);
 	dir_light->init();
 	active_scene.addNode(dir_light, DirectionalLight);
 
-	auto point_light = std::make_shared<GLPointLight>("Light_2", Point3f(0, 1, 2), SHADOW_RES);
-	point_light->init();
-	active_scene.addNode(point_light, PointLight);
+//	auto point_light = std::make_shared<GLPointLight>("Light_2", Point3f(0, 1, 2), SHADOW_RES);
+//	point_light->init();
+//	active_scene.addNode(point_light, PointLight);
 
 	DeferredRenderer* renderer = DeferredRenderer::getSingleton();
 
@@ -115,8 +116,6 @@ int Engine::start() {
 
 		processInput(window, view_camera, delta_time);
 
-		Transform model = scale(0.5f, 0.5f, 0.5f);
-		renderer->setModelMat(model);
 		renderer->setViewMat(view_camera.getViewTransform());
 		Transform projection = perspective(view_camera.zoom, width / height, 1e-2f, 1000.0f);
 		renderer->setProjectionMat(projection);
@@ -131,6 +130,12 @@ int Engine::start() {
 
 			ImGui::SetNextWindowSize(ImVec2(150, 500));
 			active_scene.drawSceneTree();
+
+			ImGui::Begin("Debug");
+			ImGui::Text("Camera pitch: %.3f, yaw: %.3f", view_camera.pitch, view_camera.yaw);
+			ImGui::Text("Camera front x: %.3f, y: %.3f, z: %.3f", view_camera.front.x, view_camera.front.y, view_camera.front.z);
+			ImGui::Text("Camera up x: %.3f, y: %.3f, z: %.3f", view_camera.up.x, view_camera.up.y, view_camera.up.z);
+			ImGui::End();
 
 			ImGui::Render();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); ///< here as well

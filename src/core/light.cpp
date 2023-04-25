@@ -17,6 +17,21 @@ void GLDirectionalLight::generateShadowMap(Shader& shader, float near_plane, flo
 	should_update = false;
 }
 
+void GLDirectionalLight::generateShadowMap(Shader& shader, Bounds3f frustum) {
+	Transform projection = orthographic(frustum.p_min.x, frustum.p_max.x, frustum.p_min.y, frustum.p_max.y, frustum.p_min.z, frustum.p_max.z);
+	Transform view = lookAtRH(Point3f(direction.x, direction.y, direction.z), Point3f(0, 0, 0), Vector3f(0, 1, 0));
+	light_space_mat = projection * view;
+
+	shader.setMat4("lightSpaceMatrix", light_space_mat.m);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+	glCheckError("ERROR::GLDirectionalLight::bindShadowMap: OpenGL error code");
+	///< maybe change to draw scene in here immediately at some point (pass in scene object)
+	///< currently needs to call draw and unbind framebuffer
+
+	should_update = false;
+}
+
 void GLDirectionalLight::bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) {
 	shader.setInt(name, tex_offset);
 
