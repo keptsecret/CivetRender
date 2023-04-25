@@ -49,6 +49,10 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory,
 
 GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, const std::string& name, bool _use_indices) :
 		vertices(_vertices), indices(_indices), textures(_textures), use_indices(_use_indices), VAO(0), VBO(0), EBO(0), Node(name, Mesh) {
+	for (const auto& v : vertices) {
+		bounds = bUnion(bounds, v.position);
+	}
+
 	setupMesh();
 }
 
@@ -93,6 +97,13 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	glCheckError("ERROR::GLMesh::draw: OpenGL error code");
 }
 
+void GLMesh::updateBounds() {
+	bounds = Bounds3f();
+	for (const auto& v : vertices) {
+		bounds = bUnion(bounds, transformData.transform(v.position));
+	}
+}
+
 void GLMesh::setupMesh() {
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -128,7 +139,8 @@ void GLMesh::setupMesh() {
 GLModel::GLModel(const char* path, const std::string& name, bool gamma) :
 		gamma_correction(gamma), Node(name, Model) {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
+	unsigned int importer_flags = aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace;
+	const aiScene* scene = importer.ReadFile(path, importer_flags);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		std::cout << "ERROR::GLModel: assimp error: " << importer.GetErrorString() << '\n';
@@ -145,6 +157,22 @@ void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 	}
 }
 
+void GLModel::updateBounds() {
+	bounds = Bounds3f();
+	for (const auto& m : meshes) {
+		bounds = bUnion(bounds, m.bounds);
+	}
+}
+
+void GLModel::setTransform(Transform t) {
+	for (auto& m : meshes) {
+		m.setTransform(t);
+	}
+
+	transformData.transform = t;
+	updateBounds();
+}
+
 std::vector<GLMesh> GLModel::getMeshes() {
 	return meshes;
 }
@@ -153,6 +181,10 @@ void GLModel::loadModel(const aiScene* scene, std::string path) {
 	directory = path.substr(0, path.find_last_of('/'));
 
 	processNode(scene->mRootNode, scene);
+
+	for (const auto& m : meshes) {
+		bounds = bUnion(bounds, m.bounds);
+	}
 }
 
 void GLModel::processNode(aiNode* node, const aiScene* scene) {

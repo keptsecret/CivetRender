@@ -30,6 +30,8 @@ public:
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
+	void updateBounds() override;
+
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
 	std::vector<GLTexture> textures; ///< TODO: review when image textures implemented
@@ -54,6 +56,9 @@ public:
 	}
 
 	void draw(Shader& shader, unsigned int tex_offset);
+
+	void updateBounds() override;
+	void setTransform(Transform t) override;
 
 	std::vector<GLMesh> getMeshes();
 
