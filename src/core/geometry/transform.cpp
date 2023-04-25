@@ -239,17 +239,32 @@ Transform lookAtLH(const Point3f& position, const Point3f& target, const Vector3
 
 CIVET_CPU_GPU
 Transform lookAtRH(const Point3f& position, const Point3f& target, const Vector3f& up) {
+	Matrix4 camera_to_world;
+	camera_to_world.m[0][3] = position.x;
+	camera_to_world.m[1][3] = position.y;
+	camera_to_world.m[2][3] = position.z;
+	camera_to_world.m[3][3] = 1;
+
 	Vector3f dir = normalize(target - position);
 	Vector3f right = normalize(cross(dir, normalize(up)));
 	Vector3f new_up = cross(right, dir);
 
-	Vector3f eye = Vector3f(position);
-	Matrix4 look_at = { right.x, right.y, right.z, -dot(right, eye),
-		new_up.x, new_up.y, new_up.z, -dot(new_up, eye),
-		-dir.x, -dir.y, -dir.z, dot(dir, eye),
-		0, 0, 0, 1 };
+	camera_to_world.m[0][0] = right.x;
+	camera_to_world.m[1][0] = right.y;
+	camera_to_world.m[2][0] = right.z;
+	camera_to_world.m[3][0] = 0;
 
-	return Transform(look_at, inverse(look_at));
+	camera_to_world.m[0][1] = new_up.x;
+	camera_to_world.m[1][1] = new_up.y;
+	camera_to_world.m[2][1] = new_up.z;
+	camera_to_world.m[3][1] = 0;
+
+	camera_to_world.m[0][2] = -dir.x;
+	camera_to_world.m[1][2] = -dir.y;
+	camera_to_world.m[2][2] = -dir.z;
+	camera_to_world.m[3][2] = 0;
+
+	return Transform(inverse(camera_to_world), camera_to_world);
 }
 
 CIVET_CPU_GPU
@@ -270,16 +285,16 @@ Transform perspective(float fov, float n, float f) {
 			0, 0, f / (f - n), -f * n / (f - n),
 			0, 0, 1, 0);
 
-	float inv_tan_ang = 1 / std::tan(radians(fov) / 2);
-	return scale(inv_tan_ang, inv_tan_ang, 1) * Transform(persp);
+	float cot_ang = 1 / std::tan(radians(fov) / 2);
+	return scale(cot_ang, cot_ang, 1) * Transform(persp);
 }
 
 CIVET_CPU_GPU
 Transform perspective(float fov, float aspect, float n, float f) {
-	float inv_tan_ang = 1 / std::tan(radians(fov) / 2);
-	Matrix4 persp(inv_tan_ang / aspect, 0, 0, 0,
-			0, inv_tan_ang, 0, 0,
-			0, 0, -(f + n) / (f - n), -(2 * f * n) / (f - n),
+	float cot_ang = 1.f / std::tan(radians(fov) * 0.5f);
+	Matrix4 persp(cot_ang / aspect, 0, 0, 0,
+			0, cot_ang, 0, 0,
+			0, 0, (f + n) / (n - f), (2 * f * n) / (n - f),
 			0, 0, -1, 0);
 
 	return Transform(persp);
