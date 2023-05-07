@@ -13,8 +13,10 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	glEnable(GL_CULL_FACE);
 	glCheckError("ERROR::Engine::init: OpenGL error code");
 
-	bounding_sphere = GLModel("../civet/resources/basic-meshes/sphere.obj", "bounding_sphere");
-	bounding_quad = GLModel("../civet/resources/basic-meshes/quad.obj", "bounding_quad");
+	bounding_sphere = GLModel("bounding_sphere");
+	bounding_sphere.loadModel("../civet/resources/basic-meshes/sphere.obj");
+	bounding_quad = GLModel("bounding_quad");
+	bounding_quad.loadModel("../civet/resources/basic-meshes/quad.obj");
 
 	geometry_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_geometry_frag.glsl");
 	pointlight_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_pointlight_pass_frag.glsl");
@@ -60,12 +62,9 @@ void DeferredRenderer::geometryPass(GLModel& model) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
 
-	model_mat = model.transformData.transform;
-
 	geometry_pass_shader.use();
 	geometry_pass_shader.setMat4("projection", projection_mat.m);
 	geometry_pass_shader.setMat4("view", view_mat.m);
-	geometry_pass_shader.setMat4("model", model.transformData.transform.m);
 	model.draw(geometry_pass_shader, 0);
 
 	glDepthMask(GL_FALSE);
@@ -141,7 +140,7 @@ void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
 	// draw bounding sphere of light
 	float r = getBoundingSphere(light);
 	Transform bs_model = translate(Vector3f(light.position)) * scale(r, r, r);
-	pointlight_pass_shader.setMat4("model", bs_model.m);
+	bounding_sphere.setTransform(bs_model);
 	bounding_sphere.draw(pointlight_pass_shader, gbuffer.num_textures + 1);
 
 	glCullFace(GL_BACK);
@@ -162,7 +161,7 @@ void DeferredRenderer::stencilPass(GLModel& model, GLPointLight& light) {
 
 	float r = getBoundingSphere(light);
 	Transform bs_model = translate(Vector3f(light.position)) * scale(r, r, r);
-	stencil_pass_shader.setMat4("model", bs_model.m);
+	bounding_sphere.setTransform(bs_model);
 	bounding_sphere.draw(stencil_pass_shader, 0);
 }
 
@@ -206,7 +205,6 @@ float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
 
 void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights) {
 	// Render depth map
-	float near_plane = std::floor(model.bounds.p_min.z - 1), far_plane = std::ceil(model.bounds.p_max.z + 1);
 	int max_axis = model.bounds.maximumAxis();
 	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.2;	// TODO: reorient frustum to light direction
 	Bounds3f frustum = bExpand(model.bounds, fmax(expand, 10.f));
@@ -217,7 +215,6 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : dir_lights) {
 		if (light->should_update) {
-			depth_shader.setMat4("model", model.transformData.transform.m);
 			light->generateShadowMap(depth_shader, frustum);
 			model.draw(depth_shader, 2); ///< change tex_offset possibly
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -233,7 +230,6 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : point_lights) {
 		if (light->should_update) {
-			depth_cube_shader.setMat4("model", model.transformData.transform.m);
 			light->generateShadowMap(depth_cube_shader, near, far);
 			model.draw(depth_cube_shader, 2);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);

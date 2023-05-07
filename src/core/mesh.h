@@ -23,6 +23,8 @@ struct GLTexture {
 	std::string path;
 };
 
+class GLModel;
+
 class GLMesh : public Node {
 public:
 	// TODO: implement this maybe when material class
@@ -48,12 +50,10 @@ public:
 	GLModel() :
 			Node("GLModel", Model) {}
 
-	GLModel(const char* path, const std::string& name, bool gamma = false);
+	GLModel(const std::string& name, bool gamma = false);
 
-	GLModel(const aiScene* scene, const std::string& name, const char* path, bool gamma = false) :
-			gamma_correction(gamma), Node(name, Model) {
-		loadModel(scene, path);
-	}
+	void loadModel(std::string path);
+	void loadModel(const aiScene* scene, std::string path);
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
@@ -63,7 +63,6 @@ public:
 	std::vector<GLMesh> getMeshes();
 
 private:
-	void loadModel(const aiScene* scene, std::string path);
 	void processNode(aiNode* node, const aiScene* scene);
 	GLMesh processMesh(aiMesh* mesh, const aiScene* scene);
 	///< TODO: needs method to load textures here

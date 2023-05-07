@@ -82,6 +82,8 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	}
 	glActiveTexture(GL_TEXTURE0);
 
+	shader.setMat4("model", getWorldTransform().m);
+
 	glBindVertexArray(VAO);
 	if (use_indices) {
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, nullptr);
@@ -136,10 +138,13 @@ void GLMesh::setupMesh() {
 	glCheckError("ERROR::GLMesh::setupMesh: OpenGL error code");
 }
 
-GLModel::GLModel(const char* path, const std::string& name, bool gamma) :
+GLModel::GLModel(const std::string& name, bool gamma) :
 		gamma_correction(gamma), Node(name, Model) {
+}
+
+void GLModel::loadModel(std::string path) {
 	Assimp::Importer importer;
-	unsigned int importer_flags = aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace;
+	unsigned int importer_flags = aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs;
 	const aiScene* scene = importer.ReadFile(path, importer_flags);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
@@ -148,6 +153,16 @@ GLModel::GLModel(const char* path, const std::string& name, bool gamma) :
 	}
 
 	loadModel(scene, path);
+}
+
+void GLModel::loadModel(const aiScene* scene, std::string path) {
+	directory = path.substr(0, path.find_last_of('/'));
+
+	processNode(scene->mRootNode, scene);
+
+	for (const auto& m : meshes) {
+		bounds = bUnion(bounds, m.bounds);
+	}
 }
 
 void GLModel::draw(Shader& shader, unsigned int tex_offset) {
@@ -165,10 +180,6 @@ void GLModel::updateBounds() {
 }
 
 void GLModel::setTransform(Transform t) {
-	for (auto& m : meshes) {
-		m.setTransform(t);
-	}
-
 	transformData.transform = t;
 	updateBounds();
 }
@@ -177,20 +188,13 @@ std::vector<GLMesh> GLModel::getMeshes() {
 	return meshes;
 }
 
-void GLModel::loadModel(const aiScene* scene, std::string path) {
-	directory = path.substr(0, path.find_last_of('/'));
-
-	processNode(scene->mRootNode, scene);
-
-	for (const auto& m : meshes) {
-		bounds = bUnion(bounds, m.bounds);
-	}
-}
-
 void GLModel::processNode(aiNode* node, const aiScene* scene) {
 	for (unsigned int i = 0; i < node->mNumMeshes; i++) {
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		meshes.push_back(processMesh(mesh, scene));
+		GLMesh newmesh = processMesh(mesh, scene);
+		newmesh.parent = this;
+		newmesh.name = mesh->mName.C_Str();
+		meshes.push_back(newmesh);
 	}
 	for (unsigned int i = 0; i < node->mNumChildren; i++) {
 		processNode(node->mChildren[i], scene);
