@@ -67,7 +67,7 @@ int Engine::init() {
 
 	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(false);
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glEnable(GL_MULTISAMPLE);
@@ -99,9 +99,9 @@ int Engine::start() {
 	dir_light->init();
 	active_scene.addNode(dir_light, DirectionalLight);
 
-//	auto point_light = std::make_shared<GLPointLight>("Light_2", Point3f(0, 1, 2), SHADOW_RES);
-//	point_light->init();
-//	active_scene.addNode(point_light, PointLight);
+	auto point_light = std::make_shared<GLPointLight>("Light_2", Point3f(0, 1, 2), SHADOW_RES);
+	point_light->init();
+	active_scene.addNode(point_light, PointLight);
 
 	DeferredRenderer* renderer = DeferredRenderer::getSingleton();
 
@@ -128,7 +128,7 @@ int Engine::start() {
 			ImGui_ImplGlfw_NewFrame();
 			ImGui::NewFrame();
 
-			ImGui::SetNextWindowSize(ImVec2(150, 500));
+			ImGui::SetNextWindowSize(ImVec2(200, 500));
 			active_scene.drawSceneTree();
 
 			ImGui::Begin("Debug");

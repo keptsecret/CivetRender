@@ -16,6 +16,9 @@ enum NodeType {
 
 struct TransformData {
 	// TODO: scene graph type transform data
+	Vector3f position;
+	Vector3f rotation;
+	Vector3f scale;
 
 	Transform transform;
 };
@@ -33,11 +36,20 @@ public:
 		updateBounds();
 	}
 
+	virtual Transform getWorldTransform() {
+		if (parent != nullptr) {
+			return parent->getWorldTransform() * transformData.transform;
+		}
+
+		return transformData.transform;
+	}
+
 	std::string name;
 	NodeType type;
 
 	Bounds3f bounds;
 	TransformData transformData;
+	Node* parent = nullptr;
 };
 
 } // namespace civet

@@ -18,7 +18,8 @@ void Scene::loadScene(const char* path) {
 		return;
 	}
 
-	auto model = std::make_shared<GLModel>(scene, "Model", path);
+	auto model = std::make_shared<GLModel>("Model");
+	model->loadModel(scene, path);
 	models.push_back(model);
 	nodes.push_back(model);
 
@@ -69,7 +70,7 @@ void Scene::addNode(std::shared_ptr<Node> node, NodeType type) {
 }
 
 void Scene::drawSceneTree() {
-	ImGui::Begin("Scene Tree", &showSceneTree, ImGuiWindowFlags_AlwaysAutoResize);
+	ImGui::Begin("Scene Tree", &showSceneTree, ImGuiWindowFlags_HorizontalScrollbar);
 
 	if (ImGui::TreeNode("Scene")) {
 		ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize() * 3);
