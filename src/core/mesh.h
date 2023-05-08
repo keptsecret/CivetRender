@@ -28,7 +28,7 @@ class GLModel;
 class GLMesh : public Node {
 public:
 	// TODO: implement this maybe when material class
-	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, const std::string& name, bool _use_indices = true);
+	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<std::shared_ptr<GLTexture>> _textures, const std::string& name, bool _use_indices = true);
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
@@ -36,7 +36,7 @@ public:
 
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<GLTexture> textures; ///< TODO: review when image textures implemented
+	std::vector<std::shared_ptr<GLTexture>> textures; ///< TODO: review when image textures implemented
 
 private:
 	void setupMesh();
@@ -60,16 +60,16 @@ public:
 	void updateBounds() override;
 	void setTransform(Transform t) override;
 
-	std::vector<GLMesh> getMeshes();
+	std::vector<std::shared_ptr<GLMesh>> getMeshes();
 
 private:
 	void processNode(aiNode* node, const aiScene* scene);
-	GLMesh processMesh(aiMesh* mesh, const aiScene* scene);
+	std::shared_ptr<GLMesh> processMesh(aiMesh* mesh, const aiScene* scene);
 	///< TODO: needs method to load textures here
-	std::vector<GLTexture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name);
+	std::vector<std::shared_ptr<GLTexture>> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name);
 
-	std::vector<GLTexture> loaded_textures;
-	std::vector<GLMesh> meshes;
+	std::vector<std::shared_ptr<GLTexture>> loaded_textures;
+	std::vector<std::shared_ptr<GLMesh>> meshes;
 	std::string directory;
 	bool gamma_correction;
 	bool use_normal_map;
