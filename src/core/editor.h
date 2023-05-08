@@ -6,6 +6,11 @@
 
 namespace civet {
 
+struct TreeNodeState {
+	bool is_open;
+	bool should_pop;
+};
+
 class Editor {
 protected:
 	Editor() {}
@@ -17,7 +22,8 @@ public:
 
 private:
 	void sceneTree(Scene& active_scene);
-	void sceneTreeNode(Scene& active_scene, ImGuiTreeNodeFlags node_flags, bool node_open, int index);
+	TreeNodeState sceneTreeNode(Scene& active_scene, std::shared_ptr<Node> node);
+
 	void inspector(Scene& active_scene);
 
 	bool show_scene_tree = true;
