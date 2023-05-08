@@ -69,46 +69,4 @@ void Scene::addNode(std::shared_ptr<Node> node, NodeType type) {
 	nodes.push_back(node);
 }
 
-void Scene::drawSceneTree() {
-	ImGui::Begin("Scene Tree", &showSceneTree, ImGuiWindowFlags_HorizontalScrollbar);
-
-	if (ImGui::TreeNode("Scene")) {
-		ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize() * 3);
-		for (int i = 0; i < nodes.size(); i++) {
-			ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
-			// only models have children for now
-			if (nodes[i]->type != Model) {
-				node_flags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-				ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, "%s", nodes[i]->name.c_str());
-			} else {
-				bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, "%s", nodes[i]->name.c_str());
-
-				drawTreeChildren(node_flags, node_open, i);
-			}
-		}
-		ImGui::TreePop();
-		ImGui::PopStyleVar();
-	}
-
-	ImGui::End();
-}
-
-void Scene::drawTreeChildren(ImGuiTreeNodeFlags node_flags, bool node_open, int index) {
-	if (node_open) {
-		auto n = nodes[index];
-		switch (n->type) {
-			case Model:
-				auto m = std::static_pointer_cast<GLModel>(n);
-				auto meshes = m->getMeshes();
-				for (int i = 0; i < meshes.size(); i++) {
-					// meshes are leaf nodes, for now
-					node_flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
-					ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, "%s", meshes[i].name.c_str());
-				}
-				break;
-		}
-		ImGui::TreePop();
-	}
-}
-
 } // namespace civet

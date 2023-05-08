@@ -102,7 +102,7 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 void GLMesh::updateBounds() {
 	bounds = Bounds3f();
 	for (const auto& v : vertices) {
-		bounds = bUnion(bounds, transformData.transform(v.position));
+		bounds = bUnion(bounds, transform_data.transform(v.position));
 	}
 }
 
@@ -180,7 +180,7 @@ void GLModel::updateBounds() {
 }
 
 void GLModel::setTransform(Transform t) {
-	transformData.transform = t;
+	transform_data.transform = t;
 	updateBounds();
 }
 
