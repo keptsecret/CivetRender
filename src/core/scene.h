@@ -7,6 +7,8 @@
 
 namespace civet {
 
+class Editor;
+
 class Scene {
 public:
 	Scene() {}
@@ -14,8 +16,6 @@ public:
 	Scene(const char* path);
 
 	void loadScene(const char* path);
-	void drawSceneTree();
-
 	void addNode(std::shared_ptr<Node> node, NodeType type);
 
 public:
@@ -27,9 +27,9 @@ public:
 	std::vector<std::shared_ptr<Node>> nodes;
 
 private:
-	void drawTreeChildren(ImGuiTreeNodeFlags node_flags, bool node_open, int index);
+	friend Editor;
 
-	bool showSceneTree = true;
+	std::shared_ptr<Node> selected_node = nullptr;
 };
 
 } // namespace civet

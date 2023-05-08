@@ -104,6 +104,7 @@ int Engine::start() {
 	active_scene.addNode(point_light, PointLight);
 
 	DeferredRenderer* renderer = DeferredRenderer::getSingleton();
+	Editor* editor = Editor::getSingleton();
 
 	renderer->setCamera(&view_camera);
 
@@ -121,25 +122,7 @@ int Engine::start() {
 		renderer->setProjectionMat(projection);
 
 		renderer->draw(active_scene);
-
-		// TODO: implement as editor class + subclasses
-		{
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
-
-			ImGui::SetNextWindowSize(ImVec2(200, 500));
-			active_scene.drawSceneTree();
-
-			ImGui::Begin("Debug");
-			ImGui::Text("Camera pitch: %.3f, yaw: %.3f", view_camera.pitch, view_camera.yaw);
-			ImGui::Text("Camera front x: %.3f, y: %.3f, z: %.3f", view_camera.front.x, view_camera.front.y, view_camera.front.z);
-			ImGui::Text("Camera up x: %.3f, y: %.3f, z: %.3f", view_camera.up.x, view_camera.up.y, view_camera.up.z);
-			ImGui::End();
-
-			ImGui::Render();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); ///< here as well
-		}
+		editor->draw(active_scene);
 
 		glCheckError("After draw");
 

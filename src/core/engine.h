@@ -7,6 +7,7 @@
 #include <core/shader.h>
 #include <core/scene.h>
 #include <rendering/deferred_renderer.h>
+#include <core/editor.h>
 
 namespace civet {
 
