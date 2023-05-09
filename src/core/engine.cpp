@@ -17,7 +17,7 @@ void processInput(GLFWwindow* window, GLCamera& camera, float delta_time) {
 	}
 
 	Engine* e = Engine::getSingleton();
-	if (e->input_manager.isButtonPressed(GLFW_MOUSE_BUTTON_2)) {	// hold right click to interact
+	if (e->input_manager.isButtonPressed(GLFW_MOUSE_BUTTON_2)) { // hold right click to interact
 		if (e->input_manager.isKeyDown(GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, true);
 		}
@@ -65,7 +65,7 @@ int Engine::init() {
 	InputManager::init(window);
 	view_camera = GLCamera(Point3f(0, 0, 3));
 
-	//glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	stbi_set_flip_vertically_on_load(false);
 
@@ -74,11 +74,12 @@ int Engine::init() {
 	glCheckError("ERROR::Engine::init: OpenGL error code");
 
 	DeferredRenderer::getSingleton()->init(width, height);
-	//renderer.init();
+	// renderer.init();
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	ImGuiIO& io = ImGui::GetIO();
+	(void)io;
 
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -92,7 +93,8 @@ int Engine::start() {
 	 * Test scene
 	 */
 	active_scene = Scene("../civet/resources/sponza/sponza.obj");
-	active_scene.models[0]->setTransform(scale(0.1, 0.1, 0.1));
+	active_scene.models[0]->transform_data.scale_vec = Vector3f{ 0.1, 0.1, 0.1 };
+	active_scene.models[0]->transform_data.updateTransform();
 
 	const unsigned int SHADOW_RES = 4096;
 	auto dir_light = std::make_shared<GLDirectionalLight>("Light_1", Vector3f(2, -1, -2), SHADOW_RES);
