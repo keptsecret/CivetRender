@@ -15,7 +15,7 @@ void Editor::draw(Scene& active_scene) {
 	ImGui::SetNextWindowSize(ImVec2(200, 500));
 	sceneTree(active_scene);
 
-	ImGui::SetNextWindowSize(ImVec2(300, 400));
+	//ImGui::SetNextWindowSize(ImVec2(250, 400));
 	inspector(active_scene);
 
 	//	ImGui::Begin("Debug");
@@ -85,12 +85,213 @@ TreeNodeState Editor::sceneTreeNode(Scene& active_scene, std::shared_ptr<Node> n
 
 void Editor::inspector(Scene& active_scene) {
 	if (show_inspector) {
-		ImGui::Begin("Inspector", &show_inspector, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::Begin("Inspector", &show_inspector, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 
 		ImGui::Text("Selected item: %s", active_scene.selected_node->name.c_str());
 
+		if (!ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+			return;
+		}
+
+		ImGui::Indent(15.0f);
+
+		auto node = active_scene.selected_node;
+
+		ValueEditState state;
+		if (ImGui::TreeNodeEx("Translation", ImGuiTreeNodeFlags_DefaultOpen)) {
+			state.merge(scalarButton(&node->transform_data.translation.x, 0xff8888ffu, 0xff222266u, "X", "##T.X"));
+			state.merge(scalarButton(&node->transform_data.translation.y, 0xff88ff88u, 0xff226622u, "Y", "##T.Y"));
+			state.merge(scalarButton(&node->transform_data.translation.z, 0xffff8888u, 0xff662222u, "Z", "##T.Z"));
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNodeEx("Rotation", ImGuiTreeNodeFlags_DefaultOpen)) {
+			state.merge(angleButton(&node->transform_data.rotation_vec.x, 0xff8888ffu, 0xff222266u, "X", "##R.X"));
+			state.merge(angleButton(&node->transform_data.rotation_vec.y, 0xff88ff88u, 0xff226622u, "Y", "##R.Y"));
+			state.merge(angleButton(&node->transform_data.rotation_vec.z, 0xffff8888u, 0xff662222u, "Z", "##R.Z"));
+			ImGui::TreePop();
+		}
+
+		if (ImGui::TreeNodeEx("Scale", ImGuiTreeNodeFlags_DefaultOpen)) {
+			state.merge(scalarButton(&node->transform_data.scale_vec.x, 0xff8888ffu, 0xff222266u, "X", "##S.X"));
+			state.merge(scalarButton(&node->transform_data.scale_vec.y, 0xff88ff88u, 0xff226622u, "Y", "##S.Y"));
+			state.merge(scalarButton(&node->transform_data.scale_vec.z, 0xffff8888u, 0xff662222u, "Z", "##S.Z"));
+			ImGui::TreePop();
+		}
+
+		if (state.value_changed || state.edit_finished) {
+			// add more updates
+			node->transform_data.updateTransform();
+		}
+
+		ImGui::Unindent(15.0f);
+		ImGui::TreePop();
+
 		ImGui::End();
 	}
+}
+
+/****************************
+ * Utility button and input fields
+ */
+static const float DRAG_MOUSE_THRESHOLD_FACTOR = 0.50f;
+
+struct DragResult {
+	bool text_edited = false;
+	bool drag_edited = false;
+};
+
+DragResult customDragScalar(const char* const label,
+		void* const p_data,
+		const float v_speed = 1.0f,
+		const float min = 0.0f,
+		const float max = 0.0f,
+		const char* format = "%.3f") {
+	ImGuiDataType data_type = ImGuiDataType_Float;
+	ImGuiSliderFlags flags = 0;
+	const float* const p_min = &min;
+	const float* const p_max = &max;
+
+	DragResult result;
+
+	ImGuiWindow* window = ImGui::GetCurrentWindow();
+	if (window->SkipItems) {
+		return result;
+	}
+
+	ImGuiContext& context = *GImGui;
+	const ImGuiStyle& style = context.Style;
+	const ImGuiID id = window->GetID(label);
+	const float w = ImGui::CalcItemWidth();
+
+	const ImVec2 label_size = ImGui::CalcTextSize(label, nullptr, true);
+	const ImRect frame_bb(window->DC.CursorPos, window->DC.CursorPos + ImVec2(w, label_size.y + style.FramePadding.y * 2.0f));
+	const ImRect total_bb(frame_bb.Min, frame_bb.Max + ImVec2(label_size.x > 0.0f ? style.ItemInnerSpacing.x + label_size.x : 0.0f, 0.0f));
+
+	const bool temp_input_allowed = (flags & ImGuiSliderFlags_NoInput) == 0;
+	ImGui::ItemSize(total_bb, style.FramePadding.y);
+	if (!ImGui::ItemAdd(total_bb, id, &frame_bb, temp_input_allowed ? ImGuiItemFlags_Inputable : 0)) {
+		return result;
+	}
+
+	// Default format string when passing NULL
+	if (format == nullptr) {
+		format = ImGui::DataTypeGetInfo(data_type)->PrintFmt;
+	}
+
+	// Tabbing or CTRL-clicking on Drag turns it into an InputText
+	const bool hovered = ImGui::ItemHoverable(frame_bb, id);
+	bool temp_input_is_active = temp_input_allowed && ImGui::TempInputIsActive(id);
+	if (!temp_input_is_active) {
+		const bool input_requested_by_tabbing = temp_input_allowed && (context.LastItemData.StatusFlags & ImGuiItemStatusFlags_FocusedByTabbing) != 0;
+		const bool clicked = (hovered && context.IO.MouseClicked[0]);
+		const bool double_clicked = (hovered && context.IO.MouseClickedCount[0] == 2);
+		if (input_requested_by_tabbing || clicked || double_clicked || context.NavActivateId == id || context.NavActivateInputId == id) {
+			ImGui::SetActiveID(id, window);
+			ImGui::SetFocusID(id, window);
+			ImGui::FocusWindow(window);
+			context.ActiveIdUsingNavDirMask = (1 << ImGuiDir_Left) | (1 << ImGuiDir_Right);
+			if (temp_input_allowed) {
+				if (input_requested_by_tabbing || (clicked && context.IO.KeyCtrl) || double_clicked || context.NavActivateInputId == id) {
+					temp_input_is_active = true;
+				}
+			}
+		}
+
+		// Experimental: simple click (without moving) turns Drag into an InputText
+		if (context.IO.ConfigDragClickToInputText && temp_input_allowed && !temp_input_is_active) {
+			if (context.ActiveId == id && hovered && context.IO.MouseReleased[0] && !ImGui::IsMouseDragPastThreshold(0, context.IO.MouseDragThreshold * DRAG_MOUSE_THRESHOLD_FACTOR)) {
+				context.NavActivateId = context.NavActivateInputId = id;
+				context.NavActivateFlags = ImGuiActivateFlags_PreferInput;
+				temp_input_is_active = true;
+			}
+		}
+	}
+
+	if (temp_input_is_active) {
+		// Only clamp CTRL+Click input when ImGuiSliderFlags_AlwaysClamp is set
+		const bool is_clamp_input = (flags & ImGuiSliderFlags_AlwaysClamp) != 0 && (p_min == NULL || p_max == NULL || ImGui::DataTypeCompare(data_type, p_min, p_max) < 0);
+		result.text_edited = ImGui::TempInputScalar(frame_bb, id, label, data_type, p_data, format, is_clamp_input ? p_min : NULL, is_clamp_input ? p_max : NULL);
+		return result;
+	}
+
+	// Draw frame
+	const ImU32 frame_col = ImGui::GetColorU32(context.ActiveId == id ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered
+																										 : ImGuiCol_FrameBg);
+	ImGui::RenderNavHighlight(frame_bb, id);
+	ImGui::RenderFrame(frame_bb.Min, frame_bb.Max, frame_col, true, style.FrameRounding);
+
+	// Drag behavior
+	result.drag_edited = ImGui::DragBehavior(id, data_type, p_data, v_speed, p_min, p_max, format, flags);
+	if (result.drag_edited) {
+		ImGui::MarkItemEdited(id);
+	}
+
+	// Display value using user-provided display format so user can add prefix/suffix/decorations to the value.
+	char value_buf[64];
+	const char* value_buf_end = value_buf + ImGui::DataTypeFormatString(value_buf, IM_ARRAYSIZE(value_buf), data_type, p_data, format);
+	if (context.LogEnabled) {
+		ImGui::LogSetNextTextDecoration("{", "}");
+	}
+	ImGui::RenderTextClipped(frame_bb.Min, frame_bb.Max, value_buf, value_buf_end, NULL, ImVec2(0.5f, 0.5f));
+
+	if (label_size.x > 0.0f) {
+		ImGui::RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
+	}
+
+	return result;
+}
+
+ValueEditState Editor::scalarButton(float* value, uint32_t text_color, uint32_t background_color, const char* label, const char* imgui_label) const {
+	ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+	ImGui::PushStyleColor(ImGuiCol_Button, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, background_color);
+	ImGui::SetNextItemWidth(12.0f);
+	ImGui::Button(label);
+	ImGui::SameLine();
+	ImGui::PopStyleColor(4);
+	ImGui::SetNextItemWidth(100.0f);
+
+	constexpr float value_speed = 0.02f;
+	const auto value_changed = customDragScalar(imgui_label, value, value_speed);
+	const bool edit_ended = ImGui::IsItemDeactivatedAfterEdit();
+
+	return ValueEditState{ value_changed.drag_edited || (value_changed.text_edited && edit_ended), edit_ended };
+}
+
+ValueEditState Editor::angleButton(float* value, uint32_t text_color, uint32_t background_color, const char* label, const char* imgui_label) const {
+	ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+	ImGui::PushStyleColor(ImGuiCol_Button, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, background_color);
+	ImGui::SetNextItemWidth(12.0f);
+	ImGui::Button(label);
+	ImGui::SameLine();
+	ImGui::PopStyleColor(4);
+	ImGui::SetNextItemWidth(100.0f);
+
+	float temp_value = *value;
+	constexpr float value_speed = 1.0f;
+	constexpr float value_min = -360.0f;
+	constexpr float value_max = 360.0f;
+
+	const auto drag_result = customDragScalar(
+			imgui_label,
+			&temp_value,
+			value_speed,
+			value_min,
+			value_max,
+			"%.f\xc2\xb0" // degree symbol in UTF-8
+	);
+
+	const bool edit_ended = ImGui::IsItemDeactivatedAfterEdit();
+	const bool value_changed = drag_result.drag_edited || (drag_result.text_edited && edit_ended);
+	if (value_changed) {
+		*value = temp_value;
+	}
+
+	return ValueEditState{ value_changed, ImGui::IsItemDeactivatedAfterEdit() };
 }
 
 } // namespace civet
