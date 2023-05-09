@@ -214,7 +214,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : dir_lights) {
-		if (light->should_update) {
+		{	// removed check for light updates
 			light->generateShadowMap(depth_shader, frustum);
 			model.draw(depth_shader, 2); ///< change tex_offset possibly
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -229,7 +229,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : point_lights) {
-		if (light->should_update) {
+		{ 	// removed check for light updates
 			light->generateShadowMap(depth_cube_shader, near, far);
 			model.draw(depth_cube_shader, 2);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
