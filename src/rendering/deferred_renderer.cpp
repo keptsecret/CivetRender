@@ -71,7 +71,7 @@ void DeferredRenderer::geometryPass(GLModel& model) {
 }
 
 void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights) {
-	glEnable(GL_STENCIL_TEST);	///< render light only if it passes test
+	glEnable(GL_STENCIL_TEST); ///< render light only if it passes test
 	// handle point lights
 	stencil_pass_shader.use();
 	stencil_pass_shader.setMat4("projection", projection_mat.m);
@@ -155,7 +155,7 @@ void DeferredRenderer::stencilPass(GLModel& model, GLPointLight& light) {
 	glDisable(GL_CULL_FACE);
 	glClear(GL_STENCIL_BUFFER_BIT);
 
-	glStencilFunc(GL_ALWAYS, 0, 0);	///< always succeeds
+	glStencilFunc(GL_ALWAYS, 0, 0); ///< always succeeds
 	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_INCR_WRAP, GL_KEEP);
 	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
 
@@ -175,7 +175,7 @@ void DeferredRenderer::dirLightPass(GLModel& model, GLDirectionalLight& light) {
 	glBlendFunc(GL_ONE, GL_ONE);
 
 	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);	///< quad is facing the wrong way, so we do this
+	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
 
 	auto diffuse = light.color * light.intensity;
 	dirlight_pass_shader.setBool("light.valid", light.active && light.cast_shadow);
@@ -204,37 +204,38 @@ float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
 }
 
 void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights) {
+	glEnable(GL_DEPTH_TEST);
+	glDepthMask(GL_TRUE);
+	glEnable(GL_CULL_FACE);
+
 	// Render depth map
 	int max_axis = model.bounds.maximumAxis();
-	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.2;	// TODO: reorient frustum to light direction
-	Bounds3f frustum = bExpand(model.bounds, fmax(expand, 10.f));
+	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.2; // TODO: reorient frustum to light direction
+	Bounds3f frustum = bExpand(model.getWorldBounds(), fmax(expand, 10.f));
 
 	depth_shader.use();
 	// loop through lights and generate shadow maps
 	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : dir_lights) {
-		{	// removed check for light updates
-			light->generateShadowMap(depth_shader, frustum);
-			model.draw(depth_shader, 2); ///< change tex_offset possibly
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
+		light->generateShadowMap(depth_shader, frustum);
+		model.draw(depth_shader, 2); ///< change tex_offset possibly
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	// Render depth cube map
-	float near = 0.01f, far = 25.0f;
-
 	depth_cube_shader.use();
 	// loop through lights and generate shadow maps for point lights
 	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : point_lights) {
-		{ 	// removed check for light updates
-			light->generateShadowMap(depth_cube_shader, near, far);
-			model.draw(depth_cube_shader, 2);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
+		float near = 0.1f, far = getBoundingSphere(*light);
+		light->generateShadowMap(depth_cube_shader, near, far);
+		model.draw(depth_cube_shader, 2);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
+
+	glDepthMask(GL_FALSE);
 }
 
 DeferredRenderer* DeferredRenderer::getSingleton() {

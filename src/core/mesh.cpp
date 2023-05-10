@@ -102,7 +102,7 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 void GLMesh::updateBounds() {
 	bounds = Bounds3f();
 	for (const auto& v : vertices) {
-		bounds = bUnion(bounds, transform_data.transform(v.position));
+		bounds = bUnion(bounds, v.position);
 	}
 }
 
@@ -175,7 +175,7 @@ void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 void GLModel::updateBounds() {
 	bounds = Bounds3f();
 	for (const auto& m : meshes) {
-		bounds = bUnion(bounds, m->bounds);
+		bounds = bUnion(bounds, m->getWorldBounds());
 	}
 }
 
