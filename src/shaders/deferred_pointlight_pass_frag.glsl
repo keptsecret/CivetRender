@@ -61,12 +61,13 @@ vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
 vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
 );
 
-float calcShadowCube(vec3 fragPos) {
+float calcShadowCube(vec3 fragPos, float cosTheta) {
     vec3 fragToLight = fragPos - light.position;
 
     float currentDepth = length(fragToLight);
     float shadow = 0.0;
-    float bias = 0.15;
+    float bias = 0.005 * tan(acos(cosTheta));
+    bias = clamp(bias, 0.0, 0.2);
     int samples = 20;
     float viewDistance = length(viewPos - fragPos);
     float radius = (1.0 + (viewDistance / light.far_plane)) / 25.0;;
@@ -88,7 +89,8 @@ vec3 calcPointLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
 
     // diffuse shading
     vec3 lightDir = light.position - worldPos;
-    float diff = max(dot(normal, lightDir), 0.0);
+    float cosTheta = dot(normal, lightDir);
+    float diff = max(cosTheta, 0.0);
     vec3 diffuse = light.diffuse * diff * texture(DiffuseMap, texCoords).xyz;
 
     // specular shading - using blinn-phong halfway vector
@@ -106,7 +108,7 @@ vec3 calcPointLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
     specular *= attenuation;
 
     // shadow
-    float shadow = calcShadowCube(worldPos);
+    float shadow = calcShadowCube(worldPos, cosTheta);
 
     return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
