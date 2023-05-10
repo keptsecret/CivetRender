@@ -54,6 +54,10 @@ public:
 		return transform_data.transform;
 	}
 
+	virtual Bounds3f getWorldBounds() {
+		return transform_data.transform(bounds);
+	}
+
 	std::string name;
 	NodeType type;
 
