@@ -34,7 +34,7 @@ struct PointLight {
     vec3 diffuse;
     vec3 specular;
 
-    float far_plane;
+    float radius;
     samplerCube shadow_map;
 };
 
@@ -70,11 +70,11 @@ float calcShadowCube(vec3 fragPos, float cosTheta) {
     bias = clamp(bias, 0.0, 0.2);
     int samples = 20;
     float viewDistance = length(viewPos - fragPos);
-    float radius = (1.0 + (viewDistance / light.far_plane)) / 25.0;;
+    float radius = (1.0 + (viewDistance / light.radius)) / 25.0;;
 
     for (int i = 0; i < samples; i++) {
         float closestDepth = texture(light.shadow_map, fragToLight + sampleOffsetDirections[i] * radius).r;
-        closestDepth *= light.far_plane;
+        closestDepth *= light.radius;
         if (currentDepth - bias > closestDepth) {
             shadow += 1.0;
         }
@@ -101,7 +101,9 @@ vec3 calcPointLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
 
     // attenuation
     float distance = length(lightDir);
-    float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
+    float s = min(distance / light.radius, 1);
+    float s2 = s * s;
+    float attenuation = (1.0 - s2) * (1.0 - s2) / (light.constant + light.linear * distance + light.quadratic * (distance * distance));
 
     ambient *= attenuation;
     diffuse *= attenuation;
