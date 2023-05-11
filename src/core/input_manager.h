@@ -22,6 +22,7 @@ public:
 	static void update();
 
 	bool isKeyDown(unsigned int key_id);
+	bool isButtonPressed(unsigned int butt_id);
 
 	Vector2f getMouseOffset() { return mouse_offset; }
 	Vector2f getMousePosition() { return mouse_coords; }
@@ -29,14 +30,21 @@ public:
 private:
 	void setKeyDown(unsigned int key_id, bool is_down);
 	//	bool wasKeyDown(unsigned int key_id);
+
+	void setButtonPressed(unsigned int butt_id, bool is_pressed);
+
 	void setMouseCoords(Vector2f coords);
 	void setMouseOffset();
 
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void mouseCallback(GLFWwindow* window, double x_pos_in, double y_pos_in);
 
 	std::unordered_map<unsigned int, bool> key_map;
-	std::unordered_map<unsigned int, bool> prev_key_map;
+	//std::unordered_map<unsigned int, bool> prev_key_map;
+
+	std::unordered_map<unsigned int, bool> mb_map;
+	//std::unordered_map<unsigned int, bool> prev_mb_map;
 
 	Vector2f mouse_coords;
 	Vector2f prev_mouse_coords;

@@ -64,7 +64,7 @@ GLCamera::GLCamera(Point3f pos, Vector3f up, float _yaw, float _pitch) :
 }
 
 Transform GLCamera::getViewTransform() const {
-	return lookAtRH(position, position + front, up);
+	return lookAtRH(position, position + front, Vector3f(0, 1, 0));	// TODO: check up vector causing perspective distortions
 }
 
 void GLCamera::translate(CameraMovement direction, float delta_time) {

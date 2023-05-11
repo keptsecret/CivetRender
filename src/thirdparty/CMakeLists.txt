@@ -45,6 +45,22 @@ set_property (TARGET glfw PROPERTY FOLDER "thirdparty")
 set_property (TARGET glad PROPERTY FOLDER "thirdparty")
 
 ###########################################################################
+# imgui
+
+set (IMGUI_PATH ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+file (GLOB IMGUI_SOURCE ${IMGUI_PATH}/*.cpp
+        ${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
+        ${IMGUI_PATH}/backends/imgui_impl_opengl3.cpp)
+
+add_library (imgui STATIC ${IMGUI_SOURCE})
+target_include_directories (imgui PUBLIC ${IMGUI_PATH} ${IMGUI_PATH}/backends)
+target_link_libraries (imgui PUBLIC glfw glad)
+
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GLAD2")
+
+set (IMGUI_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/imgui PARENT_SCOPE)
+
+###########################################################################
 # stb
 
 set (STB_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/stb PARENT_SCOPE)

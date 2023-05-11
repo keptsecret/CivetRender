@@ -271,6 +271,9 @@ set ( CIVET_CORE_HEADERS
 		src/core/interaction.h
 		src/core/shape.h
 		src/core/primitive.h
+		src/core/scene.h
+		src/core/editor.h
+		src/core/node.h
 		src/core/mesh.h
 		src/core/material.h
 		src/core/texture.h
@@ -291,6 +294,9 @@ set ( CIVET_CORE_SOURCE
 		src/core/interaction.cpp
 		src/core/shape.cpp
 		src/core/primitive.cpp
+		src/core/scene.cpp
+		src/core/editor.cpp
+		src/core/node.cpp
 		src/core/mesh.cpp
 		src/core/material.cpp
 		src/core/texture.cpp
@@ -347,6 +353,7 @@ target_include_directories( civet_lib PUBLIC
 		${STB_INCLUDE}
 		${GLFW_INCLUDE}
 		${GLAD_INCLUDE}
+		${IMGUI_INCLUDE}
 		)
 
 target_compile_options (civet_lib PUBLIC ${CIVET_CXX_FLAGS})
@@ -363,6 +370,7 @@ set ( ALL_CIVET_LIBS
 		civet_lib
 		${CMAKE_THREAD_LIBS_INIT}
 		assimp
+		imgui
 		glfw
 		glad
 		OpenGL::GL

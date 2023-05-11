@@ -4,6 +4,7 @@
 #include <assimp/scene.h>
 #include <core/civet.h>
 #include <core/shader.h>
+#include <core/node.h>
 
 namespace civet {
 
@@ -22,16 +23,20 @@ struct GLTexture {
 	std::string path;
 };
 
-class GLMesh {
+class GLModel;
+
+class GLMesh : public Node {
 public:
 	// TODO: implement this maybe when material class
-	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, bool _use_indices = true);
+	GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<std::shared_ptr<GLTexture>> _textures, const std::string& name, bool _use_indices = true);
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
+	void updateBounds() override;
+
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<GLTexture> textures; ///< TODO: review when image textures implemented
+	std::vector<std::shared_ptr<GLTexture>> textures; ///< TODO: review when image textures implemented
 
 private:
 	void setupMesh();
@@ -40,29 +45,35 @@ private:
 	bool use_indices;
 };
 
-class GLModel {
+class GLModel : public Node {
 public:
-	GLModel() {}
+	GLModel() :
+			Node("GLModel", Model) {}
 
-	GLModel(const char* path, bool gamma = false) :
-			gamma_correction(gamma) {
-		loadModel(path);
-	}
+	GLModel(const std::string& name, bool gamma = false);
+
+	void loadModel(std::string path);
+	void loadModel(const aiScene* scene, std::string path);
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
-private:
-	void loadModel(std::string path);
-	void processNode(aiNode* node, const aiScene* scene);
-	GLMesh processMesh(aiMesh* mesh, const aiScene* scene);
-	///< TODO: needs method to load textures here
-	std::vector<GLTexture> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name);
+	void updateBounds() override;
+	void setTransform(Transform t) override;
 
-	std::vector<GLTexture> loaded_textures;
-	std::vector<GLMesh> meshes;
+	std::vector<std::shared_ptr<GLMesh>> getMeshes();
+
+private:
+	void processNode(aiNode* node, const aiScene* scene);
+	std::shared_ptr<GLMesh> processMesh(aiMesh* mesh, const aiScene* scene);
+	///< TODO: needs method to load textures here
+	std::vector<std::shared_ptr<GLTexture>> loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name);
+
+	std::vector<std::shared_ptr<GLTexture>> loaded_textures;
+	std::vector<std::shared_ptr<GLMesh>> meshes;
 	std::string directory;
 	bool gamma_correction;
 	bool use_normal_map;
+	bool use_bump_map;
 };
 
 class TriangleMesh {
