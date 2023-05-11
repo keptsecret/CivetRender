@@ -19,8 +19,8 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	bounding_quad.loadModel("../civet/resources/basic-meshes/quad.obj");
 
 	geometry_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_geometry_frag.glsl");
-	pointlight_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_pointlight_pass_frag.glsl");
-	dirlight_pass_shader = Shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_dirlight_pass_frag.glsl");
+	pointlight_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_pointlight_pass_frag.glsl");
+	dirlight_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_dirlight_pass_frag.glsl");
 	stencil_pass_shader = Shader("../civet/src/shaders/null_vert.glsl", "../civet/src/shaders/null_frag.glsl");
 
 	pointlight_pass_shader.use();
@@ -85,8 +85,10 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 	pointlight_pass_shader.setVec2("screenSize", width, height);
 	pointlight_pass_shader.setFloat("material.shininess", 64.0f);
 	for (auto light : point_lights) {
-		stencilPass(model, *light);
-		pointLightPass(model, *light);
+		if (light->active) {
+			stencilPass(model, *light);
+			pointLightPass(model, *light);
+		}
 	}
 	glDisable(GL_STENCIL_TEST);
 
@@ -101,7 +103,9 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 	dirlight_pass_shader.setVec2("screenSize", width, height);
 	dirlight_pass_shader.setFloat("material.shininess", 64.0f);
 	for (auto light : dir_lights) {
-		dirLightPass(model, *light);
+		if (light->active) {
+			dirLightPass(model, *light);
+		}
 	}
 }
 
@@ -193,12 +197,12 @@ void DeferredRenderer::dirLightPass(GLModel& model, GLDirectionalLight& light) {
 }
 
 float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
-	float max_dim = fmax(fmax(light.color.x, light.color.y), light.color.z);
+	float max_dim = fmaxf(fmaxf(light.color.x, light.color.y), light.color.z);
 
 	float result = (-light.attenuation.linear + sqrtf(light.attenuation.linear * light.attenuation.linear
-														- 4 * light.attenuation.quadratic * (light.attenuation.constant
-														- 256 * max_dim * light.intensity)))
-			/ (2 * light.attenuation.quadratic);
+														- 4.0f * light.attenuation.quadratic * (light.attenuation.constant
+														- 256.0f * max_dim * light.intensity)))
+			/ (2.0f * light.attenuation.quadratic);
 
 	return result;
 }
@@ -210,7 +214,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 
 	// Render depth map
 	int max_axis = model.bounds.maximumAxis();
-	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.2; // TODO: reorient frustum to light direction
+	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.1; // TODO: reorient frustum to light direction
 	Bounds3f frustum = bExpand(model.getWorldBounds(), fmax(expand, 10.f));
 
 	depth_shader.use();

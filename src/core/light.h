@@ -10,8 +10,8 @@ namespace civet {
 
 struct AttenuationFactor {
 	float constant = 1.f;
-	float linear = 0.09f;
-	float quadratic = 0.032f;
+	float linear = 0.14f;
+	float quadratic = 0.07f;
 };
 
 class GLLight : public Node {
