@@ -75,6 +75,9 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 		} else if (name == "texture_normal") {
 			// TODO: might change depending on how many normal maps provided
 			number = "";
+		} else if (name == "texture_bump") {
+			// TODO: might change depending on how many normal maps provided
+			number = "";
 		}
 
 		shader.setInt(("material." + name + number).c_str(), i + tex_offset);
@@ -167,6 +170,7 @@ void GLModel::loadModel(const aiScene* scene, std::string path) {
 
 void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 	shader.setBool("material.use_normal_map", use_normal_map);
+	shader.setBool("material.use_bump_map", use_bump_map);
 	for (auto& mesh : meshes) {
 		mesh->draw(shader, tex_offset);
 	}
@@ -242,10 +246,13 @@ std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene)
 		std::vector<std::shared_ptr<GLTexture>> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
 
-		// TODO: make checks for file types; obj stores normals in HEIGHT
-		std::vector<std::shared_ptr<GLTexture>> normal_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+		std::vector<std::shared_ptr<GLTexture>> normal_maps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
 		use_normal_map = normal_maps.size() > 0;
 		textures.insert(textures.end(), normal_maps.begin(), normal_maps.end());
+
+		std::vector<std::shared_ptr<GLTexture>> bump_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_bump");
+		use_bump_map = bump_maps.size() > 0;
+		textures.insert(textures.end(), bump_maps.begin(), bump_maps.end());
 	}
 
 	return std::make_shared<GLMesh>(vertices, indices, textures, "Mesh");
