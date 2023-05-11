@@ -73,6 +73,7 @@ private:
 	std::string directory;
 	bool gamma_correction;
 	bool use_normal_map;
+	bool use_bump_map;
 };
 
 class TriangleMesh {
