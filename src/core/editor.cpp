@@ -152,11 +152,20 @@ void Editor::inspectPointLight(std::shared_ptr<Node> node) {
 
 	ValueEditState node_state;
 	if (ImGui::TreeNodeEx("Position", ImGuiTreeNodeFlags_DefaultOpen)) {
-		node_state.merge(scalarButton(&light->position.x, 0xff8888ffu, 0xff222266u, "X", "##T.X"));
-		node_state.merge(scalarButton(&light->position.y, 0xff88ff88u, 0xff226622u, "Y", "##T.Y"));
-		node_state.merge(scalarButton(&light->position.z, 0xffff8888u, 0xff662222u, "Z", "##T.Z"));
+		node_state.merge(scalarButton(&light->position.x, 0xff8888ffu, 0xff222266u, "X", "##P.X"));
+		node_state.merge(scalarButton(&light->position.y, 0xff88ff88u, 0xff226622u, "Y", "##P.Y"));
+		node_state.merge(scalarButton(&light->position.z, 0xffff8888u, 0xff662222u, "Z", "##P.Z"));
 		ImGui::TreePop();
 	}
+
+	if (ImGui::TreeNodeEx("Color", ImGuiTreeNodeFlags_DefaultOpen)) {
+		node_state.merge(scalarRangeButton(&light->color.x, 0.0f, 1.0f, 0xff8888ffu, 0xff222266u, "R", "##C.R"));
+		node_state.merge(scalarRangeButton(&light->color.y, 0.0f, 1.0f, 0xff88ff88u, 0xff226622u, "G", "##C.G"));
+		node_state.merge(scalarRangeButton(&light->color.z, 0.0f, 1.0f, 0xffff8888u, 0xff662222u, "B", "##C.B"));
+		ImGui::TreePop();
+	}
+
+	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 5.0f, 0xff8888ffu, 0xff222266u, "Intensity", "##I"));
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();
@@ -175,11 +184,20 @@ void Editor::inspectDirectionalLight(std::shared_ptr<Node> node) {
 
 	ValueEditState node_state;
 	if (ImGui::TreeNodeEx("Direction", ImGuiTreeNodeFlags_DefaultOpen)) {
-		node_state.merge(scalarButton(&light->direction.x, 0xff8888ffu, 0xff222266u, "X", "##T.X"));
-		node_state.merge(scalarButton(&light->direction.y, 0xff88ff88u, 0xff226622u, "Y", "##T.Y"));
-		node_state.merge(scalarButton(&light->direction.z, 0xffff8888u, 0xff662222u, "Z", "##T.Z"));
+		node_state.merge(scalarButton(&light->direction.x, 0xff8888ffu, 0xff222266u, "X", "##D.X"));
+		node_state.merge(scalarButton(&light->direction.y, 0xff88ff88u, 0xff226622u, "Y", "##D.Y"));
+		node_state.merge(scalarButton(&light->direction.z, 0xffff8888u, 0xff662222u, "Z", "##D.Z"));
 		ImGui::TreePop();
 	}
+
+	if (ImGui::TreeNodeEx("Color", ImGuiTreeNodeFlags_DefaultOpen)) {
+		node_state.merge(scalarRangeButton(&light->color.x, 0.0f, 1.0f, 0xff8888ffu, 0xff222266u, "R", "##C.R"));
+		node_state.merge(scalarRangeButton(&light->color.y, 0.0f, 1.0f, 0xff88ff88u, 0xff226622u, "G", "##C.G"));
+		node_state.merge(scalarRangeButton(&light->color.z, 0.0f, 1.0f, 0xffff8888u, 0xff662222u, "B", "##C.B"));
+		ImGui::TreePop();
+	}
+
+	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 5.0f, 0xff8888ffu, 0xff222266u, "Intensity", "##I"));
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();
@@ -264,8 +282,8 @@ DragResult customDragScalar(const char* const label,
 
 	if (temp_input_is_active) {
 		// Only clamp CTRL+Click input when ImGuiSliderFlags_AlwaysClamp is set
-		const bool is_clamp_input = (flags & ImGuiSliderFlags_AlwaysClamp) != 0 && (p_min == NULL || p_max == NULL || ImGui::DataTypeCompare(data_type, p_min, p_max) < 0);
-		result.text_edited = ImGui::TempInputScalar(frame_bb, id, label, data_type, p_data, format, is_clamp_input ? p_min : NULL, is_clamp_input ? p_max : NULL);
+		const bool is_clamp_input = (flags & ImGuiSliderFlags_AlwaysClamp) != 0 && (p_min == nullptr || p_max == nullptr || ImGui::DataTypeCompare(data_type, p_min, p_max) < 0);
+		result.text_edited = ImGui::TempInputScalar(frame_bb, id, label, data_type, p_data, format, is_clamp_input ? p_min : nullptr, is_clamp_input ? p_max : nullptr);
 		return result;
 	}
 
@@ -287,7 +305,7 @@ DragResult customDragScalar(const char* const label,
 	if (context.LogEnabled) {
 		ImGui::LogSetNextTextDecoration("{", "}");
 	}
-	ImGui::RenderTextClipped(frame_bb.Min, frame_bb.Max, value_buf, value_buf_end, NULL, ImVec2(0.5f, 0.5f));
+	ImGui::RenderTextClipped(frame_bb.Min, frame_bb.Max, value_buf, value_buf_end, nullptr, ImVec2(0.5f, 0.5f));
 
 	if (label_size.x > 0.0f) {
 		ImGui::RenderText(ImVec2(frame_bb.Max.x + style.ItemInnerSpacing.x, frame_bb.Min.y + style.FramePadding.y), label);
@@ -309,6 +327,24 @@ ValueEditState Editor::scalarButton(float* value, uint32_t text_color, uint32_t 
 
 	constexpr float value_speed = 0.02f;
 	const auto value_changed = customDragScalar(imgui_label, value, value_speed);
+	const bool edit_ended = ImGui::IsItemDeactivatedAfterEdit();
+
+	return ValueEditState{ value_changed.drag_edited || (value_changed.text_edited && edit_ended), edit_ended };
+}
+
+ValueEditState Editor::scalarRangeButton(float* value, float value_min, float value_max, uint32_t text_color, uint32_t background_color, const char* label, const char* imgui_label) const {
+	ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+	ImGui::PushStyleColor(ImGuiCol_Button, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, background_color);
+	ImGui::SetNextItemWidth(12.0f);
+	ImGui::Button(label);
+	ImGui::SameLine();
+	ImGui::PopStyleColor(4);
+	ImGui::SetNextItemWidth(100.0f);
+
+	const float value_speed = (value_max - value_min) / 200.f;
+	const auto value_changed = customDragScalar(imgui_label, value, value_speed, value_min, value_max);
 	const bool edit_ended = ImGui::IsItemDeactivatedAfterEdit();
 
 	return ValueEditState{ value_changed.drag_edited || (value_changed.text_edited && edit_ended), edit_ended };

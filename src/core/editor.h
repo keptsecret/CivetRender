@@ -40,6 +40,8 @@ private:
 
 	ValueEditState scalarButton(float* value, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;
+	ValueEditState scalarRangeButton(float* value, float min, float max, uint32_t text_color, uint32_t background_color,
+			const char* label, const char* imgui_label) const;
 	ValueEditState angleButton(float* value, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;
 
