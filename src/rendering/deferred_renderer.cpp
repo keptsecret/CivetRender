@@ -137,7 +137,7 @@ void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
 	pointlight_pass_shader.setFloat("light.constant", light.attenuation.constant);
 	pointlight_pass_shader.setFloat("light.linear", light.attenuation.linear);
 	pointlight_pass_shader.setFloat("light.quadratic", light.attenuation.quadratic);
-	pointlight_pass_shader.setFloat("light.far_plane", light.far_plane);
+	pointlight_pass_shader.setFloat("light.radius", light.radius);
 
 	light.bindShadowMap(pointlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
 

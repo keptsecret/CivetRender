@@ -97,7 +97,7 @@ public:
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
 	Point3f position;
-	float far_plane;
+	float radius;
 	AttenuationFactor attenuation;
 
 	void init() override;
