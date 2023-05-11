@@ -35,6 +35,8 @@ private:
 	TreeNodeState sceneTreeNode(Scene& active_scene, std::shared_ptr<Node> node);
 
 	void inspector(Scene& active_scene);
+	void inspectPointLight(std::shared_ptr<Node> node);
+	void inspectDirectionalLight(std::shared_ptr<Node> node);
 
 	ValueEditState scalarButton(float* value, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;
