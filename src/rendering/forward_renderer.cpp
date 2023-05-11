@@ -73,7 +73,7 @@ void ForwardRenderer::renderScene(GLModel& model, std::vector<GLDirectionalLight
 		}
 
 		for (int i = 0; i < point_lights.size(); i++) {
-			shader->setFloat(("pointLights[" + std::to_string(i) + "].far_plane").c_str(), point_lights[i].far_plane);
+			shader->setFloat(("pointLights[" + std::to_string(i) + "].far_plane").c_str(), point_lights[i].radius);
 			point_lights[i].bindShadowMap(*shader, ("pointLights[" + std::to_string(i) + "].shadow_map").c_str(), tex_offset++);
 		}
 	}

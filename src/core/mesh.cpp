@@ -2,8 +2,8 @@
 
 #include <shapes/triangle.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include <assimp/postprocess.h>
 #include <stb/stb_image.h>
+#include <assimp/postprocess.h>
 #include <assimp/Importer.hpp>
 
 namespace civet {
@@ -47,8 +47,12 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory,
 	return texture_id;
 }
 
-GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<GLTexture> _textures, bool _use_indices) :
-		vertices(_vertices), indices(_indices), textures(_textures), use_indices(_use_indices), VAO(0), VBO(0), EBO(0) {
+GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<std::shared_ptr<GLTexture>> _textures, const std::string& name, bool _use_indices) :
+		vertices(_vertices), indices(_indices), textures(_textures), use_indices(_use_indices), VAO(0), VBO(0), EBO(0), Node(name, Mesh) {
+	for (const auto& v : vertices) {
+		bounds = bUnion(bounds, v.position);
+	}
+
 	setupMesh();
 }
 
@@ -63,7 +67,7 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	for (unsigned int i = 0; i < textures.size(); i++) {
 		glActiveTexture(GL_TEXTURE0 + (i + tex_offset));
 		std::string number;
-		std::string name = textures[i].type;
+		std::string name = textures[i]->type;
 		if (name == "texture_diffuse") {
 			number = std::to_string(diffuse_no++);
 		} else if (name == "texture_specular") {
@@ -71,12 +75,17 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 		} else if (name == "texture_normal") {
 			// TODO: might change depending on how many normal maps provided
 			number = "";
+		} else if (name == "texture_bump") {
+			// TODO: might change depending on how many normal maps provided
+			number = "";
 		}
 
 		shader.setInt(("material." + name + number).c_str(), i + tex_offset);
-		glBindTexture(GL_TEXTURE_2D, textures[i].id);
+		glBindTexture(GL_TEXTURE_2D, textures[i]->id);
 	}
 	glActiveTexture(GL_TEXTURE0);
+
+	shader.setMat4("model", getWorldTransform().m);
 
 	glBindVertexArray(VAO);
 	if (use_indices) {
@@ -91,6 +100,13 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 	glCheckError("ERROR::GLMesh::draw: OpenGL error code");
+}
+
+void GLMesh::updateBounds() {
+	bounds = Bounds3f();
+	for (const auto& v : vertices) {
+		bounds = bUnion(bounds, v.position);
+	}
 }
 
 void GLMesh::setupMesh() {
@@ -125,40 +141,74 @@ void GLMesh::setupMesh() {
 	glCheckError("ERROR::GLMesh::setupMesh: OpenGL error code");
 }
 
-void GLModel::draw(Shader& shader, unsigned int tex_offset) {
-	shader.setBool("material.use_normal_map", use_normal_map);
-	for (auto& mesh : meshes) {
-		mesh.draw(shader, tex_offset);
-	}
+GLModel::GLModel(const std::string& name, bool gamma) :
+		gamma_correction(gamma), Node(name, Model) {
 }
 
 void GLModel::loadModel(std::string path) {
 	Assimp::Importer importer;
-	const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
+	unsigned int importer_flags = aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_CalcTangentSpace | aiProcess_FlipUVs;
+	const aiScene* scene = importer.ReadFile(path, importer_flags);
 
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 		std::cout << "ERROR::GLModel: assimp error: " << importer.GetErrorString() << '\n';
 		return;
 	}
+
+	loadModel(scene, path);
+}
+
+void GLModel::loadModel(const aiScene* scene, std::string path) {
 	directory = path.substr(0, path.find_last_of('/'));
 
 	processNode(scene->mRootNode, scene);
+
+	for (const auto& m : meshes) {
+		bounds = bUnion(bounds, m->bounds);
+	}
+}
+
+void GLModel::draw(Shader& shader, unsigned int tex_offset) {
+	shader.setBool("material.use_normal_map", use_normal_map);
+	shader.setBool("material.use_bump_map", use_bump_map);
+	for (auto& mesh : meshes) {
+		mesh->draw(shader, tex_offset);
+	}
+}
+
+void GLModel::updateBounds() {
+	bounds = Bounds3f();
+	for (const auto& m : meshes) {
+		bounds = bUnion(bounds, m->getWorldBounds());
+	}
+}
+
+void GLModel::setTransform(Transform t) {
+	transform_data.transform = t;
+	updateBounds();
+}
+
+std::vector<std::shared_ptr<GLMesh>> GLModel::getMeshes() {
+	return meshes;
 }
 
 void GLModel::processNode(aiNode* node, const aiScene* scene) {
 	for (unsigned int i = 0; i < node->mNumMeshes; i++) {
 		aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-		meshes.push_back(processMesh(mesh, scene));
+		std::shared_ptr<GLMesh> newmesh = processMesh(mesh, scene);
+		newmesh->parent = this;
+		newmesh->name = mesh->mName.C_Str();
+		meshes.push_back(newmesh);
 	}
 	for (unsigned int i = 0; i < node->mNumChildren; i++) {
 		processNode(node->mChildren[i], scene);
 	}
 }
 
-GLMesh GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
+std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<GLTexture> textures;
+	std::vector<std::shared_ptr<GLTexture>> textures;
 
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
 		GLVertex vertex;
@@ -191,28 +241,31 @@ GLMesh GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 	///< handle loading textures
 	if (mesh->mMaterialIndex >= 0) {
 		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-		std::vector<GLTexture> diffuse_maps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
+		std::vector<std::shared_ptr<GLTexture>> diffuse_maps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
 		textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
-		std::vector<GLTexture> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
+		std::vector<std::shared_ptr<GLTexture>> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
 		textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
 
-		// TODO: make checks for file types; obj stores normals in HEIGHT
-		std::vector<GLTexture> normal_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_normal");
+		std::vector<std::shared_ptr<GLTexture>> normal_maps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
 		use_normal_map = normal_maps.size() > 0;
 		textures.insert(textures.end(), normal_maps.begin(), normal_maps.end());
+
+		std::vector<std::shared_ptr<GLTexture>> bump_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_bump");
+		use_bump_map = bump_maps.size() > 0;
+		textures.insert(textures.end(), bump_maps.begin(), bump_maps.end());
 	}
 
-	return GLMesh(vertices, indices, textures);
+	return std::make_shared<GLMesh>(vertices, indices, textures, "Mesh");
 }
 
-std::vector<GLTexture> GLModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name) {
-	std::vector<GLTexture> textures;
+std::vector<std::shared_ptr<GLTexture>> GLModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name) {
+	std::vector<std::shared_ptr<GLTexture>> textures;
 	for (unsigned int i = 0; i < mat->GetTextureCount(type); i++) {
 		aiString path;
 		mat->GetTexture(type, i, &path);
 		bool skip = false;
 		for (unsigned int j = 0; j < loaded_textures.size(); j++) {
-			if (std::strcmp(loaded_textures[j].path.data(), path.C_Str()) == 0) {
+			if (std::strcmp(loaded_textures[j]->path.data(), path.C_Str()) == 0) {
 				textures.push_back(loaded_textures[j]);
 				skip = true;
 				break;
@@ -222,10 +275,10 @@ std::vector<GLTexture> GLModel::loadMaterialTextures(aiMaterial* mat, aiTextureT
 		if (!skip) {
 			// texture hasn't been loaded before
 			bool gamma_correct = type == aiTextureType_DIFFUSE;
-			GLTexture texture;
-			texture.id = loadTextureFromFile(path.C_Str(), this->directory, gamma_correct);
-			texture.type = type_name;
-			texture.path = path.C_Str();
+			std::shared_ptr<GLTexture> texture = std::make_shared<GLTexture>();
+			texture->id = loadTextureFromFile(path.C_Str(), this->directory, gamma_correct);
+			texture->type = type_name;
+			texture->path = path.C_Str();
 			textures.push_back(texture);
 			loaded_textures.push_back(texture);
 		}

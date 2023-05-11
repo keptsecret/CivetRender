@@ -1,7 +1,5 @@
 #include <core/engine.h>
 
-#include <shaders/simple_forward.h>
-#include <shaders/solid.h>
 #include <stb/stb_image.h>
 
 namespace civet {
@@ -13,26 +11,33 @@ void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 void processInput(GLFWwindow* window, GLCamera& camera, float delta_time) {
 	InputManager::update();
 
+	auto& io = ImGui::GetIO();
+	if (io.WantCaptureMouse || io.WantCaptureKeyboard) {
+		return;
+	}
+
 	Engine* e = Engine::getSingleton();
-	if (e->input_manager.isKeyDown(GLFW_KEY_ESCAPE)) {
-		glfwSetWindowShouldClose(window, true);
-	}
+	if (e->input_manager.isButtonPressed(GLFW_MOUSE_BUTTON_2)) { // hold right click to interact
+		if (e->input_manager.isKeyDown(GLFW_KEY_ESCAPE)) {
+			glfwSetWindowShouldClose(window, true);
+		}
 
-	if (e->input_manager.isKeyDown(GLFW_KEY_W)) {
-		camera.translate(FORWARD, delta_time);
-	}
-	if (e->input_manager.isKeyDown(GLFW_KEY_S)) {
-		camera.translate(BACKWARD, delta_time);
-	}
-	if (e->input_manager.isKeyDown(GLFW_KEY_A)) {
-		camera.translate(LEFT, delta_time);
-	}
-	if (e->input_manager.isKeyDown(GLFW_KEY_D)) {
-		camera.translate(RIGHT, delta_time);
-	}
+		if (e->input_manager.isKeyDown(GLFW_KEY_W)) {
+			camera.translate(FORWARD, delta_time);
+		}
+		if (e->input_manager.isKeyDown(GLFW_KEY_S)) {
+			camera.translate(BACKWARD, delta_time);
+		}
+		if (e->input_manager.isKeyDown(GLFW_KEY_A)) {
+			camera.translate(LEFT, delta_time);
+		}
+		if (e->input_manager.isKeyDown(GLFW_KEY_D)) {
+			camera.translate(RIGHT, delta_time);
+		}
 
-	Vector2f mouse_offset = e->input_manager.getMouseOffset();
-	e->view_camera.pan(mouse_offset.x, mouse_offset.y);
+		Vector2f mouse_offset = e->input_manager.getMouseOffset();
+		e->view_camera.pan(mouse_offset.x, mouse_offset.y);
+	}
 }
 
 int Engine::init() {
@@ -60,16 +65,25 @@ int Engine::init() {
 	InputManager::init(window);
 	view_camera = GLCamera(Point3f(0, 0, 3));
 
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	// glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(false);
 
 	glfwWindowHint(GLFW_SAMPLES, 4);
 	glEnable(GL_MULTISAMPLE);
 	glCheckError("ERROR::Engine::init: OpenGL error code");
 
 	DeferredRenderer::getSingleton()->init(width, height);
-	//renderer.init();
+	// renderer.init();
+
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO();
+	(void)io;
+
+	ImGui::StyleColorsDark();
+	ImGui_ImplGlfw_InitForOpenGL(window, true);
+	ImGui_ImplOpenGL3_Init("#version 420");
 
 	return 0;
 }
@@ -78,26 +92,21 @@ int Engine::start() {
 	/**
 	 * Test scene
 	 */
-	//SimpleForwardShader shader;
-	//Shader shader("../civet/src/shaders/deferred_geometry_vert.glsl", "../civet/src/shaders/deferred_geometry_frag.glsl");
-	Shader depth_shader("../civet/src/shaders/light_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl");
-	Shader depth_cube_shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
-	GLModel test_model("../civet/resources/backpack/backpack.obj");
+	active_scene = Scene("../civet/resources/sponza/sponza.obj");
+	active_scene.models[0]->transform_data.scale_vec = Vector3f{ 0.1, 0.1, 0.1 };
+	active_scene.models[0]->transform_data.updateTransform();
 
 	const unsigned int SHADOW_RES = 4096;
-	std::vector<GLDirectionalLight> dir_lights;
-	dir_lights.push_back(GLDirectionalLight(Vector3f(2, -1, -2), SHADOW_RES));
-	dir_lights[0].init();
+	auto dir_light = std::make_shared<GLDirectionalLight>("Light_1", Vector3f(2, -1, -2), SHADOW_RES);
+	dir_light->init();
+	active_scene.addNode(dir_light, DirectionalLight);
 
-	std::vector<GLPointLight> point_lights;
-	point_lights.push_back(GLPointLight(Point3f(0, 0, 2), SHADOW_RES));
-	point_lights[0].init();
-
-//	shader.use();
-//	shader.setDirectionalLights(dir_lights);
-//	shader.setPointLights(point_lights);
+	auto point_light = std::make_shared<GLPointLight>("Light_2", Point3f(0, 1, 2), SHADOW_RES);
+	point_light->init();
+	active_scene.addNode(point_light, PointLight);
 
 	DeferredRenderer* renderer = DeferredRenderer::getSingleton();
+	Editor* editor = Editor::getSingleton();
 
 	renderer->setCamera(&view_camera);
 
@@ -110,14 +119,12 @@ int Engine::start() {
 
 		processInput(window, view_camera, delta_time);
 
-		Transform model = scale(0.5f, 0.5f, 0.5f);
-		renderer->setModelMat(model);
 		renderer->setViewMat(view_camera.getViewTransform());
 		Transform projection = perspective(view_camera.zoom, width / height, 1e-2f, 1000.0f);
 		renderer->setProjectionMat(projection);
 
-		renderer->draw(test_model, dir_lights, point_lights);
-		//renderer.draw(test_model, dir_lights, point_lights, &shader, SHADOW_RES, &depth_shader, &depth_cube_shader);
+		renderer->draw(active_scene);
+		editor->draw(active_scene);
 
 		glCheckError("After draw");
 
@@ -125,6 +132,11 @@ int Engine::start() {
 		glfwSwapBuffers(window);
 	}
 
+	ImGui_ImplOpenGL3_Shutdown();
+	ImGui_ImplGlfw_Shutdown();
+	ImGui::DestroyContext();
+
+	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
 }

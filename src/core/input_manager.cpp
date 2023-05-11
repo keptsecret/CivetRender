@@ -6,6 +6,7 @@ std::vector<InputManager*> InputManager::instances;
 
 void InputManager::init(GLFWwindow* window) {
 	glfwSetKeyCallback(window, InputManager::keyCallback);
+	glfwSetMouseButtonCallback(window, InputManager::mouseButtonCallback);
 	glfwSetCursorPosCallback(window, InputManager::mouseCallback);
 }
 
@@ -24,8 +25,21 @@ bool InputManager::isKeyDown(unsigned int key_id) {
 	return result;
 }
 
+bool InputManager::isButtonPressed(unsigned int butt_id) {
+	bool result = false;
+	auto it = mb_map.find(butt_id);
+	if (it != mb_map.end()) {
+		result = mb_map[butt_id];
+	}
+	return result;
+}
+
 void InputManager::setKeyDown(unsigned int key_id, bool is_down) {
 	key_map[key_id] = is_down;
+}
+
+void InputManager::setButtonPressed(unsigned int butt_id, bool is_pressed) {
+	mb_map[butt_id] = is_pressed;
 }
 
 void InputManager::setMouseCoords(Vector2f coords) {
@@ -49,6 +63,12 @@ void InputManager::setMouseOffset() {
 void InputManager::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 	for (auto im : instances) {
 		im->setKeyDown(key, action != GLFW_RELEASE);
+	}
+}
+
+void InputManager::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+	for (auto im : instances) {
+		im->setButtonPressed(button, action != GLFW_RELEASE);
 	}
 }
 
