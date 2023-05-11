@@ -89,13 +89,13 @@ void Editor::inspector(Scene& active_scene) {
 
 		ImGui::Text("Selected item: %s", active_scene.selected_node->name.c_str());
 
+		auto node = active_scene.selected_node;
+
 		if (!ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
 			return;
 		}
 
 		ImGui::Indent(15.0f);
-
-		auto node = active_scene.selected_node;
 
 		ValueEditState state;
 		if (ImGui::TreeNodeEx("Translation", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -127,8 +127,62 @@ void Editor::inspector(Scene& active_scene) {
 		ImGui::Unindent(15.0f);
 		ImGui::TreePop();
 
+		if (node->type == PointLight) {
+			inspectPointLight(node);
+		}
+
+		if (node->type == DirectionalLight) {
+			inspectDirectionalLight(node);
+		}
+
 		ImGui::End();
 	}
+}
+
+void Editor::inspectPointLight(std::shared_ptr<Node> node) {
+	if (!ImGui::TreeNodeEx("Point Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+		return;
+	}
+
+	ImGui::Indent(15.0f);
+
+	auto light = std::static_pointer_cast<GLPointLight>(node);
+
+	ImGui::Checkbox("Enabled", &light->active);
+
+	ValueEditState node_state;
+	if (ImGui::TreeNodeEx("Position", ImGuiTreeNodeFlags_DefaultOpen)) {
+		node_state.merge(scalarButton(&light->position.x, 0xff8888ffu, 0xff222266u, "X", "##T.X"));
+		node_state.merge(scalarButton(&light->position.y, 0xff88ff88u, 0xff226622u, "Y", "##T.Y"));
+		node_state.merge(scalarButton(&light->position.z, 0xffff8888u, 0xff662222u, "Z", "##T.Z"));
+		ImGui::TreePop();
+	}
+
+	ImGui::Unindent(15.0f);
+	ImGui::TreePop();
+}
+
+void Editor::inspectDirectionalLight(std::shared_ptr<Node> node) {
+	if (!ImGui::TreeNodeEx("Directional Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+		return;
+	}
+
+	ImGui::Indent(15.0f);
+
+	auto light = std::static_pointer_cast<GLDirectionalLight>(node);
+
+	ImGui::Checkbox("Enabled", &light->active);
+
+	ValueEditState node_state;
+	if (ImGui::TreeNodeEx("Direction", ImGuiTreeNodeFlags_DefaultOpen)) {
+		node_state.merge(scalarButton(&light->direction.x, 0xff8888ffu, 0xff222266u, "X", "##T.X"));
+		node_state.merge(scalarButton(&light->direction.y, 0xff88ff88u, 0xff226622u, "Y", "##T.Y"));
+		node_state.merge(scalarButton(&light->direction.z, 0xffff8888u, 0xff662222u, "Z", "##T.Z"));
+		ImGui::TreePop();
+	}
+
+	ImGui::Unindent(15.0f);
+	ImGui::TreePop();
 }
 
 /****************************
