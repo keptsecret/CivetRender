@@ -16,27 +16,33 @@ void processInput(GLFWwindow* window, GLCamera& camera, float delta_time) {
 		return;
 	}
 
-	Engine* e = Engine::getSingleton();
-	if (e->input_manager.isButtonPressed(GLFW_MOUSE_BUTTON_2)) { // hold right click to interact
-		if (e->input_manager.isKeyDown(GLFW_KEY_ESCAPE)) {
-			glfwSetWindowShouldClose(window, true);
-		}
+	Engine* engine = Engine::getSingleton();
+	if (engine->input_manager.isKeyPressed(GLFW_KEY_ESCAPE)) {
+		engine->active_scene.clearSelectedNode();
+	}
 
-		if (e->input_manager.isKeyDown(GLFW_KEY_W)) {
+	if (engine->input_manager.isButtonDown(GLFW_MOUSE_BUTTON_2)) { // hold right click to interact
+
+		if (engine->input_manager.isKeyDown(GLFW_KEY_W)) {
 			camera.translate(FORWARD, delta_time);
 		}
-		if (e->input_manager.isKeyDown(GLFW_KEY_S)) {
+		if (engine->input_manager.isKeyDown(GLFW_KEY_S)) {
 			camera.translate(BACKWARD, delta_time);
 		}
-		if (e->input_manager.isKeyDown(GLFW_KEY_A)) {
+		if (engine->input_manager.isKeyDown(GLFW_KEY_A)) {
 			camera.translate(LEFT, delta_time);
 		}
-		if (e->input_manager.isKeyDown(GLFW_KEY_D)) {
+		if (engine->input_manager.isKeyDown(GLFW_KEY_D)) {
 			camera.translate(RIGHT, delta_time);
 		}
 
-		Vector2f mouse_offset = e->input_manager.getMouseOffset();
-		e->view_camera.pan(mouse_offset.x, mouse_offset.y);
+		Vector2f mouse_offset = engine->input_manager.getMouseOffset();
+		engine->view_camera.pan(mouse_offset.x, mouse_offset.y);
+	}
+
+	if (engine->input_manager.isKeyPressed(GLFW_KEY_H)) {
+		Editor* editor = Editor::getSingleton();
+		editor->toggleShowEditor();
 	}
 }
 

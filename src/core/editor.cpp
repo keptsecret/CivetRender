@@ -1,5 +1,7 @@
 #include <core/editor.h>
 
+#include <core/engine.h>
+
 namespace civet {
 
 Editor* Editor::getSingleton() {
@@ -8,24 +10,31 @@ Editor* Editor::getSingleton() {
 }
 
 void Editor::draw(Scene& active_scene) {
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
+	if (show_editor) {
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
 
-	ImGui::SetNextWindowSize(ImVec2(200, 500));
-	sceneTree(active_scene);
+		debugWindow(active_scene);
 
-	//ImGui::SetNextWindowSize(ImVec2(250, 400));
-	inspector(active_scene);
+		ImGui::SetNextWindowSize(ImVec2(200, 500));
+		sceneTree(active_scene);
 
-	//	ImGui::Begin("Debug");
-	//	ImGui::Text("Camera pitch: %.3f, yaw: %.3f", view_camera.pitch, view_camera.yaw);
-	//	ImGui::Text("Camera front x: %.3f, y: %.3f, z: %.3f", view_camera.front.x, view_camera.front.y, view_camera.front.z);
-	//	ImGui::Text("Camera up x: %.3f, y: %.3f, z: %.3f", view_camera.up.x, view_camera.up.y, view_camera.up.z);
-	//	ImGui::End();
+		// ImGui::SetNextWindowSize(ImVec2(250, 400));
+		inspector(active_scene);
 
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); ///< here as well
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+}
+
+void Editor::debugWindow(Scene& active_scene) {
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	Engine* engine = Engine::getSingleton();
+	ImGui::Begin("Debug");
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+	scalarRangeButton(&engine->view_camera.mvmt_speed, 0.0f, 50.0f, 0xffffffffu, 0x00ffffffu, "Camera Speed", "##CS");
+	ImGui::End();
 }
 
 void Editor::sceneTree(Scene& active_scene) {
@@ -77,13 +86,13 @@ TreeNodeState Editor::sceneTreeNode(Scene& active_scene, std::shared_ptr<Node> n
 
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 		active_scene.selected_node = node;
-		show_inspector = true;
 	}
 
 	return TreeNodeState{ node_open, !is_leaf };
 }
 
 void Editor::inspector(Scene& active_scene) {
+	show_inspector = active_scene.selected_node != nullptr;
 	if (show_inspector) {
 		ImGui::Begin("Inspector", &show_inspector, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
 
@@ -165,7 +174,7 @@ void Editor::inspectPointLight(std::shared_ptr<Node> node) {
 		ImGui::TreePop();
 	}
 
-	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 5.0f, 0xff8888ffu, 0xff222266u, "Intensity", "##I"));
+	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 10.0f, 0xffffffffu, 0x00ffffffu, "Intensity", "##I"));
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();
@@ -197,7 +206,7 @@ void Editor::inspectDirectionalLight(std::shared_ptr<Node> node) {
 		ImGui::TreePop();
 	}
 
-	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 5.0f, 0xff8888ffu, 0xff222266u, "Intensity", "##I"));
+	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 10.0f, 0xffffffffu, 0x00ffffffu, "Intensity", "##I"));
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();
