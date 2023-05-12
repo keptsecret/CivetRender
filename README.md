@@ -16,18 +16,16 @@ It is yet to be seen as to how far the author gets with this project.
 * Vector math and matrix transforms library, fully compatible with OpenGL (with CUDA support underway)
 * Load model and scene objects to triangle meshes with [assimp](https://github.com/assimp/assimp/)
 * Load image textures with [stb](https://github.com/nothings/stb) 
-* _(UD) GUI and improved mouse input_
+* Scene tree and object inspector in editor GUI
 
 ### Realtime OpenGL renderer
 
-* Diffuse and specular texture mapping using UVs
-* Shadow mapping for directional lights and omnidirectional shadow mapping for point lights
-* Normal mapping for surface micro details
-* Forward rendering method supporting up to 4 directional lights and 32 point lights in each scene
-* _(UD) forward+ rendering to support \[theoretically\] infinite lights and alpha blending_
+* __Diffuse and specular texture maps__ under Blinn-Phong shading model for realistic scenes
+* __Realtime shadows__ through shadow mapping for directional lights and omnidirectional shadow mapping for point lights
+* __Normal mapping and bump mapping__ for surface micro details
+* __Deferred rendering__ allows handling large scenes and lots of light sources while maintaining performance through multiple rendering passes
+* __Postprocessing pass__: tonemapping support using ASEC filmic curve for HDR renders
 * _(UD) Disney PBR based on Epic's Unreal Engine implementation_
-
-![Early screenshot](./resources/screenshots/sht_76ceb66.png)
 
 ### _Ray-tracer (UD)_
 
@@ -46,3 +44,11 @@ Since the current goal is to get the entire project up and running as a useable 
 GPU compute will probably be saved for a rainy day, or until those have been completed. 
 
 _UD: under development_
+
+## Samples
+
+![Early screenshot](./resources/screenshots/sht_162215.png)
+
+---
+
+![Early Sponza](./resources/screenshots/sht_162503.png)
