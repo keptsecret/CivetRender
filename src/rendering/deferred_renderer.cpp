@@ -22,6 +22,7 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	pointlight_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_pointlight_pass_frag.glsl");
 	dirlight_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_dirlight_pass_frag.glsl");
 	stencil_pass_shader = Shader("../civet/src/shaders/null_vert.glsl", "../civet/src/shaders/null_frag.glsl");
+	postprocess_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/postprocess_pass_frag.glsl");
 
 	pointlight_pass_shader.use();
 	pointlight_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
@@ -34,6 +35,13 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	dirlight_pass_shader.setInt("DiffuseMap", GBuffer::GBUFFER_TEXTURE_DIFFUSE);
 	dirlight_pass_shader.setInt("SpecularMap", GBuffer::GBUFFER_TEXTURE_SPECULAR);
 	dirlight_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
+
+	postprocess_shader.use();
+	Transform identity;
+	postprocess_shader.use();
+	postprocess_shader.setMat4("projection", identity.m);
+	postprocess_shader.setMat4("view", identity.m);
+	postprocess_shader.setMat4("model", identity.m);
 
 	depth_shader = Shader("../civet/src/shaders/light_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl");
 	depth_cube_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
@@ -110,6 +118,19 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 }
 
 void DeferredRenderer::finalPass() {
+	postprocess_shader.use();
+	gbuffer.bindPostProcessPass();
+
+	glDisable(GL_DEPTH_TEST);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
+
+	postprocess_shader.setVec2("screenSize", width, height);
+	bounding_quad.draw(postprocess_shader, 2);
+
+	glCullFace(GL_BACK);
+
 	gbuffer.bindFinalPass();
 	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }

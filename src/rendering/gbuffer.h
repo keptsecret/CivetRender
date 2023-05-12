@@ -24,6 +24,7 @@ public:
 	void bindGeomPass();
 	void bindStencilPass();
 	void bindLightPass();
+	void bindPostProcessPass();
 	void bindFinalPass();
 
 	unsigned int num_textures = GBUFFER_NUM_TEXTURES;
@@ -33,6 +34,7 @@ private:
 	unsigned int textures[GBUFFER_NUM_TEXTURES];
 	unsigned int depth_map;
 
+	unsigned int raw_texture;
 	unsigned int final_texture;
 };
 

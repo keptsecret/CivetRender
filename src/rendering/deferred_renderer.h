@@ -47,6 +47,7 @@ private:
 	Shader pointlight_pass_shader;
 	Shader dirlight_pass_shader;
 	Shader stencil_pass_shader; ///< doesn't actually do anything except population depth and stencil
+	Shader postprocess_shader;
 
 	Shader depth_shader;
 	Shader depth_cube_shader;

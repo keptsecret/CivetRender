@@ -101,11 +101,5 @@ void main() {
     vec3 worldPos = texture(PositionMap, texCoords).xyz;
     vec3 normal = normalize(texture(NormalMap, texCoords).xyz);
 
-    vec3 result = calcDirLight(worldPos, normal, texCoords);
-
-    vec4 fragColor = vec4(result, 1.0);
-
-    // manual gamma correction
-    float gamma = 2.2;
-    FragColor.rgb = pow(fragColor.rgb, vec3(1.0 / gamma));
+    FragColor.rgb = calcDirLight(worldPos, normal, texCoords);
 }
