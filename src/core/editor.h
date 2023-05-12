@@ -30,7 +30,11 @@ public:
 
 	void draw(Scene& active_scene);
 
+	void toggleShowEditor() { show_editor = !show_editor; }
+
 private:
+	void debugWindow(Scene& active_scene);
+
 	void sceneTree(Scene& active_scene);
 	TreeNodeState sceneTreeNode(Scene& active_scene, std::shared_ptr<Node> node);
 
@@ -45,6 +49,7 @@ private:
 	ValueEditState angleButton(float* value, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;
 
+	bool show_editor = true;
 	bool show_scene_tree = true;
 	bool show_inspector = false;
 };

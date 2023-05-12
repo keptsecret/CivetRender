@@ -2,8 +2,8 @@
 #define CIVET_SCENE_H
 
 #include <core/civet.h>
-#include <core/mesh.h>
 #include <core/light.h>
+#include <core/mesh.h>
 
 namespace civet {
 
@@ -17,6 +17,8 @@ public:
 
 	void loadScene(const char* path);
 	void addNode(std::shared_ptr<Node> node, NodeType type);
+
+	void clearSelectedNode() { selected_node = nullptr; }
 
 public:
 	std::vector<std::shared_ptr<GLModel>> models;
