@@ -70,6 +70,9 @@ public:
 	float sensitivity;
 	float zoom;		///< represents vertical FOV, default = 50deg
 
+	float near_plane;
+	float far_plane;
+
 private:
 	void updateCameraVectors();
 };

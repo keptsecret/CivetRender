@@ -31,9 +31,19 @@ void Editor::draw(Scene& active_scene) {
 void Editor::debugWindow(Scene& active_scene) {
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	Engine* engine = Engine::getSingleton();
+
 	ImGui::Begin("Debug");
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	scalarRangeButton(&engine->view_camera.mvmt_speed, 0.0f, 50.0f, 0xffffffffu, 0x00ffffffu, "Camera Speed", "##CS");
+
+	if (ImGui::TreeNodeEx("Clip range", ImGuiTreeNodeFlags_DefaultOpen)) {
+		ImGui::Indent(15.0f);
+		scalarButton(&engine->view_camera.near_plane, 0xffffffffu, 0x00ffffffu, "Start:", "##CNP");
+		scalarButton(&engine->view_camera.far_plane, 0xffffffffu, 0x00ffffffu, "End:", "##CFP");
+		ImGui::Unindent(15.0f);
+		ImGui::TreePop();
+	}
+
 	ImGui::End();
 }
 

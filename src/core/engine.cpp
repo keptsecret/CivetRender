@@ -126,7 +126,7 @@ int Engine::start() {
 		processInput(window, view_camera, delta_time);
 
 		renderer->setViewMat(view_camera.getViewTransform());
-		Transform projection = perspective(view_camera.zoom, width / height, 1e-2f, 1000.0f);
+		Transform projection = perspective(view_camera.zoom, width / height, view_camera.near_plane, view_camera.far_plane);
 		renderer->setProjectionMat(projection);
 
 		renderer->draw(active_scene);

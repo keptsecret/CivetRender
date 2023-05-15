@@ -25,9 +25,14 @@ layout (location = 3) out vec3 NormalOut;
 uniform Material material;
 
 void main() {
+    vec4 diffuse = texture(material.texture_diffuse1, TexCoords);
+    if (diffuse.a < 0.1) {
+        discard;
+    }
+
     FragPosOut = FragPos;
-    DiffuseOut = texture(material.texture_diffuse1, TexCoords).xyz;
-    SpecularOut = texture(material.texture_specular1, TexCoords).xyz;
+    DiffuseOut = diffuse.rgb;
+    SpecularOut = texture(material.texture_specular1, TexCoords).rgb;
 
     NormalOut = Normal;
     if (material.use_normal_map) {
