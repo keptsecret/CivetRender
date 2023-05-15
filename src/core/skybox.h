@@ -7,9 +7,10 @@
 #ifndef CIVET_SKYBOX_H
 #define CIVET_SKYBOX_H
 
-#include "shader.h"
 #include <core/civet.h>
 #include <core/geometry/vecmath.h>
+#include <core/node.h>
+#include <core/shader.h>
 
 namespace civet {
 
@@ -35,14 +36,19 @@ struct SkyboxParameters {
 	Vector3f ground_color{ 0.5f, 0.5f, 0.5f };
 };
 
-class Skybox {
+class Skybox : public Node {
 public:
-	Skybox() {}
+	Skybox() :
+			Node("Skybox", NodeType::SkyBox, false) {}
 
 	void init(const SkyboxParameters& params);
 	void update(const SkyboxParameters& params);
 	void draw(const Transform& projection, const Transform& view);
 	void renderSkyboxToTexture(const Vector3f& sun_dir);
+
+	void resetEditingParameters() { editing_params = parameters; }
+
+	SkyboxParameters editing_params;
 
 	static const int sun_intensity = 20; // magic number
 

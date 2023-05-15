@@ -118,7 +118,7 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 }
 
 void DeferredRenderer::postProcessPass(Scene& scene) {
-	scene.skybox.draw(projection_mat, view_mat);
+	scene.skybox->draw(projection_mat, view_mat);
 
 	postprocess_shader.use();
 	gbuffer.bindPostProcessPass();

@@ -100,41 +100,43 @@ void Editor::inspector(Scene& active_scene) {
 
 		auto node = active_scene.selected_node;
 
-		if (!ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-			return;
-		}
+		if (node->isTransformEnabled()) {
+			if (!ImGui::TreeNodeEx("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
+				return;
+			}
 
-		ImGui::Indent(15.0f);
+			ImGui::Indent(15.0f);
 
-		ValueEditState state;
-		if (ImGui::TreeNodeEx("Translation", ImGuiTreeNodeFlags_DefaultOpen)) {
-			state.merge(scalarButton(&node->transform_data.translation.x, 0xff8888ffu, 0xff222266u, "X", "##T.X"));
-			state.merge(scalarButton(&node->transform_data.translation.y, 0xff88ff88u, 0xff226622u, "Y", "##T.Y"));
-			state.merge(scalarButton(&node->transform_data.translation.z, 0xffff8888u, 0xff662222u, "Z", "##T.Z"));
+			ValueEditState state;
+			if (ImGui::TreeNodeEx("Translation", ImGuiTreeNodeFlags_DefaultOpen)) {
+				state.merge(scalarButton(&node->transform_data.translation.x, 0xff8888ffu, 0xff222266u, "X", "##T.X"));
+				state.merge(scalarButton(&node->transform_data.translation.y, 0xff88ff88u, 0xff226622u, "Y", "##T.Y"));
+				state.merge(scalarButton(&node->transform_data.translation.z, 0xffff8888u, 0xff662222u, "Z", "##T.Z"));
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("Rotation", ImGuiTreeNodeFlags_DefaultOpen)) {
+				state.merge(angleButton(&node->transform_data.rotation_vec.x, 0xff8888ffu, 0xff222266u, "X", "##R.X"));
+				state.merge(angleButton(&node->transform_data.rotation_vec.y, 0xff88ff88u, 0xff226622u, "Y", "##R.Y"));
+				state.merge(angleButton(&node->transform_data.rotation_vec.z, 0xffff8888u, 0xff662222u, "Z", "##R.Z"));
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("Scale", ImGuiTreeNodeFlags_DefaultOpen)) {
+				state.merge(scalarButton(&node->transform_data.scale_vec.x, 0xff8888ffu, 0xff222266u, "X", "##S.X"));
+				state.merge(scalarButton(&node->transform_data.scale_vec.y, 0xff88ff88u, 0xff226622u, "Y", "##S.Y"));
+				state.merge(scalarButton(&node->transform_data.scale_vec.z, 0xffff8888u, 0xff662222u, "Z", "##S.Z"));
+				ImGui::TreePop();
+			}
+
+			if (state.value_changed || state.edit_finished) {
+				// add more updates
+				node->transform_data.updateTransform();
+			}
+
+			ImGui::Unindent(15.0f);
 			ImGui::TreePop();
 		}
-
-		if (ImGui::TreeNodeEx("Rotation", ImGuiTreeNodeFlags_DefaultOpen)) {
-			state.merge(angleButton(&node->transform_data.rotation_vec.x, 0xff8888ffu, 0xff222266u, "X", "##R.X"));
-			state.merge(angleButton(&node->transform_data.rotation_vec.y, 0xff88ff88u, 0xff226622u, "Y", "##R.Y"));
-			state.merge(angleButton(&node->transform_data.rotation_vec.z, 0xffff8888u, 0xff662222u, "Z", "##R.Z"));
-			ImGui::TreePop();
-		}
-
-		if (ImGui::TreeNodeEx("Scale", ImGuiTreeNodeFlags_DefaultOpen)) {
-			state.merge(scalarButton(&node->transform_data.scale_vec.x, 0xff8888ffu, 0xff222266u, "X", "##S.X"));
-			state.merge(scalarButton(&node->transform_data.scale_vec.y, 0xff88ff88u, 0xff226622u, "Y", "##S.Y"));
-			state.merge(scalarButton(&node->transform_data.scale_vec.z, 0xffff8888u, 0xff662222u, "Z", "##S.Z"));
-			ImGui::TreePop();
-		}
-
-		if (state.value_changed || state.edit_finished) {
-			// add more updates
-			node->transform_data.updateTransform();
-		}
-
-		ImGui::Unindent(15.0f);
-		ImGui::TreePop();
 
 		if (node->type == PointLight) {
 			inspectPointLight(node);
@@ -142,6 +144,10 @@ void Editor::inspector(Scene& active_scene) {
 
 		if (node->type == DirectionalLight) {
 			inspectDirectionalLight(node);
+		}
+
+		if (node->type == SkyBox) {
+			inspectSkybox(node);
 		}
 
 		ImGui::End();
@@ -212,6 +218,45 @@ void Editor::inspectDirectionalLight(std::shared_ptr<Node> node) {
 	ImGui::TreePop();
 }
 
+void Editor::inspectSkybox(std::shared_ptr<Node> node) {
+	if (!ImGui::TreeNodeEx("Sky Box", ImGuiTreeNodeFlags_DefaultOpen)) {
+		return;
+	}
+
+	ImGui::Indent(15.0f);
+
+	auto sky = std::static_pointer_cast<Skybox>(node);
+
+	ValueEditState node_state;
+	if (ImGui::TreeNodeEx("Sun Direction", ImGuiTreeNodeFlags_DefaultOpen)) {
+		node_state.merge(scalarButton(&sky->editing_params.sun_direction.x, 0xff8888ffu, 0xff222266u, "X", "##SD.X"));
+		node_state.merge(scalarButton(&sky->editing_params.sun_direction.y, 0xff88ff88u, 0xff226622u, "Y", "##SD.Y"));
+		node_state.merge(scalarButton(&sky->editing_params.sun_direction.z, 0xffff8888u, 0xff662222u, "Z", "##SD.Z"));
+		ImGui::TreePop();
+	}
+
+	if (ImGui::TreeNodeEx("Ground Color", ImGuiTreeNodeFlags_DefaultOpen)) {
+		node_state.merge(scalarButton(&sky->editing_params.ground_color.x, 0xff8888ffu, 0xff222266u, "R", "##GC.R"));
+		node_state.merge(scalarButton(&sky->editing_params.ground_color.y, 0xff88ff88u, 0xff226622u, "G", "##GC.G"));
+		node_state.merge(scalarButton(&sky->editing_params.ground_color.z, 0xffff8888u, 0xff662222u, "B", "##GC.B"));
+		ImGui::TreePop();
+	}
+
+	node_state.merge(scalarButton(&sky->editing_params.resolution, 0xffffffffu, 0x00ffffffu, "Resolution", "##Res"));
+	node_state.merge(scalarButton(&sky->editing_params.samples_per_pixel, 0xffffffffu, 0x00ffffffu, "Samples per pixel", "##SPP"));
+
+	if (ImGui::Button("Apply")) {
+		sky->update(sky->editing_params);
+	}
+	ImGui::SameLine();
+	if (ImGui::Button("Revert Changes")) {
+		sky->resetEditingParameters();
+	}
+
+	ImGui::Unindent(15.0f);
+	ImGui::TreePop();
+}
+
 /****************************
  * Utility button and input fields
  */
@@ -227,8 +272,8 @@ DragResult customDragScalar(const char* const label,
 		const float v_speed = 1.0f,
 		const float min = 0.0f,
 		const float max = 0.0f,
+		const ImGuiDataType data_type = ImGuiDataType_Float,
 		const char* format = "%.3f") {
-	ImGuiDataType data_type = ImGuiDataType_Float;
 	ImGuiSliderFlags flags = 0;
 	const float* const p_min = &min;
 	const float* const p_max = &max;
@@ -341,6 +386,24 @@ ValueEditState Editor::scalarButton(float* value, uint32_t text_color, uint32_t 
 	return ValueEditState{ value_changed.drag_edited || (value_changed.text_edited && edit_ended), edit_ended };
 }
 
+ValueEditState Editor::scalarButton(unsigned int* value, uint32_t text_color, uint32_t background_color, const char* label, const char* imgui_label) const {
+	ImGui::PushStyleColor(ImGuiCol_Text, text_color);
+	ImGui::PushStyleColor(ImGuiCol_Button, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, background_color);
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, background_color);
+	ImGui::SetNextItemWidth(12.0f);
+	ImGui::Button(label);
+	ImGui::SameLine();
+	ImGui::PopStyleColor(4);
+	ImGui::SetNextItemWidth(100.0f);
+
+	constexpr unsigned int value_speed = 1;
+	const auto value_changed = customDragScalar(imgui_label, value, value_speed, 0, 0, ImGuiDataType_U32, nullptr);
+	const bool edit_ended = ImGui::IsItemDeactivatedAfterEdit();
+
+	return ValueEditState{ value_changed.drag_edited || (value_changed.text_edited && edit_ended), edit_ended };
+}
+
 ValueEditState Editor::scalarRangeButton(float* value, float value_min, float value_max, uint32_t text_color, uint32_t background_color, const char* label, const char* imgui_label) const {
 	ImGui::PushStyleColor(ImGuiCol_Text, text_color);
 	ImGui::PushStyleColor(ImGuiCol_Button, background_color);
@@ -381,6 +444,7 @@ ValueEditState Editor::angleButton(float* value, uint32_t text_color, uint32_t b
 			value_speed,
 			value_min,
 			value_max,
+			ImGuiDataType_Float,
 			"%.f\xc2\xb0" // degree symbol in UTF-8
 	);
 

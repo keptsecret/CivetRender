@@ -80,7 +80,7 @@ int Engine::init() {
 	glCheckError("ERROR::Engine::init: OpenGL error code");
 
 	DeferredRenderer::getSingleton()->init(width, height);
-	parallelInit(12);
+	parallelInit();
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
