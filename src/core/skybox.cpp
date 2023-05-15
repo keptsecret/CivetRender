@@ -1,6 +1,7 @@
 #include <core/skybox.h>
 
 #include <random>
+#include <utils/parallel.h>
 
 namespace civet {
 
@@ -184,29 +185,32 @@ void Skybox::renderSky(int face, float fov, float aspect, int spp) {
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(0, 1);
 
-	Vector3f* p = skybox_data[face].data();
-	for (unsigned int y = 0; y < parameters.resolution; y++) {
-		for (unsigned int x = 0; x < parameters.resolution; x++, p++) {
-			for (unsigned int m = 0; m < spp; m++) {
-				for (unsigned int n = 0; n < spp; n++) {
-					float rayx = (2 * (x + (m + distribution(generator)) / spp) / float(parameters.resolution) - 1) * aspect * angle;
-					float rayy = (1 - (y + (n + distribution(generator)) / spp) / float(parameters.resolution) * 2) * angle;
-					Vector3f dir = mapToDirection(rayx, rayy, face);
-					float t0, t1, tmax = Infinity;
-					if (raySphereIntersect(origin, dir, atmosphere.earth_radius, t0, t1) && t1 > 0) {
-						tmax = std::max(0.0f, t0);
-					}
-					Vector3f color;
-					if (atmosphere.computeIncidentLight(origin, dir, 0, tmax, &color, 16, 8)) {
-						*p += color;
-					} else {
-						*p += parameters.ground_color;
-					}
+	parallelFor2D([&](Point2i xy) {
+		unsigned int x = xy.x;
+		unsigned int y = xy.y;
+
+		Vector3f* p = skybox_data[face].data();
+		p += y * parameters.resolution + x;
+
+		for (unsigned int m = 0; m < spp; m++) {
+			for (unsigned int n = 0; n < spp; n++) {
+				float rayx = (2 * (x + (m + distribution(generator)) / spp) / float(parameters.resolution) - 1) * aspect * angle;
+				float rayy = (1 - (y + (n + distribution(generator)) / spp) / float(parameters.resolution) * 2) * angle;
+				Vector3f dir = mapToDirection(rayx, rayy, face);
+				float t0, t1, tmax = Infinity;
+				if (raySphereIntersect(origin, dir, atmosphere.earth_radius, t0, t1) && t1 > 0) {
+					tmax = std::max(0.0f, t0);
+				}
+				Vector3f color;
+				if (atmosphere.computeIncidentLight(origin, dir, 0, tmax, &color, 16, 8)) {
+					*p += color;
+				} else {
+					*p += parameters.ground_color;
 				}
 			}
-			*p *= 1.f / (spp * spp);
 		}
-	}
+		*p *= 1.f / (spp * spp);
+	}, Point2i(parameters.resolution, parameters.resolution));
 }
 
 Vector3f Skybox::mapToDirection(float x, float y, int s) {
