@@ -80,7 +80,7 @@ int Engine::init() {
 	glCheckError("ERROR::Engine::init: OpenGL error code");
 
 	DeferredRenderer::getSingleton()->init(width, height);
-	// renderer.init();
+	parallelInit(12);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -141,6 +141,8 @@ int Engine::start() {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+
+	parallelCleanup();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();

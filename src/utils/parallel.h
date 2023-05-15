@@ -64,10 +64,10 @@ void parallelFor(std::function<void(int64_t)> func, int64_t count,
 		int chunk_size = 1);
 extern CIVET_THREAD_LOCAL int thread_index;
 void parallelFor2D(std::function<void(Point2i)> func, const Point2i& count);
-int maxThreadIndex();
+int maxThreadIndex(int num_threads);
 int numSystemCores();
 
-void parallelInit();
+void parallelInit(int num_threads = 0);
 void parallelCleanup();
 void mergeWorkerThreadStats();
 

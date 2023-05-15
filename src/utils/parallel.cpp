@@ -63,7 +63,7 @@ void Barrier::wait() {
 static std::condition_variable work_list_condition;
 
 static void workerThreadFunc(int t_idx, std::shared_ptr<Barrier> barrier) {
-	printf("Started execution in worker thread %d", t_idx);
+	printf("Started execution in worker thread %d\n", t_idx);
 	thread_index = t_idx;
 
 	// The main thread sets up a barrier so that it can be sure that all
@@ -126,7 +126,7 @@ static void workerThreadFunc(int t_idx, std::shared_ptr<Barrier> barrier) {
 			}
 		}
 	}
-	printf("Exiting worker thread %d", t_idx);
+	printf("Exiting worker thread %d\n", t_idx);
 }
 
 // Parallel Definitions
@@ -185,17 +185,17 @@ void parallelFor(std::function<void(int64_t)> func, int64_t count,
 
 CIVET_THREAD_LOCAL int thread_index;
 
-int maxThreadIndex() {
-	// TODO: get option for nthreads from some config
-	//return nThreads == 0 ? numSystemCores() : nThreads;
-	return numSystemCores();
+int maxThreadIndex(int nthreads) {
+	return nthreads == 0 ? numSystemCores() : nthreads;
 }
 
 void parallelFor2D(std::function<void(Point2i)> func, const Point2i& count) {
 	if (threads.empty() || count.x * count.y <= 1) {
-		for (int y = 0; y < count.y; ++y)
-			for (int x = 0; x < count.x; ++x)
+		for (int y = 0; y < count.y; ++y) {
+			for (int x = 0; x < count.x; ++x) {
 				func(Point2i(x, y));
+			}
+		}
 		return;
 	}
 
@@ -245,8 +245,8 @@ int numSystemCores() {
 	return std::max(1u, std::thread::hardware_concurrency());
 }
 
-void parallelInit() {
-	int nThreads = maxThreadIndex();
+void parallelInit(int num_threads) {
+	int nThreads = maxThreadIndex(num_threads);
 	thread_index = 0;
 
 	// Create a barrier so that we can be sure all worker threads get past
