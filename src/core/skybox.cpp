@@ -114,6 +114,7 @@ void Skybox::init(const SkyboxParameters& params) {
 
 void Skybox::update(const SkyboxParameters& params) {
 	parameters = params;
+	editing_params = params;
 
 	glGenTextures(1, &cubemap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);

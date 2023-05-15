@@ -41,8 +41,11 @@ private:
 	void inspector(Scene& active_scene);
 	void inspectPointLight(std::shared_ptr<Node> node);
 	void inspectDirectionalLight(std::shared_ptr<Node> node);
+	void inspectSkybox(std::shared_ptr<Node> node);
 
 	ValueEditState scalarButton(float* value, uint32_t text_color, uint32_t background_color,
+			const char* label, const char* imgui_label) const;
+	ValueEditState scalarButton(unsigned int* value, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;
 	ValueEditState scalarRangeButton(float* value, float min, float max, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;

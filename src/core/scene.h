@@ -29,7 +29,7 @@ public:
 
 	std::vector<std::shared_ptr<Node>> nodes;
 
-	Skybox skybox;
+	std::shared_ptr<Skybox> skybox;
 
 private:
 	friend Editor;
