@@ -4,7 +4,7 @@ namespace civet {
 
 void SimpleForwardShader::setPointLights(std::vector<GLPointLight>& lights) {
 	for (int i = 0; i < lights.size(); i++) {
-		auto diffuse = lights[i].color * lights[i].intensity;
+		auto diffuse = lights[i].color * lights[i].power;
 
 		setBool(("pointLights[" + std::to_string(i) + "].valid").c_str(), lights[i].active && lights[i].cast_shadow);
 		setVec3(("pointLights[" + std::to_string(i) + "].position").c_str(), Vector3f(lights[i].position));
@@ -19,7 +19,7 @@ void SimpleForwardShader::setPointLights(std::vector<GLPointLight>& lights) {
 
 void SimpleForwardShader::setDirectionalLights(std::vector<GLDirectionalLight>& lights) {
 	for (int i = 0; i < lights.size(); i++) {
-		auto diffuse = lights[i].color * lights[i].intensity;
+		auto diffuse = lights[i].color * lights[i].power;
 
 		setBool(("dirLights[" + std::to_string(i) + "].valid").c_str(), lights[i].active && lights[i].cast_shadow);
 		setVec3(("dirLights[" + std::to_string(i) + "].direction").c_str(), lights[i].direction);

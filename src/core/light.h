@@ -29,7 +29,7 @@ public:
 	bool cast_shadow;
 
 	Vector3f color;
-	float intensity;
+	float power;
 
 	bool should_update;	///< true only if need to regenerate shadow map, e.g. position or direction changes
 
@@ -45,7 +45,7 @@ public:
 		resolution = res;
 		direction = Vector3f(1, 0, 0);
 		color = Vector3f(1, 1, 1);
-		intensity = 1.f;
+		power = 3.f;
 		active = true;
 		cast_shadow = true;
 		should_update = true;
@@ -55,7 +55,7 @@ public:
 			direction(dir), GLLight(name, DirectionalLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
-		intensity = 1.f;
+		power = 3.f;
 		active = true;
 		cast_shadow = true;
 		should_update = true;
@@ -77,7 +77,7 @@ public:
 			GLLight(name, PointLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
-		intensity = 0.8f;
+		power = 100.f;
 		active = true;
 		cast_shadow = true;
 		should_update = true;
@@ -87,7 +87,7 @@ public:
 			position(pos), GLLight(name, PointLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
-		intensity = 0.8f;
+		power = 100.f;
 		active = true;
 		cast_shadow = true;
 		should_update = true;
