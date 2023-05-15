@@ -8,7 +8,7 @@
 
 namespace civet {
 
-unsigned int loadTextureFromFile(const char* path, const std::string& directory, bool gamma) {
+unsigned int loadTextureFromFile(const char* path, const std::string& directory) {
 	std::string filename = std::string(path);
 	filename = directory + '/' + filename;
 
@@ -23,11 +23,9 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory,
 		if (n_channels == 1) {
 			format_in = format_out = GL_RED;
 		} else if (n_channels == 3) {
-			format_in = gamma ? GL_SRGB : GL_RGB;
-			format_out = GL_RGB;
+			format_in = format_out = GL_RGB;
 		} else if (n_channels == 4) {
-			format_in = gamma ? GL_SRGB_ALPHA : GL_RGBA;
-			format_out = GL_RGBA;
+			format_in = format_out = GL_RGBA;
 		}
 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -276,9 +274,8 @@ std::vector<std::shared_ptr<GLTexture>> GLModel::loadMaterialTextures(aiMaterial
 
 		if (!skip) {
 			// texture hasn't been loaded before
-			bool gamma_correct = type == aiTextureType_DIFFUSE;
 			std::shared_ptr<GLTexture> texture = std::make_shared<GLTexture>();
-			texture->id = loadTextureFromFile(path.C_Str(), this->directory, gamma_correct);
+			texture->id = loadTextureFromFile(path.C_Str(), this->directory);
 			texture->type = type_name;
 			texture->path = path.C_Str();
 			textures.push_back(texture);

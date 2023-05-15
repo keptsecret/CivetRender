@@ -9,7 +9,7 @@
 
 namespace civet {
 
-unsigned int loadTextureFromFile(const char* path, const std::string& directory, bool gamma = false);
+unsigned int loadTextureFromFile(const char* path, const std::string& directory);
 
 struct GLVertex {
 	Point3f position;
