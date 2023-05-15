@@ -47,8 +47,8 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory,
 	return texture_id;
 }
 
-GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::vector<std::shared_ptr<GLTexture>> _textures, const std::string& name, bool _use_indices) :
-		vertices(_vertices), indices(_indices), textures(_textures), use_indices(_use_indices), VAO(0), VBO(0), EBO(0), Node(name, Mesh) {
+GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::shared_ptr<GLMaterial> _material, const std::string& name, bool _use_indices) :
+		vertices(_vertices), indices(_indices), material(_material), use_indices(_use_indices), VAO(0), VBO(0), EBO(0), Node(name, Mesh) {
 	for (const auto& v : vertices) {
 		bounds = bUnion(bounds, v.position);
 	}
@@ -62,28 +62,7 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	///< shadow maps always bind to GL_TEXTURE0, i = 0
 	// TODO: make checks that tex_offset and drawing active textures stay within texture limit, until alternative solution found
 
-	unsigned int diffuse_no = 1;
-	unsigned int specular_no = 1;
-	for (unsigned int i = 0; i < textures.size(); i++) {
-		glActiveTexture(GL_TEXTURE0 + (i + tex_offset));
-		std::string number;
-		std::string name = textures[i]->type;
-		if (name == "texture_diffuse") {
-			number = std::to_string(diffuse_no++);
-		} else if (name == "texture_specular") {
-			number = std::to_string(specular_no++);
-		} else if (name == "texture_normal") {
-			// TODO: might change depending on how many normal maps provided
-			number = "";
-		} else if (name == "texture_bump") {
-			// TODO: might change depending on how many normal maps provided
-			number = "";
-		}
-
-		shader.setInt(("material." + name + number).c_str(), i + tex_offset);
-		glBindTexture(GL_TEXTURE_2D, textures[i]->id);
-	}
-	glActiveTexture(GL_TEXTURE0);
+	material->bind(shader, tex_offset);
 
 	shader.setMat4("model", getWorldTransform().m);
 
@@ -95,10 +74,7 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	}
 
 	glBindVertexArray(0);
-	for (unsigned int i = 0; i < textures.size(); i++) {
-		glActiveTexture(GL_TEXTURE0 + (i + tex_offset));
-		glBindTexture(GL_TEXTURE_2D, 0);
-	}
+	material->unbind(tex_offset);
 	glCheckError("ERROR::GLMesh::draw: OpenGL error code");
 }
 
@@ -141,8 +117,8 @@ void GLMesh::setupMesh() {
 	glCheckError("ERROR::GLMesh::setupMesh: OpenGL error code");
 }
 
-GLModel::GLModel(const std::string& name, bool gamma) :
-		gamma_correction(gamma), Node(name, Model) {
+GLModel::GLModel(const std::string& name) :
+		Node(name, Model) {
 }
 
 void GLModel::loadModel(std::string path) {
@@ -169,8 +145,6 @@ void GLModel::loadModel(const aiScene* scene, std::string path) {
 }
 
 void GLModel::draw(Shader& shader, unsigned int tex_offset) {
-	shader.setBool("material.use_normal_map", use_normal_map);
-	shader.setBool("material.use_bump_map", use_bump_map);
 	for (auto& mesh : meshes) {
 		mesh->draw(shader, tex_offset);
 	}
@@ -208,7 +182,6 @@ void GLModel::processNode(aiNode* node, const aiScene* scene) {
 std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
-	std::vector<std::shared_ptr<GLTexture>> textures;
 
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
 		GLVertex vertex;
@@ -238,24 +211,53 @@ std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene)
 		}
 	}
 
+	auto material = std::make_shared<GLMaterial>();
+
 	///< handle loading textures
 	if (mesh->mMaterialIndex >= 0) {
-		aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-		std::vector<std::shared_ptr<GLTexture>> diffuse_maps = loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-		textures.insert(textures.end(), diffuse_maps.begin(), diffuse_maps.end());
-		std::vector<std::shared_ptr<GLTexture>> specular_maps = loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-		textures.insert(textures.end(), specular_maps.begin(), specular_maps.end());
+		aiMaterial* aimaterial = scene->mMaterials[mesh->mMaterialIndex];
 
-		std::vector<std::shared_ptr<GLTexture>> normal_maps = loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
-		use_normal_map = normal_maps.size() > 0;
-		textures.insert(textures.end(), normal_maps.begin(), normal_maps.end());
+		aiColor3D color;
+		aimaterial->Get(AI_MATKEY_BASE_COLOR, color);
+		material->albedo = Vector3f(color.r, color.g, color.b);
 
-		std::vector<std::shared_ptr<GLTexture>> bump_maps = loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_bump");
-		use_bump_map = bump_maps.size() > 0;
-		textures.insert(textures.end(), bump_maps.begin(), bump_maps.end());
+		aimaterial->Get(AI_MATKEY_METALLIC_FACTOR, material->metallic);
+		aimaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, material->roughness);
+
+		///< make sure these names match in the shader
+		std::vector<std::shared_ptr<GLTexture>> diffuse_maps = loadMaterialTextures(aimaterial, aiTextureType_DIFFUSE, "texture_albedo");
+		material->textures.insert(material->textures.end(), diffuse_maps.begin(), diffuse_maps.end());
+		material->use_albedo_map = diffuse_maps.size() > 0;
+
+		///< to work with old blinn-phong models, use specular maps as metallic maps as well
+		std::vector<std::shared_ptr<GLTexture>> specular_maps = loadMaterialTextures(aimaterial, aiTextureType_SPECULAR, "texture_metallic");
+		material->textures.insert(material->textures.end(), specular_maps.begin(), specular_maps.end());
+		std::vector<std::shared_ptr<GLTexture>> metallic_maps = loadMaterialTextures(aimaterial, aiTextureType_METALNESS, "texture_metallic");
+		material->textures.insert(material->textures.end(), metallic_maps.begin(), metallic_maps.end());
+		material->use_metallic_map = specular_maps.size() > 0 || metallic_maps.size() > 0;
+
+		///< likewise, use inverse gloss maps as roughness maps as well
+		std::vector<std::shared_ptr<GLTexture>> roughness_maps = loadMaterialTextures(aimaterial, aiTextureType_DIFFUSE_ROUGHNESS, "texture_roughness");
+		material->textures.insert(material->textures.end(), roughness_maps.begin(), roughness_maps.end());
+		std::vector<std::shared_ptr<GLTexture>> glossy_maps = loadMaterialTextures(aimaterial, aiTextureType_SHININESS, "texture_roughness");
+		material->textures.insert(material->textures.end(), glossy_maps.begin(), glossy_maps.end());
+		material->use_roughness_map = roughness_maps.size() > 0 || glossy_maps.size() > 0;
+		material->is_glossy_rough = glossy_maps.size() > 0;
+
+		std::vector<std::shared_ptr<GLTexture>> ao_maps = loadMaterialTextures(aimaterial, aiTextureType_AMBIENT_OCCLUSION, "texture_ao");
+		material->textures.insert(material->textures.end(), ao_maps.begin(), ao_maps.end());
+		material->use_ao_map = ao_maps.size() > 0;
+
+		std::vector<std::shared_ptr<GLTexture>> normal_maps = loadMaterialTextures(aimaterial, aiTextureType_NORMALS, "texture_normal");
+		material->textures.insert(material->textures.end(), normal_maps.begin(), normal_maps.end());
+		material->use_normal_map = normal_maps.size() > 0;
+
+		std::vector<std::shared_ptr<GLTexture>> bump_maps = loadMaterialTextures(aimaterial, aiTextureType_HEIGHT, "texture_bump");
+		material->textures.insert(material->textures.end(), bump_maps.begin(), bump_maps.end());
+		material->use_bump_map = bump_maps.size() > 0;
 	}
 
-	return std::make_shared<GLMesh>(vertices, indices, textures, "Mesh");
+	return std::make_shared<GLMesh>(vertices, indices, material, "Mesh");
 }
 
 std::vector<std::shared_ptr<GLTexture>> GLModel::loadMaterialTextures(aiMaterial* mat, aiTextureType type, std::string type_name) {

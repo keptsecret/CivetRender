@@ -35,6 +35,7 @@ void Editor::debugWindow(Scene& active_scene) {
 	ImGui::Begin("Debug");
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	scalarRangeButton(&engine->view_camera.mvmt_speed, 0.0f, 50.0f, 0xffffffffu, 0x00ffffffu, "Camera Speed", "##CS");
+	scalarRangeButton(&engine->view_camera.exposure, 0.0f, 10.0f, 0xffffffffu, 0x00ffffffu, "Exposure", "##CE");
 
 	if (ImGui::TreeNodeEx("Clip range", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Indent(15.0f);
@@ -190,7 +191,7 @@ void Editor::inspectPointLight(std::shared_ptr<Node> node) {
 		ImGui::TreePop();
 	}
 
-	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 10.0f, 0xffffffffu, 0x00ffffffu, "Intensity", "##I"));
+	node_state.merge(scalarButton(&light->power, 0xffffffffu, 0x00ffffffu, "Power", "##P"));
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();
@@ -222,7 +223,7 @@ void Editor::inspectDirectionalLight(std::shared_ptr<Node> node) {
 		ImGui::TreePop();
 	}
 
-	node_state.merge(scalarRangeButton(&light->intensity, 0.0f, 10.0f, 0xffffffffu, 0x00ffffffu, "Intensity", "##I"));
+	node_state.merge(scalarButton(&light->power, 0xffffffffu, 0x00ffffffu, "Power", "##P"));
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();

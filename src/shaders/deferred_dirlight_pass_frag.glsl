@@ -1,22 +1,10 @@
 #version 420 core
 out vec4 FragColor;
 
-struct Material {
-    sampler2D texture_diffuse1;
-    sampler2D texture_specular1;
-    float shininess;
-
-    sampler2D texture_normal;
-    bool use_normal_map;
-};
-
 struct DirLight {
     bool valid;
     vec3 direction;
-
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
+    vec3 color;
 
     mat4 light_space_mat;
     sampler2D shadow_map;
@@ -25,28 +13,31 @@ struct DirLight {
 struct PointLight {
     bool valid;
     vec3 position;
+    vec3 color;
 
     float constant;
     float linear;
     float quadratic;
 
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-
-    float far_plane;
+    float radius;
     samplerCube shadow_map;
 };
 
 uniform sampler2D PositionMap;
-uniform sampler2D DiffuseMap;
-uniform sampler2D SpecularMap;
+uniform sampler2D AlbedoMap;
+uniform sampler2D MetallicRoughAOMap;
 uniform sampler2D NormalMap;
 uniform vec2 screenSize;
 
 uniform vec3 viewPos;
 uniform DirLight light;
-uniform Material material;
+
+const float PI = 3.14159265359;
+
+float distributionGGX(vec3 N, vec3 H, float roughness);
+float geometrySchlickGGX(float NdotV, float roughness);
+float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
+vec3 fresnelSchlick(float cosTheta, vec3 F0);
 
 vec2 getTexCoords() {
     return gl_FragCoord.xy / screenSize;
@@ -76,24 +67,49 @@ float calcShadow(vec4 fragPosLightSpace, vec3 normal) {
 }
 
 vec3 calcDirLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
-    vec3 ambient = light.ambient * texture(DiffuseMap, texCoords).xyz;
+    vec3 N = normal;
+    vec3 V = normalize(viewPos - worldPos);
 
-    // diffuse shading
-    vec3 lightDir = normalize(-light.direction);
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * texture(DiffuseMap, texCoords).xyz;
+    vec3 albedo = texture(AlbedoMap, texCoords).xyz;
+    float metallic = texture(MetallicRoughAOMap, texCoords).r;
+    float roughness = texture(MetallicRoughAOMap, texCoords).g;
+    float ao = texture(MetallicRoughAOMap, texCoords).b;
 
-    // specular shading - using blinn-phong halfway vector
-    vec3 viewDir = normalize(viewPos - worldPos);
-    vec3 halfwayDir = normalize(lightDir + viewDir);
-    float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
-    vec3 specular = light.specular * spec * texture(SpecularMap, texCoords).xyz;
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, metallic);
+
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
+    vec3 L = normalize(-light.direction);
+    vec3 H = normalize(V + L);
+    // skip attenuation calculation because directional light is global
+    vec3 radiance = light.color;
+
+    // cook-torrance brdf
+    float NDF = distributionGGX(N, H, roughness);
+    float G = geometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denominator;
+
+    // add to outgoing radiance Lo
+    float NdotL = max(dot(N, L), 0.0);
+    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
     // shadow
     vec4 fragPosLightSpace = light.light_space_mat * vec4(worldPos, 1.0);
     float shadow = calcShadow(fragPosLightSpace, normal);
 
-    return (ambient + (1.0 - shadow) * (diffuse + specular));
+    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 color = ambient + (1.0 - shadow) * Lo;
+
+    return color;
 }
 
 void main() {
@@ -102,4 +118,41 @@ void main() {
     vec3 normal = normalize(texture(NormalMap, texCoords).xyz);
 
     FragColor.rgb = calcDirLight(worldPos, normal, texCoords);
+}
+
+float distributionGGX(vec3 N, vec3 H, float roughness) {
+    float a      = roughness*roughness;
+    float a2     = a*a;
+    float NdotH  = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float num   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return num / denom;
+}
+
+float geometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float num   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return num / denom;
+}
+
+float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2  = geometrySchlickGGX(NdotV, roughness);
+    float ggx1  = geometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }

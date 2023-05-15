@@ -26,14 +26,14 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 
 	pointlight_pass_shader.use();
 	pointlight_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
-	pointlight_pass_shader.setInt("DiffuseMap", GBuffer::GBUFFER_TEXTURE_DIFFUSE);
-	pointlight_pass_shader.setInt("SpecularMap", GBuffer::GBUFFER_TEXTURE_SPECULAR);
+	pointlight_pass_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
+	pointlight_pass_shader.setInt("MetallicRoughAOMap", GBuffer::GBUFFER_TEXTURE_METALLICROUGHAO);
 	pointlight_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
 
 	dirlight_pass_shader.use();
 	dirlight_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
-	dirlight_pass_shader.setInt("DiffuseMap", GBuffer::GBUFFER_TEXTURE_DIFFUSE);
-	dirlight_pass_shader.setInt("SpecularMap", GBuffer::GBUFFER_TEXTURE_SPECULAR);
+	dirlight_pass_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
+	dirlight_pass_shader.setInt("MetallicRoughAOMap", GBuffer::GBUFFER_TEXTURE_METALLICROUGHAO);
 	dirlight_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
 
 	postprocess_shader.use();
@@ -91,7 +91,6 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 
 	pointlight_pass_shader.setVec3("viewPos", Vector3f(camera->position));
 	pointlight_pass_shader.setVec2("screenSize", width, height);
-	pointlight_pass_shader.setFloat("material.shininess", 64.0f);
 	for (auto light : point_lights) {
 		if (light->active) {
 			stencilPass(model, *light);
@@ -109,7 +108,6 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 
 	dirlight_pass_shader.setVec3("viewPos", Vector3f(camera->position));
 	dirlight_pass_shader.setVec2("screenSize", width, height);
-	dirlight_pass_shader.setFloat("material.shininess", 64.0f);
 	for (auto light : dir_lights) {
 		if (light->active) {
 			dirLightPass(model, *light);
@@ -153,12 +151,10 @@ void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 
-	auto diffuse = light.color * light.intensity;
+	auto color = light.color * light.power;
 	pointlight_pass_shader.setBool("light.valid", light.active && light.cast_shadow);
 	pointlight_pass_shader.setVec3("light.position", Vector3f(light.position));
-	pointlight_pass_shader.setVec3("light.ambient", diffuse * 0.1f);
-	pointlight_pass_shader.setVec3("light.diffuse", diffuse);
-	pointlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	pointlight_pass_shader.setVec3("light.color", color);
 	pointlight_pass_shader.setFloat("light.constant", light.attenuation.constant);
 	pointlight_pass_shader.setFloat("light.linear", light.attenuation.linear);
 	pointlight_pass_shader.setFloat("light.quadratic", light.attenuation.quadratic);
@@ -206,12 +202,10 @@ void DeferredRenderer::dirLightPass(GLModel& model, GLDirectionalLight& light) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
 
-	auto diffuse = light.color * light.intensity;
+	auto color = light.color * light.power;
 	dirlight_pass_shader.setBool("light.valid", light.active && light.cast_shadow);
 	dirlight_pass_shader.setVec3("light.direction", light.direction);
-	dirlight_pass_shader.setVec3("light.ambient", diffuse * 0.1f);
-	dirlight_pass_shader.setVec3("light.diffuse", diffuse);
-	dirlight_pass_shader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+	dirlight_pass_shader.setVec3("light.color", color);
 	dirlight_pass_shader.setMat4("light.light_space_mat", light.light_space_mat.m);
 
 	light.bindShadowMap(dirlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
@@ -226,7 +220,7 @@ float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
 
 	float result = (-light.attenuation.linear + sqrtf(light.attenuation.linear * light.attenuation.linear
 														- 4.0f * light.attenuation.quadratic * (light.attenuation.constant
-														- 256.0f * max_dim * light.intensity)))
+														- 256.0f * max_dim * light.power)))
 			/ (2.0f * light.attenuation.quadratic);
 
 	return result;
@@ -239,7 +233,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 
 	// Render depth map
 	int max_axis = model.bounds.maximumAxis();
-	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.075; // TODO: reorient frustum to light direction
+	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.1; // TODO: reorient frustum to light direction
 	Bounds3f frustum = bExpand(model.getWorldBounds(), fmax(expand, 10.f));
 
 	depth_shader.use();
