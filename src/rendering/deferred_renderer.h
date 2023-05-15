@@ -20,7 +20,6 @@ public:
 
 	void draw(Scene& scene);
 
-	void setModelMat(const Transform& model) { model_mat = model; }
 	void setViewMat(const Transform& view) { view_mat = view; }
 	void setProjectionMat(const Transform& projection) { projection_mat = projection; }
 	void setCamera(GLCamera* cam) { camera = cam; }
@@ -28,6 +27,7 @@ public:
 private:
 	void geometryPass(GLModel& model);
 	void lightsPass(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights);
+	void postProcessPass(Scene& scene);
 	void finalPass();
 
 	void pointLightPass(GLModel& model, GLPointLight& light);
@@ -39,7 +39,7 @@ private:
 
 	unsigned int width, height;
 	const unsigned int shadow_res = 4096;
-	Transform model_mat, view_mat, projection_mat;
+	Transform view_mat, projection_mat;
 	GLCamera* camera;
 	GBuffer gbuffer;
 

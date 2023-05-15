@@ -333,7 +333,7 @@ inline GLenum glCheckError(const char* func_def) {
 				error_message = "UNKNOWN_ERROR";
 				break;
 		}
-		std::cout << func_def << " " << error << " " << error_message << '\n';
+		std::cerr << func_def << " " << error << " " << error_message << '\n';
 	}
 	return error;
 }

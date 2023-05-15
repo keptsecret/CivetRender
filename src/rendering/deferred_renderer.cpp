@@ -47,10 +47,9 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	depth_cube_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
 }
 
-void DeferredRenderer::draw(civet::Scene& scene) {
+void DeferredRenderer::draw(Scene& scene) {
 	gbuffer.start();
 
-	// TODO: support multiple models?
 	for (auto model : scene.models) {
 		generateShadowMaps(*model, scene.dir_lights, scene.point_lights);
 
@@ -59,6 +58,7 @@ void DeferredRenderer::draw(civet::Scene& scene) {
 		geometryPass(*model);
 		lightsPass(*model, scene.dir_lights, scene.point_lights);
 	}
+	postProcessPass(scene);
 	finalPass();
 }
 
@@ -117,7 +117,9 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 	}
 }
 
-void DeferredRenderer::finalPass() {
+void DeferredRenderer::postProcessPass(Scene& scene) {
+	scene.skybox.draw(projection_mat, view_mat);
+
 	postprocess_shader.use();
 	gbuffer.bindPostProcessPass();
 
@@ -130,7 +132,9 @@ void DeferredRenderer::finalPass() {
 	bounding_quad.draw(postprocess_shader, 2);
 
 	glCullFace(GL_BACK);
+}
 
+void DeferredRenderer::finalPass() {
 	gbuffer.bindFinalPass();
 	glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_LINEAR);
 }
@@ -235,7 +239,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 
 	// Render depth map
 	int max_axis = model.bounds.maximumAxis();
-	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.1; // TODO: reorient frustum to light direction
+	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.075; // TODO: reorient frustum to light direction
 	Bounds3f frustum = bExpand(model.getWorldBounds(), fmax(expand, 10.f));
 
 	depth_shader.use();
