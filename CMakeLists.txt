@@ -277,6 +277,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/mesh.h
 		src/core/material.h
 		src/core/texture.h
+		src/core/skybox.h
 		src/core/spectrum.h
 		src/core/camera.h
 		src/core/sampler.h
@@ -300,6 +301,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/mesh.cpp
 		src/core/material.cpp
 		src/core/texture.cpp
+		src/core/skybox.cpp
 		src/core/spectrum.cpp
 		src/core/camera.cpp
 		src/core/sampler.cpp

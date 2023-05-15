@@ -5,6 +5,8 @@
 #include <core/light.h>
 #include <core/mesh.h>
 
+#include <core/skybox.h>
+
 namespace civet {
 
 class Editor;
@@ -22,11 +24,12 @@ public:
 
 public:
 	std::vector<std::shared_ptr<GLModel>> models;
-
 	std::vector<std::shared_ptr<GLDirectionalLight>> dir_lights;
 	std::vector<std::shared_ptr<GLPointLight>> point_lights;
 
 	std::vector<std::shared_ptr<Node>> nodes;
+
+	Skybox skybox;
 
 private:
 	friend Editor;

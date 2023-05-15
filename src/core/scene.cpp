@@ -6,6 +6,8 @@
 namespace civet {
 
 Scene::Scene(const char* path) {
+	SkyboxParameters params{ Vector3f(0.f, 0.2f, 0.5f), 128, 4 };
+	skybox.init(params);
 	loadScene(path);
 }
 
