@@ -45,7 +45,7 @@ public:
 		resolution = res;
 		direction = Vector3f(1, 0, 0);
 		color = Vector3f(1, 1, 1);
-		intensity = 0.5f;
+		intensity = 1.f;
 		active = true;
 		cast_shadow = true;
 		should_update = true;
@@ -55,7 +55,7 @@ public:
 			direction(dir), GLLight(name, DirectionalLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
-		intensity = 0.5f;
+		intensity = 1.f;
 		active = true;
 		cast_shadow = true;
 		should_update = true;
