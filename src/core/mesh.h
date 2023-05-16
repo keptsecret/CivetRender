@@ -26,7 +26,7 @@ public:
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
-	void updateBounds() override;
+	void updateWorldBounds() override;
 
 	std::vector<GLVertex> vertices;
 	std::vector<unsigned int> indices;
@@ -50,9 +50,6 @@ public:
 	void loadModel(const aiScene* scene, std::string path);
 
 	void draw(Shader& shader, unsigned int tex_offset);
-
-	void updateBounds() override;
-	void setTransform(Transform t) override;
 
 	std::vector<std::shared_ptr<GLMesh>> getMeshes();
 

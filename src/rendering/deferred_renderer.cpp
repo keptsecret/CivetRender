@@ -164,8 +164,9 @@ void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
 
 	// draw bounding sphere of light
 	float r = getBoundingSphere(light);
-	Transform bs_model = translate(Vector3f(light.position)) * scale(r, r, r);
-	bounding_sphere.setTransform(bs_model);
+	bounding_sphere.transform_data.scale_vec = Vector3f{r, r, r};
+	bounding_sphere.transform_data.translation = Vector3f{light.position};
+	bounding_sphere.transform_data.updateTransform();
 	bounding_sphere.draw(pointlight_pass_shader, gbuffer.num_textures + 1);
 
 	glCullFace(GL_BACK);
@@ -185,8 +186,9 @@ void DeferredRenderer::stencilPass(GLModel& model, GLPointLight& light) {
 	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_DECR_WRAP, GL_KEEP);
 
 	float r = getBoundingSphere(light);
-	Transform bs_model = translate(Vector3f(light.position)) * scale(r, r, r);
-	bounding_sphere.setTransform(bs_model);
+	bounding_sphere.transform_data.scale_vec = Vector3f{r, r, r};
+	bounding_sphere.transform_data.translation = Vector3f{light.position};
+	bounding_sphere.transform_data.updateTransform();
 	bounding_sphere.draw(stencil_pass_shader, 0);
 }
 

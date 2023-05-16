@@ -35,7 +35,6 @@ void Editor::debugWindow(Scene& active_scene) {
 	ImGui::Begin("Debug");
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	scalarRangeButton(&engine->view_camera.mvmt_speed, 0.0f, 50.0f, 0xffffffffu, 0x00ffffffu, "Camera Speed", "##CS");
-	scalarRangeButton(&engine->view_camera.exposure, 0.0f, 10.0f, 0xffffffffu, 0x00ffffffu, "Exposure", "##CE");
 
 	if (ImGui::TreeNodeEx("Clip range", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Indent(15.0f);
@@ -143,6 +142,7 @@ void Editor::inspector(Scene& active_scene) {
 			if (state.value_changed || state.edit_finished) {
 				// add more updates
 				node->transform_data.updateTransform();
+				node->updateWorldBounds();
 			}
 
 			ImGui::Unindent(15.0f);

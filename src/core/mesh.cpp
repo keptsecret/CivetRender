@@ -76,7 +76,7 @@ void GLMesh::draw(Shader& shader, unsigned int tex_offset) {
 	glCheckError("ERROR::GLMesh::draw: OpenGL error code");
 }
 
-void GLMesh::updateBounds() {
+void GLMesh::updateWorldBounds() {
 	bounds = Bounds3f();
 	for (const auto& v : vertices) {
 		bounds = bUnion(bounds, v.position);
@@ -148,18 +148,6 @@ void GLModel::draw(Shader& shader, unsigned int tex_offset) {
 	}
 }
 
-void GLModel::updateBounds() {
-	bounds = Bounds3f();
-	for (const auto& m : meshes) {
-		bounds = bUnion(bounds, m->getWorldBounds());
-	}
-}
-
-void GLModel::setTransform(Transform t) {
-	transform_data.transform = t;
-	updateBounds();
-}
-
 std::vector<std::shared_ptr<GLMesh>> GLModel::getMeshes() {
 	return meshes;
 }
@@ -171,6 +159,7 @@ void GLModel::processNode(aiNode* node, const aiScene* scene) {
 		newmesh->parent = this;
 		newmesh->name = mesh->mName.C_Str();
 		meshes.push_back(newmesh);
+		children.push_back(newmesh);
 	}
 	for (unsigned int i = 0; i < node->mNumChildren; i++) {
 		processNode(node->mChildren[i], scene);

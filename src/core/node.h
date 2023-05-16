@@ -16,19 +16,21 @@ enum NodeType {
 };
 
 struct TransformData {
+	// local transform components
 	Vector3f translation{ 0, 0, 0 };
 	Vector3f rotation_vec{ 0, 0, 0 };
 	Vector3f scale_vec{ 1, 1, 1 };
 
 	TransformData() {
-		transform = translate(translation) * rotateX(rotation_vec.x) * rotateY(rotation_vec.y) * rotateZ(rotation_vec.z) * scale(scale_vec.x, scale_vec.y, scale_vec.z);
+		updateTransform();
 	}
 
 	void updateTransform() {
-		transform = translate(translation) * rotateX(rotation_vec.x) * rotateY(rotation_vec.y) * rotateZ(rotation_vec.z) * scale(scale_vec.x, scale_vec.y, scale_vec.z);
+		transform = translate(translation) * rotateX(rotation_vec.x) * rotateY(rotation_vec.y) * rotateZ(rotation_vec.z)
+				* scale(scale_vec.x, scale_vec.y, scale_vec.z);
 	}
 
-	Transform transform;
+	Transform transform;	// local transform
 };
 
 class Node {
@@ -39,12 +41,6 @@ public:
 		transformEnabled = te;
 	}
 
-	virtual void updateBounds() {}
-	virtual void setTransform(Transform t) {
-		transform_data.transform = t;
-		updateBounds();
-	}
-
 	virtual Transform getWorldTransform() {
 		if (parent != nullptr) {
 			return parent->getWorldTransform() * transform_data.transform;
@@ -53,8 +49,16 @@ public:
 		return transform_data.transform;
 	}
 
+	virtual void updateWorldBounds() {
+		bounds = Bounds3f();
+		for (auto&& child : children) {
+			child->updateWorldBounds();
+			bounds = bUnion(bounds, child->getWorldBounds());
+		}
+	}
+
 	virtual Bounds3f getWorldBounds() {
-		return transform_data.transform(bounds);
+		return bounds;
 	}
 
 	bool isTransformEnabled() { return transformEnabled; }
@@ -62,9 +66,10 @@ public:
 	std::string name;
 	NodeType type;
 
-	Bounds3f bounds;
+	Bounds3f bounds;	// global bounds
 	TransformData transform_data;
 	Node* parent = nullptr;
+	std::vector<std::shared_ptr<Node>> children;
 
 private:
 	bool transformEnabled;
