@@ -65,6 +65,7 @@ void main() {
     }
     if (material.use_bump_map) {
         // adapted from "Bump Mapping Unparametrized Surfaces on the GPU"
+        // TODO: still somewhat broken it seems
         vec3 vn = Normal;
         vec3 posDX = dFdx(FragPos.xyz);// choose dFdx (#version 420) or dFdxFine (#version 450) here
         vec3 posDY = dFdy(FragPos.xyz);
@@ -81,6 +82,6 @@ void main() {
         vec3 surf_grad = sign(det) * ((Hlr - Hll) * r1 + (Hul - Hll)* r2);
         float bump_amt = 0.1;// bump_amt = adjustable bump amount
         vec3 vbumpnorm = vn*(1.0-bump_amt) + bump_amt * normalize (abs(det)*vn - surf_grad);// bump normal
-        NormalOut = vbumpnorm;
+        NormalOut = normalize(TBN * vbumpnorm);
     }
 }

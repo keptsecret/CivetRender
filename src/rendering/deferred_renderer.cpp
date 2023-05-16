@@ -222,7 +222,7 @@ float DeferredRenderer::getBoundingSphere(GLPointLight& light) {
 
 	float result = (-light.attenuation.linear + sqrtf(light.attenuation.linear * light.attenuation.linear
 														- 4.0f * light.attenuation.quadratic * (light.attenuation.constant
-														- 256.0f * max_dim * light.power)))
+														- 64.0f * max_dim)))	// 256 / 4
 			/ (2.0f * light.attenuation.quadratic);
 
 	return result;
