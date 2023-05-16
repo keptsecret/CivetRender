@@ -25,7 +25,7 @@ struct PointLight {
 
 uniform sampler2D PositionMap;
 uniform sampler2D AlbedoMap;
-uniform sampler2D MetallicRoughAOMap;
+uniform sampler2D AORoughMetallicMap;
 uniform sampler2D NormalMap;
 uniform vec2 screenSize;
 
@@ -71,9 +71,9 @@ vec3 calcDirLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
     vec3 V = normalize(viewPos - worldPos);
 
     vec3 albedo = texture(AlbedoMap, texCoords).xyz;
-    float metallic = texture(MetallicRoughAOMap, texCoords).r;
-    float roughness = texture(MetallicRoughAOMap, texCoords).g;
-    float ao = texture(MetallicRoughAOMap, texCoords).b;
+    float ao = texture(AORoughMetallicMap, texCoords).r;
+    float roughness = texture(AORoughMetallicMap, texCoords).g;
+    float metallic = texture(AORoughMetallicMap, texCoords).b;
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);

@@ -52,10 +52,10 @@ void main() {
 
     FragPosOut = FragPos;
     AlbedoOut = srgb_to_linear(diffuse.rgb);
-    MetallicRoughAOOut.r = material.use_roughness_map ? texture(material.texture_roughness, TexCoords).r : material.roughness;
-    MetallicRoughAOOut.r = material.is_glossy_rough ? 1 - MetallicRoughAOOut.r : MetallicRoughAOOut.r;
-    MetallicRoughAOOut.g = material.use_metallic_map ? texture(material.texture_metallic, TexCoords).g : material.metallic;
-    MetallicRoughAOOut.b = material.use_ao_map ? texture(material.texture_ao, TexCoords).b : material.ambient;
+    MetallicRoughAOOut.r = material.use_ao_map ? texture(material.texture_ao, TexCoords).r : material.ambient;
+    MetallicRoughAOOut.g = material.use_roughness_map ? texture(material.texture_roughness, TexCoords).g : material.roughness;
+    MetallicRoughAOOut.g = material.is_glossy_rough ? 1 - MetallicRoughAOOut.g : MetallicRoughAOOut.g;
+    MetallicRoughAOOut.b = material.use_metallic_map ? texture(material.texture_metallic, TexCoords).b : material.metallic;
 
     NormalOut = Normal;
     if (material.use_normal_map) {

@@ -27,13 +27,13 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	pointlight_pass_shader.use();
 	pointlight_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
 	pointlight_pass_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
-	pointlight_pass_shader.setInt("MetallicRoughAOMap", GBuffer::GBUFFER_TEXTURE_METALLICROUGHAO);
+	pointlight_pass_shader.setInt("AORoughMetallicMap", GBuffer::GBUFFER_TEXTURE_AOROUGHMETALLIC);
 	pointlight_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
 
 	dirlight_pass_shader.use();
 	dirlight_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
 	dirlight_pass_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
-	dirlight_pass_shader.setInt("MetallicRoughAOMap", GBuffer::GBUFFER_TEXTURE_METALLICROUGHAO);
+	dirlight_pass_shader.setInt("AORoughMetallicMap", GBuffer::GBUFFER_TEXTURE_AOROUGHMETALLIC);
 	dirlight_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
 
 	postprocess_shader.use();
