@@ -16,17 +16,20 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory)
 	glGenTextures(1, &texture_id);
 
 	int width, height, n_channels;
-	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &n_channels, 0);
+	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &n_channels, 4);
 	if (data) {
-		GLenum format_in;
-		GLenum format_out;
-		if (n_channels == 1) {
-			format_in = format_out = GL_RED;
-		} else if (n_channels == 3) {
-			format_in = format_out = GL_RGB;
-		} else if (n_channels == 4) {
-			format_in = format_out = GL_RGBA;
-		}
+		GLenum format_in = GL_RGBA8;
+		GLenum format_out = GL_RGBA;
+//		if (n_channels == 1) {
+//			format_in = GL_R8;
+//			format_out = GL_RED;
+//		} else if (n_channels == 3) {
+//			format_in = GL_RGB8;
+//			format_out = GL_RGB;
+//		} else if (n_channels == 4) {
+//			format_in = GL_RGBA8;
+//			format_out = GL_RGBA;
+//		}
 
 		glBindTexture(GL_TEXTURE_2D, texture_id);
 		glTexImage2D(GL_TEXTURE_2D, 0, format_in, width, height, 0, format_out, GL_UNSIGNED_BYTE, data);
@@ -178,8 +181,10 @@ std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene)
 		Normal3f normal(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
 		vertex.normal = normal;
 
-		Normal3f tangent(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
-		vertex.tangent = tangent;
+		if (mesh->mTangents) {
+			Normal3f tangent(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
+			vertex.tangent = tangent;
+		}
 
 		if (mesh->mTextureCoords[0]) {
 			Point2f uv(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
