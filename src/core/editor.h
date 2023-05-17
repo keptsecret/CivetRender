@@ -43,6 +43,8 @@ private:
 	void inspectDirectionalLight(std::shared_ptr<Node> node);
 	void inspectSkybox(std::shared_ptr<Node> node);
 
+	void materialEditor(std::shared_ptr<Node> node);
+
 	ValueEditState scalarButton(float* value, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;
 	ValueEditState scalarButton(unsigned int* value, uint32_t text_color, uint32_t background_color,
@@ -52,9 +54,12 @@ private:
 	ValueEditState angleButton(float* value, uint32_t text_color, uint32_t background_color,
 			const char* label, const char* imgui_label) const;
 
+	bool colorEditVector3(Vector3f* color, const char* imgui_label);
+
 	bool show_editor = true;
 	bool show_scene_tree = true;
 	bool show_inspector = false;
+	bool show_material_editor = false;
 };
 
 } // namespace civet

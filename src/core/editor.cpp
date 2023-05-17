@@ -23,6 +23,8 @@ void Editor::draw(Scene& active_scene) {
 		// ImGui::SetNextWindowSize(ImVec2(250, 400));
 		inspector(active_scene);
 
+		materialEditor(active_scene.selected_node);
+
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	}
@@ -161,6 +163,12 @@ void Editor::inspector(Scene& active_scene) {
 			inspectSkybox(node);
 		}
 
+		if (node->type == Mesh) {
+			if (ImGui::Button("Edit Material")) {
+				show_material_editor = true;
+			}
+		}
+
 		ImGui::End();
 	}
 }
@@ -184,12 +192,7 @@ void Editor::inspectPointLight(std::shared_ptr<Node> node) {
 		ImGui::TreePop();
 	}
 
-	if (ImGui::TreeNodeEx("Color", ImGuiTreeNodeFlags_DefaultOpen)) {
-		node_state.merge(scalarRangeButton(&light->color.x, 0.0f, 1.0f, 0xff8888ffu, 0xff222266u, "R", "##C.R"));
-		node_state.merge(scalarRangeButton(&light->color.y, 0.0f, 1.0f, 0xff88ff88u, 0xff226622u, "G", "##C.G"));
-		node_state.merge(scalarRangeButton(&light->color.z, 0.0f, 1.0f, 0xffff8888u, 0xff662222u, "B", "##C.B"));
-		ImGui::TreePop();
-	}
+	colorEditVector3(&light->color, "Color");
 
 	node_state.merge(scalarButton(&light->power, 0xffffffffu, 0x00ffffffu, "Power", "##P"));
 
@@ -216,12 +219,7 @@ void Editor::inspectDirectionalLight(std::shared_ptr<Node> node) {
 		ImGui::TreePop();
 	}
 
-	if (ImGui::TreeNodeEx("Color", ImGuiTreeNodeFlags_DefaultOpen)) {
-		node_state.merge(scalarRangeButton(&light->color.x, 0.0f, 1.0f, 0xff8888ffu, 0xff222266u, "R", "##C.R"));
-		node_state.merge(scalarRangeButton(&light->color.y, 0.0f, 1.0f, 0xff88ff88u, 0xff226622u, "G", "##C.G"));
-		node_state.merge(scalarRangeButton(&light->color.z, 0.0f, 1.0f, 0xffff8888u, 0xff662222u, "B", "##C.B"));
-		ImGui::TreePop();
-	}
+	colorEditVector3(&light->color, "Color");
 
 	node_state.merge(scalarButton(&light->power, 0xffffffffu, 0x00ffffffu, "Power", "##P"));
 
@@ -246,12 +244,7 @@ void Editor::inspectSkybox(std::shared_ptr<Node> node) {
 		ImGui::TreePop();
 	}
 
-	if (ImGui::TreeNodeEx("Ground Color", ImGuiTreeNodeFlags_DefaultOpen)) {
-		node_state.merge(scalarButton(&sky->editing_params.ground_color.x, 0xff8888ffu, 0xff222266u, "R", "##GC.R"));
-		node_state.merge(scalarButton(&sky->editing_params.ground_color.y, 0xff88ff88u, 0xff226622u, "G", "##GC.G"));
-		node_state.merge(scalarButton(&sky->editing_params.ground_color.z, 0xffff8888u, 0xff662222u, "B", "##GC.B"));
-		ImGui::TreePop();
-	}
+	colorEditVector3(&sky->editing_params.ground_color, "Color");
 
 	node_state.merge(scalarButton(&sky->editing_params.resolution, 0xffffffffu, 0x00ffffffu, "Resolution", "##Res"));
 	node_state.merge(scalarButton(&sky->editing_params.samples_per_pixel, 0xffffffffu, 0x00ffffffu, "Samples per pixel", "##SPP"));
@@ -266,6 +259,37 @@ void Editor::inspectSkybox(std::shared_ptr<Node> node) {
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();
+}
+
+void Editor::materialEditor(std::shared_ptr<Node> node) {
+	if (show_material_editor && node->type == Mesh) {
+		auto mesh = std::static_pointer_cast<GLMesh>(node);
+		auto material = mesh->material;
+
+		ImGui::Begin("Material Editor", &show_material_editor, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+
+		ImGui::Text("Selected item: %s", node->name.c_str());
+
+		colorEditVector3(&material->albedo, "Base Color");
+
+		scalarRangeButton(&material->metallic, 0.0f, 1.0f, 0xffffffffu, 0x00ffffffu, "Metallic", "##MM");
+		scalarRangeButton(&material->roughness, 0.0f, 1.0f, 0xffffffffu, 0x00ffffffu, "Roughness", "##MR");
+		scalarRangeButton(&material->ambient, 0.0f, 1.0f, 0xffffffffu, 0x00ffffffu, "Ambient Occlusion", "##MAO");
+
+		if (ImGui::TreeNodeEx("Texture Maps", ImGuiTreeNodeFlags_OpenOnArrow)) {
+			ImGui::Checkbox("Enable albedo texture", &material->use_albedo_map);
+			ImGui::Checkbox("Enable metallic texture", &material->use_metallic_map);
+			ImGui::Checkbox("Enable roughness texture", &material->use_roughness_map);
+			ImGui::Checkbox("Enable AO texture", &material->use_ao_map);
+
+			ImGui::Checkbox("Enable normal map", &material->use_normal_map);
+			ImGui::Checkbox("Enable bump map", &material->use_bump_map);
+
+			ImGui::TreePop();
+		}
+
+		ImGui::End();
+	}
 }
 
 /****************************
@@ -466,6 +490,14 @@ ValueEditState Editor::angleButton(float* value, uint32_t text_color, uint32_t b
 	}
 
 	return ValueEditState{ value_changed, ImGui::IsItemDeactivatedAfterEdit() };
+}
+
+bool Editor::colorEditVector3(Vector3f* color, const char* imgui_label) {
+	float col3[3] = {color->x, color->y, color->z};
+	bool res = ImGui::ColorEdit3("Color", col3);
+	color->x = col3[0], color->y = col3[1], color->z = col3[2];
+
+	return res;
 }
 
 } // namespace civet
