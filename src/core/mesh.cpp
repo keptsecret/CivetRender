@@ -205,11 +205,21 @@ std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene)
 		aiMaterial* aimaterial = scene->mMaterials[mesh->mMaterialIndex];
 
 		aiColor3D color;
-		aimaterial->Get(AI_MATKEY_BASE_COLOR, color);
-		material->albedo = Vector3f(color.r, color.g, color.b);
+		if (aimaterial->Get(AI_MATKEY_BASE_COLOR, color) == AI_SUCCESS) {
+			material->albedo = Vector3f(color.r, color.g, color.b);
+		}
+		if (aimaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
+			material->albedo = Vector3f(color.r, color.g, color.b);
+		}
 
-		aimaterial->Get(AI_MATKEY_METALLIC_FACTOR, material->metallic);
-		aimaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, material->roughness);
+		if (aimaterial->Get(AI_MATKEY_METALLIC_FACTOR, material->metallic) != AI_SUCCESS) {
+			aimaterial->Get(AI_MATKEY_SPECULAR_FACTOR, material->metallic);
+		}
+		if (aimaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, material->roughness) != AI_SUCCESS) {
+			if (aimaterial->Get(AI_MATKEY_GLOSSINESS_FACTOR, material->roughness) == AI_SUCCESS) {
+				material->roughness = 1 - material->roughness;
+			}
+		}
 
 		///< make sure these names match in the shader
 		std::vector<std::shared_ptr<GLTexture>> diffuse_maps = loadMaterialTextures(aimaterial, aiTextureType_DIFFUSE, "texture_albedo");
