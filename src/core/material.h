@@ -45,6 +45,7 @@ public:
 	bool use_ao_map = false;
 	bool use_normal_map = false;
 	bool use_bump_map = false;
+	float bump_scale = 0.1f;
 	std::vector<std::shared_ptr<GLTexture>> textures;
 };
 

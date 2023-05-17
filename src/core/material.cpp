@@ -47,6 +47,7 @@ void GLMaterial::bind(Shader& shader, unsigned int tex_offset) {
 	shader.setBool("material.is_glossy_rough", is_glossy_rough);
 	shader.setBool("material.use_normal_map", use_normal_map);
 	shader.setBool("material.use_bump_map", use_bump_map);
+	shader.setFloat("material.bump_scale", bump_scale);
 }
 
 void GLMaterial::unbind(unsigned int tex_offset) {

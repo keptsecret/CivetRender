@@ -24,6 +24,7 @@ struct Material {
     bool use_normal_map;
 
     sampler2D texture_bump;
+    float bump_scale;
     bool use_bump_map;
 };
 
@@ -64,24 +65,15 @@ void main() {
         NormalOut = normalize(TBN * NormalOut); // normals in world space
     }
     if (material.use_bump_map) {
-        // adapted from "Bump Mapping Unparametrized Surfaces on the GPU"
-        // TODO: still somewhat broken it seems
-        vec3 vn = Normal;
-        vec3 posDX = dFdx(FragPos.xyz);// choose dFdx (#version 420) or dFdxFine (#version 450) here
-        vec3 posDY = dFdy(FragPos.xyz);
-        vec3 r1 = cross(posDY, vn);
-        vec3 r2 = cross(vn, posDX);
-        float det = dot(posDX, r1);
-        float Hll = texture(material.texture_bump, TexCoords).x;//-- height from bump map texture, tc=texture coordinates
-        float Hlr = texture(material.texture_bump, TexCoords + dFdx(TexCoords.xy)).x;
-        float Hul = texture(material.texture_bump, TexCoords + dFdy(TexCoords.xy)).x;
-        // float dBs = ddx_fine ( height );     //-- optional explicit height
-        // float dBt = ddy_fine ( height );
+        // adapted from https://www.shadertoy.com/view/MsScRt
+        vec2 texelSize = 1. / textureSize(material.texture_bump, 0);
+        float H = texture(material.texture_bump, TexCoords).r;
+        float Hx = texture(material.texture_bump, TexCoords + dFdx(TexCoords.xy)).r;
+        float Hy = texture(material.texture_bump, TexCoords + dFdy(TexCoords.xy)).r;
+        vec2 dxy = H - vec2(Hx, Hy);
 
-        // gradient of surface texture. dBs=Hlr-Hll, dBt=Hul-Hll
-        vec3 surf_grad = sign(det) * ((Hlr - Hll) * r1 + (Hul - Hll)* r2);
-        float bump_amt = 0.1;// bump_amt = adjustable bump amount
-        vec3 vbumpnorm = vn*(1.0-bump_amt) + bump_amt * normalize (abs(det)*vn - surf_grad);// bump normal
-        NormalOut = normalize(TBN * vbumpnorm);
+        vec3 bump = normalize(vec3(dxy * material.bump_scale / texelSize, 1.0));
+        bump = normalize(bump * 0.5 + 0.5);
+        NormalOut = normalize(TBN * bump);
     }
 }

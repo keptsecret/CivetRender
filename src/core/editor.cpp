@@ -284,6 +284,9 @@ void Editor::materialEditor(std::shared_ptr<Node> node) {
 
 			ImGui::Checkbox("Enable normal map", &material->use_normal_map);
 			ImGui::Checkbox("Enable bump map", &material->use_bump_map);
+			if (material->use_bump_map) {
+				scalarRangeButton(&material->bump_scale, 0.0f, 5.0f, 0xffffffffu, 0x00ffffffu, "Bump Factor", "##MBS");
+			}
 
 			ImGui::TreePop();
 		}
