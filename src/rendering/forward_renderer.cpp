@@ -23,7 +23,7 @@ void ForwardRenderer::generateShadowMaps(GLModel& model, std::vector<GLDirection
 		for (auto& light : dir_lights) {
 			if (light.should_update) {
 				depth_shader->setMat4("model", model_mat.m);
-				light.generateShadowMap(*depth_shader, near_plane, far_plane);
+				light.generateShadowMap(*depth_shader);
 				model.draw(*depth_shader, 2); ///< change tex_offset possibly
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			}
@@ -68,7 +68,7 @@ void ForwardRenderer::renderScene(GLModel& model, std::vector<GLDirectionalLight
 	///< put this into bind lights function in shader, possibly
 	{
 		for (int i = 0; i < dir_lights.size(); i++) {
-			shader->setMat4(("dirLights[" + std::to_string(i) + "].light_space_mat").c_str(), dir_lights[i].light_space_mat.m);
+			shader->setMat4(("dirLights[" + std::to_string(i) + "].light_space_mat").c_str(), dir_lights[i].light_space_mat[0].m);
 			dir_lights[i].bindShadowMap(*shader, ("dirLights[" + std::to_string(i) + "].shadow_map").c_str(), tex_offset++);
 		}
 

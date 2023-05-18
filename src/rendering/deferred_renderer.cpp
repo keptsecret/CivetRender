@@ -1,5 +1,6 @@
-#include "core/scene.h"
 #include <rendering/deferred_renderer.h>
+
+#include <core/engine.h>
 
 namespace civet {
 
@@ -44,7 +45,14 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	postprocess_shader.setMat4("model", identity.m);
 
 	depth_shader = Shader("../civet/src/shaders/light_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl");
+	depth_cascade_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl", "../civet/src/shaders/light_cascaded_depth_geom.glsl");
 	depth_cube_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_cube_depth_frag.glsl", "../civet/src/shaders/light_cube_depth_geom.glsl");
+
+	// bind light matrices UBO
+	unsigned int lightmats_index = glGetUniformBlockIndex(depth_cascade_shader.ID, "LightSpaceMatrices");
+	glUniformBlockBinding(depth_cascade_shader.ID, lightmats_index, 1);
+	lightmats_index = glGetUniformBlockIndex(dirlight_pass_shader.ID, "LightSpaceMatrices");
+	glUniformBlockBinding(dirlight_pass_shader.ID, lightmats_index, 1);
 }
 
 void DeferredRenderer::draw(Scene& scene) {
@@ -151,15 +159,6 @@ void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT);
 
-	auto color = light.color * light.power;
-	pointlight_pass_shader.setBool("light.valid", light.active && light.cast_shadow);
-	pointlight_pass_shader.setVec3("light.position", Vector3f(light.position));
-	pointlight_pass_shader.setVec3("light.color", color);
-	pointlight_pass_shader.setFloat("light.constant", light.attenuation.constant);
-	pointlight_pass_shader.setFloat("light.linear", light.attenuation.linear);
-	pointlight_pass_shader.setFloat("light.quadratic", light.attenuation.quadratic);
-	pointlight_pass_shader.setFloat("light.radius", light.radius);
-
 	light.bindShadowMap(pointlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
 
 	// draw bounding sphere of light
@@ -204,13 +203,8 @@ void DeferredRenderer::dirLightPass(GLModel& model, GLDirectionalLight& light) {
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
 
-	auto color = light.color * light.power;
-	dirlight_pass_shader.setBool("light.valid", light.active && light.cast_shadow);
-	dirlight_pass_shader.setVec3("light.direction", light.direction);
-	dirlight_pass_shader.setVec3("light.color", color);
-	dirlight_pass_shader.setMat4("light.light_space_mat", light.light_space_mat.m);
-
-	light.bindShadowMap(dirlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
+	dirlight_pass_shader.setMat4("cam_view", view_mat.m);
+	light.bindShadowMap(dirlight_pass_shader,  "light.shadow_map", gbuffer.num_textures);
 	bounding_quad.draw(dirlight_pass_shader, gbuffer.num_textures + 1);
 
 	glCullFace(GL_BACK);
@@ -234,24 +228,24 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glEnable(GL_CULL_FACE);
 
 	// Render depth map
-	int max_axis = model.bounds.maximumAxis();
-	float expand = std::abs(model.bounds.p_max[max_axis] - model.bounds.p_min[max_axis]) * 0.1; // TODO: reorient frustum to light direction
-	Bounds3f frustum = bExpand(model.getWorldBounds(), fmax(expand, 10.f));
-
-	depth_shader.use();
 	// loop through lights and generate shadow maps
-	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : dir_lights) {
-		light->generateShadowMap(depth_shader, frustum);
-		model.draw(depth_shader, 2); ///< change tex_offset possibly
+		if (light->use_cascaded_shadows) {
+			depth_cascade_shader.use();
+			light->generateShadowMap(depth_cascade_shader);
+			model.draw(depth_cascade_shader, 2); ///< change tex_offset possibly
+		} else {
+			depth_shader.use();
+			light->generateShadowMap(depth_shader);
+			model.draw(depth_shader, 2); ///< change tex_offset possibly
+		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
 	// Render depth cube map
 	depth_cube_shader.use();
 	// loop through lights and generate shadow maps for point lights
-	glViewport(0, 0, shadow_res, shadow_res);
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : point_lights) {
 		float near = 0.1f, far = getBoundingSphere(*light);

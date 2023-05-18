@@ -222,6 +222,7 @@ void Editor::inspectDirectionalLight(std::shared_ptr<Node> node) {
 	colorEditVector3(&light->color, "Color");
 
 	node_state.merge(scalarButton(&light->power, 0xffffffffu, 0x00ffffffu, "Power", "##P"));
+	node_state.merge(scalarButton(&light->frustum_fitting_factor, 0xffffffffu, 0x00ffffffu, "Fitting Factor", "##F"));
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();

@@ -1,12 +1,22 @@
 #version 420 core
 out vec4 FragColor;
 
+layout (std140, binding = 1) uniform LightSpaceMatrices {
+    mat4 lightSpaceMatrices[16];
+};
+
 struct DirLight {
     bool valid;
     vec3 direction;
     vec3 color;
 
-    mat4 light_space_mat;
+    bool use_cascaded_shadows;
+    float far_plane;
+    int cascade_count;
+    float cascade_distances[16];
+    sampler2DArray shadow_cascades;
+
+    mat4 light_space_mat;   // only if shadow not cascade
     sampler2D shadow_map;
 };
 
@@ -29,6 +39,7 @@ uniform sampler2D AORoughMetallicMap;
 uniform sampler2D NormalMap;
 uniform vec2 screenSize;
 
+uniform mat4 cam_view;
 uniform vec3 viewPos;
 uniform DirLight light;
 
@@ -43,21 +54,61 @@ vec2 getTexCoords() {
     return gl_FragCoord.xy / screenSize;
 }
 
-float calcShadow(vec4 fragPosLightSpace, vec3 normal) {
+float calcShadow(vec3 worldPos, vec3 normal) {
+    vec4 fragPosLightSpace = vec4(1.0);
+    int layer = -1;
+
+    if (light.use_cascaded_shadows) {
+        vec4 fragPosViewSpace = cam_view * vec4(worldPos, 1.0);
+        float depthValue = abs(fragPosViewSpace.z);
+
+        for (int i = 0; i < light.cascade_count; ++i) {
+            if (depthValue < light.cascade_distances[i]) {
+                layer = i;
+                break;
+            }
+        }
+        if (layer == -1) {
+            layer = light.cascade_count;
+        }
+
+        fragPosLightSpace = lightSpaceMatrices[layer] * vec4(worldPos, 1.0);
+    } else {
+        fragPosLightSpace = light.light_space_mat * vec4(worldPos, 1.0);
+    }
+
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     projCoords = projCoords * 0.5 + 0.5;
+    float currentDepth = projCoords.z;
+
+    float bias = max(0.05 * (1.0 - dot(normal, -light.direction)), 0.005);
+    if (light.use_cascaded_shadows) {
+        if (layer == light.cascade_count) {
+            bias *= 1.0 / (light.far_plane * 0.25);
+        } else {
+            bias *= 1.0 / (light.cascade_distances[layer] * 0.25);
+        }
+    }
 
     float shadow = 0.0;
-    if (!(projCoords.z > 1.0)) {
-        float bias = max(0.05 * (1.0 - dot(normal, -light.direction)), 0.005);
-        vec2 texelSize = 1.0 / textureSize(light.shadow_map, 0);
-        float currentDepth = projCoords.z;
+    if (!(currentDepth > 1.0)) {
+        vec2 texelSize = vec2(1.0);
+        if (light.use_cascaded_shadows) {
+            texelSize /= vec2(textureSize(light.shadow_cascades, 0));
+        } else {
+            texelSize /= textureSize(light.shadow_map, 0);
+        }
 
         // PCF, 4x4 filter
         for (int x = -1; x <= 2; x++) {
             for (int y = -1; y <= 2; y++) {
-                float pcfDepth = texture(light.shadow_map, projCoords.xy + vec2(x, y) * texelSize).r;
-                shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0f;
+                float pcfDepth = 1.0;
+                if (light.use_cascaded_shadows) {
+                    pcfDepth = texture(light.shadow_cascades, vec3(projCoords.xy + vec2(x, y) * texelSize, layer)).r;
+                } else {
+                    pcfDepth = texture(light.shadow_map, projCoords.xy + vec2(x, y) * texelSize).r;
+                }
+                shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
             }
         }
         shadow /= 16.0;
@@ -103,8 +154,7 @@ vec3 calcDirLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
     // shadow
-    vec4 fragPosLightSpace = light.light_space_mat * vec4(worldPos, 1.0);
-    float shadow = calcShadow(fragPosLightSpace, normal);
+    float shadow = calcShadow(worldPos, normal);
 
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 color = ambient + (1.0 - shadow) * Lo;

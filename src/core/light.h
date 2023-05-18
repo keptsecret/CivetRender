@@ -19,7 +19,6 @@ public:
 	GLLight(const std::string& name, const NodeType type) :
 			Node(name, type) {}
 
-	virtual void generateShadowMap(Shader& shader, float near_plane, float far_plane) = 0;
 	virtual void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) = 0;
 
 	virtual void init() = 0;
@@ -43,7 +42,6 @@ public:
 	GLDirectionalLight(const std::string& name, unsigned int res = 2048) :
 			GLLight(name, DirectionalLight) {
 		resolution = res;
-		direction = Vector3f(1, 0, 0);
 		color = Vector3f(1, 1, 1);
 		power = 3.f;
 		active = true;
@@ -61,19 +59,28 @@ public:
 		should_update = true;
 	}
 
-	void generateShadowMap(civet::Shader& shader, float near_plane, float far_plane) override;
-	void generateShadowMap(civet::Shader& shader, Bounds3f frustum);
+	void generateShadowMap(Shader& shader);
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
-	Vector3f direction;
-	Transform light_space_mat;
+	Vector3f direction{1.f, 0.f, 0.f};
+	std::vector<Transform> light_space_mat{5};
+
+	unsigned int UBO;
+	std::vector<float> cascade_levels;
+	float frustum_fitting_factor = 10.f;
+	bool use_cascaded_shadows = true;
 
 	void init() override;
+
+private:
+	std::vector<Point3f> getFrustumCornersInWorldSpace(const Transform& projection, const Transform& view);
+	Transform getLightSpaceMatrix(const float near_plane, const float far_plane);
+	std::vector<Transform> getLightSpaceMatrices();
 };
 
 class GLPointLight : public GLLight {
 public:
-	GLPointLight(const std::string& name, unsigned int res = 2048) :
+	GLPointLight(const std::string& name, unsigned int res = 1024) :
 			GLLight(name, PointLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
@@ -83,7 +90,7 @@ public:
 		should_update = true;
 	}
 
-	GLPointLight(const std::string& name, Point3f pos, unsigned int res = 2048) :
+	GLPointLight(const std::string& name, Point3f pos, unsigned int res = 1024) :
 			position(pos), GLLight(name, PointLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
@@ -93,7 +100,7 @@ public:
 		should_update = true;
 	}
 
-	void generateShadowMap(civet::Shader& shader, float near_plane, float far_plane) override;
+	void generateShadowMap(Shader& shader, float near_plane, float far_plane);
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
 	Point3f position;

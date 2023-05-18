@@ -5,6 +5,7 @@
 #include <core/civet.h>
 #include <core/light.h>
 #include <core/mesh.h>
+#include <core/scene.h>
 #include <rendering/gbuffer.h>
 
 namespace civet {
@@ -50,6 +51,7 @@ private:
 	Shader postprocess_shader;
 
 	Shader depth_shader;
+	Shader depth_cascade_shader;
 	Shader depth_cube_shader;
 
 	GLModel bounding_sphere;
