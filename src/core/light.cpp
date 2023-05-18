@@ -39,6 +39,7 @@ void GLDirectionalLight::bindShadowMap(Shader& shader, const std::string& name, 
 			shader.setFloat(("light.cascade_distances[" + std::to_string(i) + "]"), cascade_levels[i]);
 		}
 		shader.setInt("light.shadow_cascades", tex_offset);
+		shader.setInt("light.cascade_count", cascade_levels.size());
 	} else {
 		shader.setMat4("light.light_space_mat", light_space_mat[0].m);
 		shader.setInt("light.shadow_map", tex_offset);
@@ -189,6 +190,7 @@ void GLPointLight::generateShadowMap(Shader& shader, float near_plane, float far
 	}
 	shader.setFloat("far_plane", far_plane);
 	shader.setVec3("lightPos", position.x, position.y, position.z);
+	glViewport(0, 0, resolution, resolution);
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	///< same for this as above
@@ -206,7 +208,6 @@ void GLPointLight::bindShadowMap(Shader& shader, const std::string& name, unsign
 	shader.setFloat("light.radius", radius);
 
 	shader.setInt("light.shadow_map", tex_offset);
-	glViewport(0, 0, resolution, resolution);
 	glActiveTexture(GL_TEXTURE0 + tex_offset);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, shadow_map);
 	glCheckError("ERROR::GLPointLight::bindShadowMap: OpenGL error code");

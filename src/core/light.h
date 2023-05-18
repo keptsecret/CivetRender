@@ -39,8 +39,8 @@ protected:
 
 class GLDirectionalLight : public GLLight {
 public:
-	GLDirectionalLight(const std::string& name, unsigned int res = 2048) :
-			GLLight(name, DirectionalLight) {
+	GLDirectionalLight(const std::string& name, bool cascades = true, unsigned int res = 2048) :
+			use_cascaded_shadows(cascades), GLLight(name, DirectionalLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
 		power = 3.f;
@@ -49,8 +49,8 @@ public:
 		should_update = true;
 	}
 
-	GLDirectionalLight(const std::string& name, Vector3f dir, unsigned int res = 2048) :
-			direction(dir), GLLight(name, DirectionalLight) {
+	GLDirectionalLight(const std::string& name, Vector3f dir, bool cascades = true, unsigned int res = 2048) :
+			direction(dir), use_cascaded_shadows(cascades), GLLight(name, DirectionalLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
 		power = 3.f;
@@ -67,8 +67,8 @@ public:
 
 	unsigned int UBO;
 	std::vector<float> cascade_levels;
-	float frustum_fitting_factor = 10.f;
-	bool use_cascaded_shadows = true;
+	float frustum_fitting_factor = 100.f;
+	bool use_cascaded_shadows;
 
 	void init() override;
 

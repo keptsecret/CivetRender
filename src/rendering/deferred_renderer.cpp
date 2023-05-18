@@ -230,6 +230,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	// Render depth map
 	// loop through lights and generate shadow maps
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
+	glEnable(GL_DEPTH_CLAMP);
 	for (auto light : dir_lights) {
 		if (light->use_cascaded_shadows) {
 			depth_cascade_shader.use();
@@ -242,6 +243,7 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 		}
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
+	glDisable(GL_DEPTH_CLAMP);
 
 	// Render depth cube map
 	depth_cube_shader.use();

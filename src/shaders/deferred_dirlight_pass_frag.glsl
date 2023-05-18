@@ -62,7 +62,7 @@ float calcShadow(vec3 worldPos, vec3 normal) {
         vec4 fragPosViewSpace = cam_view * vec4(worldPos, 1.0);
         float depthValue = abs(fragPosViewSpace.z);
 
-        for (int i = 0; i < light.cascade_count; ++i) {
+        for (int i = 0; i < light.cascade_count; i++) {
             if (depthValue < light.cascade_distances[i]) {
                 layer = i;
                 break;
@@ -84,9 +84,9 @@ float calcShadow(vec3 worldPos, vec3 normal) {
     float bias = max(0.05 * (1.0 - dot(normal, -light.direction)), 0.005);
     if (light.use_cascaded_shadows) {
         if (layer == light.cascade_count) {
-            bias *= 1.0 / (light.far_plane * 0.25);
+            bias *= 1.0 / (light.far_plane * 0.5);
         } else {
-            bias *= 1.0 / (light.cascade_distances[layer] * 0.25);
+            bias *= 1.0 / (light.cascade_distances[layer] * 0.5);
         }
     }
 
