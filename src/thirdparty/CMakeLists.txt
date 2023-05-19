@@ -50,7 +50,8 @@ set_property (TARGET glad PROPERTY FOLDER "thirdparty")
 set (IMGUI_PATH ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
 file (GLOB IMGUI_SOURCE ${IMGUI_PATH}/*.cpp
         ${IMGUI_PATH}/backends/imgui_impl_glfw.cpp
-        ${IMGUI_PATH}/backends/imgui_impl_opengl3.cpp)
+        ${IMGUI_PATH}/backends/imgui_impl_opengl3.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiFileDialog/*.cpp)
 
 add_library (imgui STATIC ${IMGUI_SOURCE})
 target_include_directories (imgui PUBLIC ${IMGUI_PATH} ${IMGUI_PATH}/backends)
@@ -59,6 +60,12 @@ target_link_libraries (imgui PUBLIC glfw glad)
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIMGUI_IMPL_OPENGL_LOADER_GLAD2")
 
 set (IMGUI_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/imgui PARENT_SCOPE)
+
+# imgui filedialog extension
+### uses dirent so we include that too
+
+set (DIRENT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiFileDialog/dirent PARENT_SCOPE)
+set (IMGUI_EXT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/ImGuiFileDialog PARENT_SCOPE)
 
 ###########################################################################
 # stb

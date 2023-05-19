@@ -355,7 +355,9 @@ target_include_directories( civet_lib PUBLIC
 		${STB_INCLUDE}
 		${GLFW_INCLUDE}
 		${GLAD_INCLUDE}
+		${DIRENT_INCLUDE}
 		${IMGUI_INCLUDE}
+		${IMGUI_EXT_INCLUDE}
 		)
 
 target_compile_options (civet_lib PUBLIC ${CIVET_CXX_FLAGS})
