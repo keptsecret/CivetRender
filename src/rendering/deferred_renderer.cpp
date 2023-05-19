@@ -232,16 +232,18 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	glEnable(GL_DEPTH_CLAMP);
 	for (auto light : dir_lights) {
-		if (light->use_cascaded_shadows) {
-			depth_cascade_shader.use();
-			light->generateShadowMap(depth_cascade_shader);
-			model.draw(depth_cascade_shader, 2); ///< change tex_offset possibly
-		} else {
-			depth_shader.use();
-			light->generateShadowMap(depth_shader);
-			model.draw(depth_shader, 2); ///< change tex_offset possibly
+		if (light->active) {
+			if (light->use_cascaded_shadows) {
+				depth_cascade_shader.use();
+				light->generateShadowMap(depth_cascade_shader);
+				model.draw(depth_cascade_shader, 2); ///< change tex_offset possibly
+			} else {
+				depth_shader.use();
+				light->generateShadowMap(depth_shader);
+				model.draw(depth_shader, 2); ///< change tex_offset possibly
+			}
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 	glDisable(GL_DEPTH_CLAMP);
 
@@ -250,10 +252,12 @@ void DeferredRenderer::generateShadowMaps(GLModel& model, std::vector<std::share
 	// loop through lights and generate shadow maps for point lights
 	glCullFace(GL_FRONT); ///< fix for peter panning shadow artifacts
 	for (auto light : point_lights) {
-		float near = 0.1f, far = getBoundingSphere(*light);
-		light->generateShadowMap(depth_cube_shader, near, far);
-		model.draw(depth_cube_shader, 2);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		if (light->active) {
+			float near = 0.1f, far = getBoundingSphere(*light);
+			light->generateShadowMap(depth_cube_shader, near, far);
+			model.draw(depth_cube_shader, 2);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
 	}
 
 	glDepthMask(GL_FALSE);

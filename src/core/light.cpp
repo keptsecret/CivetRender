@@ -57,7 +57,7 @@ void GLDirectionalLight::bindShadowMap(Shader& shader, const std::string& name, 
 void GLDirectionalLight::init() {
 	Engine* engine = Engine::getSingleton();
 	float far_plane = engine->view_camera.far_plane;
-	cascade_levels = std::vector<float>{ far_plane / 50.0f, far_plane / 25.0f, far_plane / 10.0f, far_plane / 2.0f };
+	cascade_levels = std::vector<float>{ far_plane / 50.0f, far_plane / 25.0f, far_plane / 10.0f };
 
 	glGenFramebuffers(1, &FBO);
 
@@ -66,7 +66,7 @@ void GLDirectionalLight::init() {
 	if (use_cascaded_shadows) {
 		glGenBuffers(1, &UBO);
 		glBindBuffer(GL_UNIFORM_BUFFER, UBO);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrix4) * 16, nullptr, GL_STATIC_DRAW);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(Matrix4) * 4, nullptr, GL_STATIC_DRAW);
 		glBindBufferBase(GL_UNIFORM_BUFFER, 1, UBO);
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 

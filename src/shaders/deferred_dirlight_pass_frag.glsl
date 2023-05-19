@@ -2,7 +2,7 @@
 out vec4 FragColor;
 
 layout (std140, binding = 1) uniform LightSpaceMatrices {
-    mat4 lightSpaceMatrices[16];
+    mat4 lightSpaceMatrices[4];
 };
 
 struct DirLight {
@@ -13,7 +13,7 @@ struct DirLight {
     bool use_cascaded_shadows;
     float far_plane;
     int cascade_count;
-    float cascade_distances[16];
+    float cascade_distances[4]; // limit to 4 cascade levels
     sampler2DArray shadow_cascades;
 
     mat4 light_space_mat;   // only if shadow not cascade
@@ -62,15 +62,8 @@ float calcShadow(vec3 worldPos, vec3 normal) {
         vec4 fragPosViewSpace = cam_view * vec4(worldPos, 1.0);
         float depthValue = abs(fragPosViewSpace.z);
 
-        for (int i = 0; i < light.cascade_count; i++) {
-            if (depthValue < light.cascade_distances[i]) {
-                layer = i;
-                break;
-            }
-        }
-        if (layer == -1) {
-            layer = light.cascade_count;
-        }
+        vec4 res = step(depthValue, vec4(light.cascade_distances[0], light.cascade_distances[1], light.cascade_distances[2], light.cascade_distances[3]));
+        layer = light.cascade_count - int(res.x + res.y + res.z + res.w);
 
         fragPosLightSpace = lightSpaceMatrices[layer] * vec4(worldPos, 1.0);
     } else {

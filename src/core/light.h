@@ -63,7 +63,7 @@ public:
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
 	Vector3f direction{1.f, 0.f, 0.f};
-	std::vector<Transform> light_space_mat{5};
+	std::vector<Transform> light_space_mat{4};
 
 	unsigned int UBO;
 	std::vector<float> cascade_levels;
