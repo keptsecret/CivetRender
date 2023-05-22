@@ -81,11 +81,11 @@ inline float schlickWeight(float cos_theta) {
 }
 
 inline float frSchlick(float R0, float cos_theta) {
-	return lerp(schlickWeight(cos_theta), R0, 1);
+	return R0 + (1.f - R0) * schlickWeight(cos_theta);
 }
 
 inline Spectrum frSchlick(const Spectrum& R0, float cos_theta) {
-	return lerp(schlickWeight(cos_theta), R0, Spectrum(1.f));
+	return lerp(schlickWeight(cos_theta), R0, Spectrum(1.f));	///< possibly also wrong
 }
 
 float frDielectric(float cos_theta_I, float eta_I, float eta_T);

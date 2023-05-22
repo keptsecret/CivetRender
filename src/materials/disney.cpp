@@ -1,5 +1,7 @@
 #include <materials/disney.h>
 
+#include <core/interaction.h>
+#include <core/texture.h>
 #include <utils/reflection.h>
 
 /**
@@ -12,6 +14,16 @@
  */
 
 namespace civet {
+
+inline float sqr(float x) {
+	return x * x;
+}
+
+// For a dielectric, R(0) = (eta - 1)^2 / (eta + 1)^2, assuming we're
+// coming from air..
+inline float schlickR0FromEta(float eta) {
+	return sqr(eta - 1) / sqr(eta + 1);
+}
 
 class DisneyDiffuse : public BxDF {
 public:
@@ -166,8 +178,8 @@ public:
 			gloss(gloss) {}
 
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
-	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type = nullptr) const override;
-	// TODO: implement sample_f and pdf when there
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type) const override;
+	float pdf(const Vector3f& wo, const Vector3f& wi) const;
 
 private:
 	float weight, gloss;
@@ -188,7 +200,148 @@ Spectrum DisneyClearcoat::f(const Vector3f& wo, const Vector3f& wi) const {
 	return weight * Gr * Fr * Dr * 0.25f;
 }
 
-void DisneyMaterial::computeScatteringFunctions(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const {
+Spectrum DisneyClearcoat::sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type) const {
+	if (wo.z == 0) {
+		return Spectrum(0.f);
+	}
+
+	float alpha2 = gloss * gloss;
+	float cos_theta = std::sqrt(std::max(float(0), (1 - std::pow(alpha2, 1 - sample[0])) / (1 - alpha2)));
+	float sin_theta = std::sqrt(std::max((float)0, 1 - cos_theta * cos_theta));
+	float phi = 2 * Pi * sample[1];
+	Vector3f wh = sphericalDirection(sin_theta, cos_theta, phi);
+	if (!sameHemisphere(wo, wh)) {
+		wh = -wh;
+	}
+
+	*wi = reflect(wo, wh);
+	if (!sameHemisphere(wo, *wi)) {
+		return Spectrum(0.f);
+	}
+
+	*pdf_val = pdf(wo, *wi);
+	return f(wo, *wi);
+}
+
+float DisneyClearcoat::pdf(const Vector3f& wo, const Vector3f& wi) const {
+	if (!sameHemisphere(wo, wi)) {
+		return 0.f;
+	}
+
+	Vector3f wh = wi + wo;
+	if (wh.x == 0 && wh.y == 0 && wh.z == 0) {
+		return 0.f;
+	}
+	wh = normalize(wh);
+
+	// The sampling routine samples wh exactly from the GTR1 distribution.
+	// Thus, the final value of the PDF is just the value of the
+	// distribution for wh converted to a measure with respect to the
+	// surface normal.
+	float Dr = GTR1(absCosTheta(wh), gloss);
+	return Dr * absCosTheta(wh) / (4 * dot(wo, wh));
+}
+
+void DisneyMaterial::computeScatteringFunctions(SurfaceInteraction* si, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const {
+	// Perform bump mapping with _bumpMap_, if present
+	if (bump_map) {
+		bump(bump_map, si);
+	}
+
+	// Evaluate textures for _DisneyMaterial_ material and allocate BRDF
+	si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
+
+	// Diffuse
+	Spectrum c = color->evaluate(*si).clamp();
+	float metallicWeight = metallic->evaluate(*si);
+	float e = eta->evaluate(*si);
+	float strans = specular_transmission->evaluate(*si);
+	float diffuseWeight = (1 - metallicWeight) * (1 - strans);
+	float dt = diffuse_transmission->evaluate(*si) / 2; // 0: all diffuse is reflected -> 1, transmitted
+	float rough = roughness->evaluate(*si);
+	float lum = c.y();
+	// normalize lum. to isolate hue+sat
+	Spectrum Ctint = lum > 0 ? (c / lum) : Spectrum(1.);
+
+	float sheenWeight = sheen->evaluate(*si);
+	Spectrum Csheen;
+	if (sheenWeight > 0) {
+		float stint = sheen_tint->evaluate(*si);
+		Csheen = lerp(stint, Spectrum(1.), Ctint);
+	}
+
+	if (diffuseWeight > 0) {
+		if (thin) {
+			float flat = flatness->evaluate(*si);
+			// Blend between DisneyDiffuse and fake subsurface based on
+			// flatness.  Additionally, weight using diffTrans.
+			si->bsdf->add(ARENA_ALLOC(arena, DisneyDiffuse)(diffuseWeight * (1 - flat) * (1 - dt) * c));
+			si->bsdf->add(ARENA_ALLOC(arena, DisneyFakeSS)(diffuseWeight * flat * (1 - dt) * c, rough));
+		} else {
+			Spectrum sd = scatter_distance->evaluate(*si);
+			if (sd.isBlack())
+				// No subsurface scattering; use regular (Fresnel modified)
+				// diffuse.
+				si->bsdf->add(ARENA_ALLOC(arena, DisneyDiffuse)(diffuseWeight * c));
+			else {
+				// Use a BSSRDF instead.
+				// TODO: implement BSSRDFs
+				// si->bsdf->add(ARENA_ALLOC(arena, SpecularTransmission)(1.f, 1.f, e, mode));
+				// si->bssrdf = ARENA_ALLOC(arena, DisneyBSSRDF)(c * diffuseWeight, sd, *si, e, this, mode);
+			}
+		}
+
+		// Retro-reflection.
+		si->bsdf->add(
+				ARENA_ALLOC(arena, DisneyRetro)(diffuseWeight * c, rough));
+
+		// Sheen (if enabled)
+		if (sheenWeight > 0) {
+			si->bsdf->add(ARENA_ALLOC(arena, DisneySheen)(diffuseWeight * sheenWeight * Csheen));
+		}
+	}
+
+	// Create the microfacet distribution for metallic and/or specular
+	// transmission.
+	float aspect = std::sqrt(1 - anisotropic->evaluate(*si) * .9);
+	float ax = std::max(float(.001), sqr(rough) / aspect);
+	float ay = std::max(float(.001), sqr(rough) * aspect);
+	MicrofacetDistribution* distrib = ARENA_ALLOC(arena, DisneyMicrofacetDistribution)(ax, ay);
+
+	// Specular is Trowbridge-Reitz with a modified Fresnel function.
+	float specTint = specular_tint->evaluate(*si);
+	Spectrum Cspec0 = lerp(metallicWeight, schlickR0FromEta(e) * lerp(specTint, Spectrum(1.), Ctint), c);
+	Fresnel* fresnel = ARENA_ALLOC(arena, DisneyFresnel)(Cspec0, metallicWeight, e);
+	si->bsdf->add(ARENA_ALLOC(arena, MicrofacetReflection)(Spectrum(1.), distrib, fresnel));
+
+	// Clearcoat
+	float cc = clearcoat->evaluate(*si);
+	if (cc > 0) {
+		si->bsdf->add(ARENA_ALLOC(arena, DisneyClearcoat)(cc, lerp(clearcoat_gloss->evaluate(*si), .1, .001)));
+	}
+
+	// BTDF
+	if (strans > 0) {
+		// Walter et al's model, with the provided transmissive term scaled
+		// by sqrt(color), so that after two refractions, we're back to the
+		// provided color.
+		Spectrum T = strans * sqrt(c);
+		if (thin) {
+			// Scale roughness based on IOR (Burley 2015, Figure 15).
+			float rscaled = (0.65f * e - 0.35f) * rough;
+			float ax = std::max(float(.001), sqr(rscaled) / aspect);
+			float ay = std::max(float(.001), sqr(rscaled) * aspect);
+			MicrofacetDistribution* scaledDistrib =
+					ARENA_ALLOC(arena, TrowbridgeReitzDistribution)(ax, ay);
+			si->bsdf->add(ARENA_ALLOC(arena, MicrofacetTransmission)(T, scaledDistrib, 1., e, mode));
+		} else {
+			si->bsdf->add(ARENA_ALLOC(arena, MicrofacetTransmission)(T, distrib, 1., e, mode));
+		}
+	}
+	if (thin) {
+		// Lambertian, weighted by (1 - diffTrans)
+		si->bsdf->add(ARENA_ALLOC(arena, LambertianTransmission)(dt * c));
+	}
 }
 
 } // namespace civet
