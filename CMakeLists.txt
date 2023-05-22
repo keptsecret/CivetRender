@@ -269,6 +269,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/geometry/transform.h
 		src/core/geometry/quaternion.h
 		src/core/interaction.h
+		src/core/medium.h
 		src/core/shape.h
 		src/core/primitive.h
 		src/core/scene.h
@@ -277,6 +278,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/mesh.h
 		src/core/material.h
 		src/core/texture.h
+		src/core/mipmap.h
 		src/core/skybox.h
 		src/core/spectrum.h
 		src/core/camera.h
@@ -293,6 +295,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/geometry/transform.cpp
 		src/core/geometry/quaternion.cpp
 		src/core/interaction.cpp
+		src/core/medium.cpp
 		src/core/shape.cpp
 		src/core/primitive.cpp
 		src/core/scene.cpp
@@ -301,6 +304,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/mesh.cpp
 		src/core/material.cpp
 		src/core/texture.cpp
+		src/core/mipmap.cpp
 		src/core/skybox.cpp
 		src/core/spectrum.cpp
 		src/core/camera.cpp
@@ -316,7 +320,9 @@ file ( GLOB CIVET_SOURCE
 		src/utils/*
 		src/cameras/*
 		src/shaders/*
+		src/textures/*
 		src/materials/*
+		src/lights/*
 		src/rendering/*
 		)
 
