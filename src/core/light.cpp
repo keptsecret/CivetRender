@@ -4,6 +4,10 @@
 
 namespace civet {
 
+bool VisibilityTester::unoccluded(const Scene& scene) const {
+	return !scene.intersectP(p0.spawnRayTo(p1));
+}
+
 void GLDirectionalLight::generateShadowMap(Shader& shader) {
 	Engine* engine = Engine::getSingleton();
 	glViewport(0, 0, resolution, resolution);

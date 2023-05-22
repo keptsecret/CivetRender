@@ -3,10 +3,58 @@
 
 #include <core/civet.h>
 #include <core/geometry/vecmath.h>
-#include <core/shader.h>
+#include <core/medium.h>
 #include <core/node.h>
+#include <core/shader.h>
+#include <core/interaction.h>
 
 namespace civet {
+
+enum class LightFlags : int {
+	DeltaPosition = 1,
+	DeltaDirection = 2,
+	Area = 4,
+	Infinite = 8
+};
+
+inline bool isDeltaLight(int flags) {
+	return flags & (int)LightFlags::DeltaPosition ||
+			flags & (int)LightFlags::DeltaDirection;
+}
+
+class Light {
+public:
+	Light(int flags, const Transform& ltw, const MediumInterface& mi, int n_samples = 1) :
+			flags(flags), n_samples(std::max(1, n_samples)), light_to_world(ltw), world_to_light(inverse(ltw)) {
+	}
+
+	virtual Spectrum sample_Li(const Interaction& ref, const Point2f& u, Vector3f* wi, float* pdf, VisibilityTester* vis) const = 0;
+	virtual Spectrum power() const = 0;
+	virtual void preprocess(const Scene& scene) {}
+
+	const int flags;
+	const int n_samples;
+	const MediumInterface medium_interface;
+
+protected:
+	const Transform light_to_world, world_to_light;
+};
+
+class VisibilityTester {
+public:
+	VisibilityTester() {}
+	VisibilityTester(const Interaction& p0, const Interaction& p1) :
+			p0(p0), p1(p1) {}
+
+	const Interaction &P0() const { return p0; }
+	const Interaction &P1() const { return p1; }
+
+	bool unoccluded(const Scene& scene) const;
+	Spectrum Tr(const Scene& scene, Sampler& sampler) const;
+
+private:
+	Interaction p0, p1;
+};
 
 struct AttenuationFactor {
 	float constant = 1.f;
@@ -30,7 +78,7 @@ public:
 	Vector3f color;
 	float power;
 
-	bool should_update;	///< true only if need to regenerate shadow map, e.g. position or direction changes
+	bool should_update; ///< true only if need to regenerate shadow map, e.g. position or direction changes
 
 protected:
 	unsigned int FBO;
@@ -62,8 +110,8 @@ public:
 	void generateShadowMap(Shader& shader);
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
-	Vector3f direction{1.f, 0.f, 0.f};
-	std::vector<Transform> light_space_mat{4};
+	Vector3f direction{ 1.f, 0.f, 0.f };
+	std::vector<Transform> light_space_mat{ 4 };
 
 	unsigned int UBO;
 	std::vector<float> cascade_levels;
