@@ -91,9 +91,10 @@ vec3 calcPointLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
     vec3 L = normalize(light.position - worldPos);
     vec3 H = normalize(V + L);
     float distance = length(light.position - worldPos);
-    float s = min(distance / light.radius, 1);
+    float dmr = distance / light.radius;
+    float s = clamp(1 - (dmr * dmr * dmr * dmr), 0.0, 1.0);
     float s2 = s * s;
-    float attenuation = (1.0 - s2) * (1.0 - s2) / (distance * distance);
+    float attenuation = s2 / (distance * distance + 1);
     vec3 radiance = light.color * attenuation;
 
     // cook-torrance brdf
