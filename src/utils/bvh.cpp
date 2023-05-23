@@ -458,6 +458,10 @@ int BVH::flattenBVHTree(BVHBuildNode* node, int* offset) {
 	return curr_offset;
 }
 
+Bounds3f BVH::worldBound() const {
+	return nodes ? nodes[0].bounds : Bounds3f();
+}
+
 bool BVH::intersect(const Ray& ray, SurfaceInteraction* isect) const {
 	bool hit = false;
 	Vector3f inv_dir(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);

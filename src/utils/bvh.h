@@ -70,6 +70,7 @@ public:
 
 	~BVH() { freeAligned(nodes); }
 
+	Bounds3f worldBound() const override;
 	bool intersect(const Ray& ray, SurfaceInteraction* isect) const;
 	bool intersectP(const Ray& ray) const;
 
