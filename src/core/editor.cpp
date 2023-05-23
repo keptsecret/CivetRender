@@ -1,6 +1,7 @@
 #include <core/editor.h>
 
 #include <core/engine.h>
+#include <ImGuiFileDialog/ImGuiFileDialog.h>
 
 namespace civet {
 
@@ -37,6 +38,7 @@ void Editor::debugWindow(Scene& active_scene) {
 	ImGui::Begin("Debug");
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	scalarRangeButton(&engine->view_camera.mvmt_speed, 0.0f, 50.0f, 0xffffffffu, 0x00ffffffu, "Camera Speed", "##CS");
+	scalarRangeButton(&engine->view_camera.zoom, 27.0f, 78.0f, 0xffffffffu, 0x00ffffffu, "Camera FOV", "##CFOV");
 
 	if (ImGui::TreeNodeEx("Clip range", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Indent(15.0f);
@@ -44,6 +46,25 @@ void Editor::debugWindow(Scene& active_scene) {
 		scalarButton(&engine->view_camera.far_plane, 0xffffffffu, 0x00ffffffu, "End:", "##CFP");
 		ImGui::Unindent(15.0f);
 		ImGui::TreePop();
+	}
+
+	if (ImGui::Button("Open File Dialog")) {
+		ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File", ".cpp,.h,.hpp", ".");
+	}
+
+	// display
+	if (ImGuiFileDialog::Instance()->Display("ChooseFileDlgKey"))
+	{
+		// action if OK
+		if (ImGuiFileDialog::Instance()->IsOk())
+		{
+			std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
+			std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+			// action
+		}
+
+		// close
+		ImGuiFileDialog::Instance()->Close();
 	}
 
 	ImGui::End();
@@ -62,7 +83,7 @@ void Editor::sceneTree(Scene& active_scene) {
 			TreeNodeState state = sceneTreeNode(active_scene, node);
 
 			if (state.is_open) {
-				if (node->type == Model) {
+				if (node->type == NodeType::Model) {
 					auto model = std::static_pointer_cast<GLModel>(node);
 					auto meshes = model->getMeshes();
 					for (int j = 0; j < meshes.size(); j++) {
@@ -84,7 +105,7 @@ void Editor::sceneTree(Scene& active_scene) {
 }
 
 TreeNodeState Editor::sceneTreeNode(Scene& active_scene, std::shared_ptr<Node> node) {
-	bool is_leaf = node->type != Model;
+	bool is_leaf = node->type != NodeType::Model;
 
 	ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_SpanAvailWidth |
 			(is_leaf
@@ -151,19 +172,19 @@ void Editor::inspector(Scene& active_scene) {
 			ImGui::TreePop();
 		}
 
-		if (node->type == PointLight) {
+		if (node->type == NodeType::PointLight) {
 			inspectPointLight(node);
 		}
 
-		if (node->type == DirectionalLight) {
+		if (node->type == NodeType::DirectionalLight) {
 			inspectDirectionalLight(node);
 		}
 
-		if (node->type == SkyBox) {
+		if (node->type == NodeType::SkyBox) {
 			inspectSkybox(node);
 		}
 
-		if (node->type == Mesh) {
+		if (node->type == NodeType::Mesh) {
 			if (ImGui::Button("Edit Material")) {
 				show_material_editor = true;
 			}
@@ -263,7 +284,7 @@ void Editor::inspectSkybox(std::shared_ptr<Node> node) {
 }
 
 void Editor::materialEditor(std::shared_ptr<Node> node) {
-	if (show_material_editor && node->type == Mesh) {
+	if (show_material_editor && node->type == NodeType::Mesh) {
 		auto mesh = std::static_pointer_cast<GLMesh>(node);
 		auto material = mesh->material;
 

@@ -7,7 +7,7 @@
 
 namespace civet {
 
-enum NodeType {
+enum class NodeType {
 	Model,
 	Mesh,
 	DirectionalLight,

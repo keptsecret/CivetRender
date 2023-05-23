@@ -49,7 +49,7 @@ unsigned int loadTextureFromFile(const char* path, const std::string& directory)
 }
 
 GLMesh::GLMesh(std::vector<GLVertex> _vertices, std::vector<unsigned int> _indices, std::shared_ptr<GLMaterial> _material, const std::string& name, bool _use_indices) :
-		vertices(_vertices), indices(_indices), material(_material), use_indices(_use_indices), VAO(0), VBO(0), EBO(0), Node(name, Mesh) {
+		vertices(_vertices), indices(_indices), material(_material), use_indices(_use_indices), VAO(0), VBO(0), EBO(0), Node(name, NodeType::Mesh) {
 	for (const auto& v : vertices) {
 		bounds = bUnion(bounds, v.position);
 	}
@@ -119,7 +119,7 @@ void GLMesh::setupMesh() {
 }
 
 GLModel::GLModel(const std::string& name) :
-		Node(name, Model) {
+		Node(name, NodeType::Model) {
 }
 
 void GLModel::loadModel(std::string path) {
@@ -182,7 +182,7 @@ std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene)
 		vertex.normal = normal;
 
 		if (mesh->mTangents) {
-			Normal3f tangent(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
+			Vector3f tangent(mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z);
 			vertex.tangent = tangent;
 		}
 

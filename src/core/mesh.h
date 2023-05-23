@@ -15,7 +15,7 @@ struct GLVertex {
 	Point3f position;
 	Normal3f normal;
 	Point2f uv;
-	Normal3f tangent;
+	Vector3f tangent;
 };
 
 class GLModel;
@@ -42,7 +42,7 @@ private:
 class GLModel : public Node {
 public:
 	GLModel() :
-			Node("GLModel", Model) {}
+			Node("GLModel", NodeType::Model) {}
 
 	GLModel(const std::string& name);
 

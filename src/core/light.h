@@ -88,7 +88,7 @@ protected:
 class GLDirectionalLight : public GLLight {
 public:
 	GLDirectionalLight(const std::string& name, bool cascades = true, unsigned int res = 2048) :
-			use_cascaded_shadows(cascades), GLLight(name, DirectionalLight) {
+			use_cascaded_shadows(cascades), GLLight(name, NodeType::DirectionalLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
 		power = 3.f;
@@ -98,7 +98,7 @@ public:
 	}
 
 	GLDirectionalLight(const std::string& name, Vector3f dir, bool cascades = true, unsigned int res = 2048) :
-			direction(dir), use_cascaded_shadows(cascades), GLLight(name, DirectionalLight) {
+			direction(dir), use_cascaded_shadows(cascades), GLLight(name, NodeType::DirectionalLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
 		power = 3.f;
@@ -129,7 +129,7 @@ private:
 class GLPointLight : public GLLight {
 public:
 	GLPointLight(const std::string& name, unsigned int res = 1024) :
-			GLLight(name, PointLight) {
+			GLLight(name, NodeType::PointLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
 		power = 100.f;
@@ -139,7 +139,7 @@ public:
 	}
 
 	GLPointLight(const std::string& name, Point3f pos, unsigned int res = 1024) :
-			position(pos), GLLight(name, PointLight) {
+			position(pos), GLLight(name, NodeType::PointLight) {
 		resolution = res;
 		color = Vector3f(1, 1, 1);
 		power = 100.f;
