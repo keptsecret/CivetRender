@@ -254,6 +254,8 @@ CIVET_CPU_GPU
 Transform perspective(float fov, float n, float f);
 CIVET_CPU_GPU
 Transform perspective(float fov, float aspect, float n, float f);
+CIVET_CPU_GPU
+bool solveLinearSystem2x2(const float A[2][2], const float B[2], float* x0, float* x1);
 
 // Transform Inline Functions
 template <typename T>

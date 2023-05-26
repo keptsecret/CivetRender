@@ -4,7 +4,8 @@
 
 namespace civet {
 
-bool solveLinearSystem(const float A[2][2], const float B[2], float* x0, float* x1) {
+CIVET_CPU_GPU
+bool solveLinearSystem2x2(const float A[2][2], const float B[2], float* x0, float* x1) {
 	float det = A[0][0] * A[1][1] - A[0][1] * A[1][0];
 	if (std::abs(det) < 1e-10f) {
 		return false;

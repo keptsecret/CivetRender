@@ -56,16 +56,17 @@
 
 #include <imgui.h>
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include <imgui/imgui_internal.h>
-#include <imgui/misc/cpp/imgui_stdlib.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_opengl3.h>
+#include <imgui/imgui_internal.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 
 #define ALLOCA(TYPE, COUNT) (TYPE*)alloca((COUNT) * sizeof(TYPE))
 
 namespace civet {
 
 // Global forward declarations
+class Scene;
 template <typename T>
 class Vector2;
 template <typename T>
@@ -104,6 +105,8 @@ class Shape;
 class Primitive;
 class GeometricPrimitive;
 class TransformedPrimitve;
+class GLModel;
+class Skybox;
 
 class Material;
 template <typename T>
@@ -117,7 +120,11 @@ class MediumInteraction;
 struct MediumInterface;
 
 class Light;
+class VisibilityTester;
 class AreaLight;
+class GLLight;
+class GLDirectionalLight;
+class GLPointLight;
 
 template <int n_spectrum_samples>
 class CoefficientSpectrum;
@@ -136,6 +143,8 @@ class Filter;
 class Sampler;
 
 class MemoryArena;
+template <typename T, int logBlockSize = 2>
+class BlockedArray;
 class RNG;
 
 // Global constants
@@ -227,6 +236,20 @@ inline float gamma(int n) {
 	return (n * MachineEpsilon) / (1 - n * MachineEpsilon);
 }
 
+inline float gammaCorrect(float value) {
+	if (value <= 0.0031308f) {
+		return 12.92f * value;
+	}
+	return 1.055f * std::pow(value, (float)(1.f / 2.4f)) - 0.055f;
+}
+
+inline float inverseGammaCorrect(float value) {
+	if (value <= 0.04045f) {
+		return value * 1.f / 12.92f;
+	}
+	return std::pow((value + 0.055f) * 1.f / 1.055f, (float)2.4f);
+}
+
 template <typename T, typename U, typename V>
 CIVET_CPU_GPU inline T clamp(T val, U low, V high) {
 	if (val < low) {
@@ -259,6 +282,42 @@ inline float degrees(float rad) {
 	return (180.0f / Pi) * rad;
 }
 
+inline float log2(float x) {
+	const double inv_log2 = 1.442695040888963387004650940071;
+	return std::log(x) * inv_log2;
+}
+
+inline int log2Int(uint32_t v) {
+#if defined(CIVET_IS_MSVC)
+	unsigned long lz = 0;
+	if (_BitScanReverse(&lz, v)) return lz;
+	return 0;
+#else
+	return 31 - __builtin_clz(v);
+#endif
+}
+
+inline int log2Int(int32_t v) { return log2Int((uint32_t)v); }
+
+inline int log2Int(uint64_t v) {
+#if defined(CIVET_IS_MSVC)
+	unsigned long lz = 0;
+#if defined(_WIN64)
+	_BitScanReverse64(&lz, v);
+#else
+	if  (_BitScanReverse(&lz, v >> 32))
+		lz += 32;
+	else
+		_BitScanReverse(&lz, v & 0xffffffff);
+#endif // _WIN64
+	return lz;
+#else  // CIVET_IS_MSVC
+	return 63 - __builtin_clzll(v);
+#endif
+}
+
+inline int log2Int(int64_t v) { return log2Int((uint64_t)v); }
+
 template <typename Predicate>
 CIVET_CPU_GPU int findInterval(int size, const Predicate& pred) {
 	int first = 0, len = size;
@@ -272,6 +331,87 @@ CIVET_CPU_GPU int findInterval(int size, const Predicate& pred) {
 		}
 	}
 	return clamp(first - 1, 0, size - 2);
+}
+
+template <typename T>
+inline CIVET_CONSTEXPR bool isPowerOf2(T v) {
+	return v && !(v & (v - 1));
+}
+
+inline int32_t roundUpPow2(int32_t v) {
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	return v + 1;
+}
+
+inline int64_t roundUpPow2(int64_t v) {
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v |= v >> 32;
+	return v + 1;
+}
+
+inline float erfInv(float x) {
+	float w, p;
+	x = clamp(x, -.99999f, .99999f);
+	w = -std::log((1 - x) * (1 + x));
+	if (w < 5) {
+		w = w - 2.5f;
+		p = 2.81022636e-08f;
+		p = 3.43273939e-07f + p * w;
+		p = -3.5233877e-06f + p * w;
+		p = -4.39150654e-06f + p * w;
+		p = 0.00021858087f + p * w;
+		p = -0.00125372503f + p * w;
+		p = -0.00417768164f + p * w;
+		p = 0.246640727f + p * w;
+		p = 1.50140941f + p * w;
+	} else {
+		w = std::sqrt(w) - 3;
+		p = -0.000200214257f;
+		p = 0.000100950558f + p * w;
+		p = 0.00134934322f + p * w;
+		p = -0.00367342844f + p * w;
+		p = 0.00573950773f + p * w;
+		p = -0.0076224613f + p * w;
+		p = 0.00943887047f + p * w;
+		p = 1.00167406f + p * w;
+		p = 2.83297682f + p * w;
+	}
+	return p * x;
+}
+
+inline float erf(float x) {
+	// constants
+	float a1 = 0.254829592f;
+	float a2 = -0.284496736f;
+	float a3 = 1.421413741f;
+	float a4 = -1.453152027f;
+	float a5 = 1.061405429f;
+	float p = 0.3275911f;
+
+	// Save the sign of x
+	int sign = 1;
+	if (x < 0) {
+		sign = -1;
+	}
+	x = std::abs(x);
+
+	// A&S formula 7.1.26
+	float t = 1 / (1 + p * x);
+	float y =
+			1 -
+			(((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * std::exp(-x * x);
+
+	return sign * y;
 }
 
 // Math functions to support both CPU and GPU
@@ -302,11 +442,6 @@ inline CIVET_CPU_GPU typename std::enable_if_t<std::is_floating_point_v<T>, bool
 template <typename T>
 inline CIVET_CPU_GPU typename std::enable_if_t<std::is_integral_v<T>, bool> isInf(T v) {
 	return false;
-}
-
-template <typename T>
-inline CIVET_CPU_GPU CIVET_CONSTEXPR bool isPowerOf2(T v) {
-	return v && !(v & (v - 1));
 }
 
 inline GLenum glCheckError(const char* func_def) {

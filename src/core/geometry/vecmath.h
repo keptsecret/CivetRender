@@ -61,7 +61,7 @@ public:
 	}
 
 	CIVET_CPU_GPU
-	Vector2<T>& operator*=(T s) const {
+	Vector2<T>& operator*=(T s) {
 		x *= s;
 		y *= s;
 		return *this;
