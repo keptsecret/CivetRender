@@ -2,7 +2,10 @@
 #define CIVET_TEXTURE_H
 
 #include <core/civet.h>
+#include <core/geometry/vecmath.h>
 #include <core/geometry/transform.h>
+#include <core/spectrum.h>
+#include <utils/memory.h>
 
 namespace civet {
 
@@ -47,6 +50,7 @@ private:
 
 class TextureMapping3D {
 public:
+	virtual ~TextureMapping3D();
 	virtual Point3f map(const SurfaceInteraction& si, Vector3f* dpdx, Vector3f* dpdy) const = 0;
 };
 
@@ -64,7 +68,7 @@ private:
 template <typename T>
 class Texture {
 public:
-	virtual T evaluate(const SurfaceInteraction&) const = 0;
+	virtual T evaluate(const SurfaceInteraction&, int channel = 0) const = 0;
 	virtual ~Texture() {}
 };
 

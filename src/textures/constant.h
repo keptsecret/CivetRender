@@ -10,7 +10,7 @@ template <typename T>
 class ConstantTexture : public Texture<T> {
 public:
 	ConstantTexture(const T& value) : value(value) {}
-	T evaluate(const SurfaceInteraction&) const {
+	T evaluate(const SurfaceInteraction&, int channel = 0) const {
 		return value;
 	}
 

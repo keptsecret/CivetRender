@@ -11,7 +11,7 @@ class MixTexture : public Texture<T> {
 public:
 	MixTexture(const std::shared_ptr<Texture<T>>& t1, const std::shared_ptr<Texture<T>>& t2, const std::shared_ptr<Texture<float>>& amt) :
 			tex1(t1), tex2(t2), amount(amt) {}
-	T evaluate(const SurfaceInteraction& si) const {
+	T evaluate(const SurfaceInteraction& si, int channel = 0) const {
 		T t1 = tex1.evaluate(si), t2 = tex2->evaluate(si);
 		float amt = amount->evaluate(si);
 		return (1 - amt) * t1 + amt * t2;

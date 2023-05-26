@@ -13,7 +13,7 @@ public:
 			const T& v01, const T& v10, const T& v11) :
 			mapping(std::move(mapping)), v00(v00), v01(v01), v10(v10), v11(v11) {}
 
-	T evaluate(const SurfaceInteraction& si) const {
+	T evaluate(const SurfaceInteraction& si, int channel = 0) const {
 		Vector2f dstdx, dstdy;
 		Point2f st = mapping->map(si, &dstdx, &dstdy);
 		return (1-st[0]) * (1-st[1]) * v00 + (1-st[0]) * st[1] * v01 +

@@ -4,6 +4,10 @@
 
 namespace civet {
 
+TextureMapping2D::~TextureMapping2D() {}
+
+TextureMapping3D::~TextureMapping3D() {}
+
 UVMapping2D::UVMapping2D(float su, float sv, float du, float dv) :
 		su(su), sv(sv), du(du), dv(dv) {}
 
