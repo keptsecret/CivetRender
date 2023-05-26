@@ -180,6 +180,20 @@ void Skybox::renderSkyboxToTexture(const Vector3f& sun_dir) {
 	}
 }
 
+Vector3f Skybox::sampleSky(const Vector3f& sample_dir) {
+	Vector3f origin{ 0, atmosphere.earth_radius + 1000, 3000 };
+	float t0, t1, tmax = Infinity;
+	if (raySphereIntersect(origin, sample_dir, atmosphere.earth_radius, t0, t1) && t1 > 0) {
+		tmax = std::max(0.0f, t0);
+	}
+	Vector3f color;
+	if (!atmosphere.computeIncidentLight(origin, sample_dir, 0, tmax, &color, 16, 8)) {
+		color = parameters.ground_color;
+	}
+
+	return color;
+}
+
 void Skybox::renderSky(int face, float fov, float aspect, int spp) {
 	Vector3f origin{ 0, atmosphere.earth_radius + 1000, 3000 };
 	float angle = std::tan(radians(fov) * 0.5f);

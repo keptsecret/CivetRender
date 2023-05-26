@@ -45,6 +45,7 @@ public:
 	void update(const SkyboxParameters& params);
 	void draw(const Transform& projection, const Transform& view);
 	void renderSkyboxToTexture(const Vector3f& sun_dir);
+	Vector3f sampleSky(const Vector3f& sample_dir);
 
 	void resetEditingParameters() { editing_params = parameters; }
 
