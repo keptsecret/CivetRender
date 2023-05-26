@@ -76,7 +76,7 @@ inline bool sameHemisphere(const Vector3f& w, const Normal3f& wp) {
 }
 
 inline float schlickWeight(float cos_theta) {
-	float m = clamp(1- cos_theta, 0, 1);
+	float m = clamp(1 - cos_theta, 0, 1);
 	return m * m * m * m * m;
 }
 
@@ -85,7 +85,7 @@ inline float frSchlick(float R0, float cos_theta) {
 }
 
 inline Spectrum frSchlick(const Spectrum& R0, float cos_theta) {
-	return lerp(schlickWeight(cos_theta), R0, Spectrum(1.f));	///< possibly also wrong
+	return lerp(schlickWeight(cos_theta), R0, Spectrum(1.f)); ///< possibly also wrong
 }
 
 float frDielectric(float cos_theta_I, float eta_I, float eta_T);
@@ -163,6 +163,9 @@ public:
 	Spectrum rho(const Vector3f& wo, int num_samples, const Point2f* samples, BxDFType flags = BSDF_ALL) const;
 	Spectrum rho(int num_samples, const Point2f* samples1, const Point2f* samples2, BxDFType flags = BSDF_ALL) const;
 
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& u, float* pdf, BxDFType flags = BSDF_ALL, BxDFType* sampled_type = nullptr) const;
+	float pdf(const Vector3f& wo, const Vector3f& wi, BxDFType flags = BSDF_ALL) const;
+
 	const float eta;
 
 private:
@@ -202,11 +205,11 @@ public:
 	 * @param wo outgoing direction
 	 * @param wi new incoming direction
 	 * @param sample
-	 * @param pdf
+	 * @param pdf_val
 	 * @param sampled_type
 	 * @return value of the distribution function as a Spectrum (incident direction stored in wi)
 	 */
-	virtual Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type = nullptr) const;
+	virtual Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type = nullptr) const;
 
 	/**
 	 * Computes hemispherical-directional reflectance:\n
@@ -227,6 +230,8 @@ public:
 	 * @return
 	 */
 	virtual Spectrum rho(int n_samples, const Point2f* samples1, const Point2f* samples2) const;
+
+	virtual float pdf(const Vector3f& wo, const Vector3f& wi) const;
 
 	bool matchesFlags(BxDFType t) const {
 		return (type & t) == type;
@@ -289,6 +294,7 @@ public:
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
 
 	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type = nullptr) const override;
+	float pdf(const Vector3f& wo, const Vector3f& wi) const override { return 0; }
 
 private:
 	const Spectrum R;
@@ -302,7 +308,8 @@ public:
 
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
 
-	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type = nullptr) const override;
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type = nullptr) const override;
+	float pdf(const Vector3f& wo, const Vector3f& wi) const override { return 0; }
 
 private:
 	const Spectrum T;
@@ -324,7 +331,7 @@ public:
 
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
 
-	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf, BxDFType* sampled_type = nullptr) const override;
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type = nullptr) const override;
 
 private:
 	const Spectrum R, T;
@@ -388,6 +395,8 @@ public:
 			BxDF(BxDFType(BSDF_REFLECTION | BSDF_GLOSSY)), R(R), distribution(d), fresnel(f) {}
 
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type = nullptr) const override;
+	float pdf(const Vector3f& wo, const Vector3f& wi) const override;
 
 private:
 	const Spectrum R;
@@ -401,6 +410,8 @@ public:
 			BxDF(BxDFType(BSDF_TRANSMISSION | BSDF_GLOSSY)), T(T), distribution(d), eta_A(etaa), eta_B(etab), fresnel(etaa, etab), mode(m) {}
 
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type = nullptr) const override;
+	float pdf(const Vector3f& wo, const Vector3f& wi) const override;
 
 private:
 	const Spectrum T;
@@ -421,6 +432,8 @@ public:
 	}
 
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type = nullptr) const override;
+	float pdf(const Vector3f& wo, const Vector3f& wi) const override;
 
 private:
 	const Spectrum Rd, Rs;
@@ -433,11 +446,23 @@ public:
 			BxDF(BxDFType(BSDF_REFLECTION | BSDF_TRANSMISSION | BSDF_GLOSSY)), bsdf_table(table), mode(m) {}
 
 	Spectrum f(const Vector3f& wo, const Vector3f& wi) const override;
+	Spectrum sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample, float* pdf_val, BxDFType* sampled_type = nullptr) const override;
+	float pdf(const Vector3f& wo, const Vector3f& wi) const override;
 
 private:
 	const FourierBSDFTable& bsdf_table;
 	const TransportMode mode;
 };
+
+inline int BSDF::numComponents(BxDFType flags) const {
+	int num = 0;
+	for (int i = 0; i < num_BxDFs; ++i) {
+		if (bxdfs[i]->matchesFlags(flags)) {
+			++num;
+		}
+	}
+	return num;
+}
 
 } // namespace civet
 

@@ -25,6 +25,9 @@ extern void sortSpectrumSamples(float* lambda, float* vals, int n);
 extern float averageSpectrumSamples(const float* lambda, const float* vals, int n, float l_start, float l_end);
 extern float interpolateSpectrumSamples(const float* lambda, const float* vals, int n, float l);
 
+extern void blackbody(const float* lambda, int n, float T, float* Le);
+extern void blackbodyNormalized(const float* lambda, int n, float T, float* Le);
+
 // Spectral data for RGB to XYZ
 static const int N_RGB2Spect_samples = 32;
 extern const float RGB2SpectLambda[N_RGB2Spect_samples];
@@ -73,7 +76,7 @@ public:
 		return *this;
 	}
 
-	CoefficientSpectrum operator+(const CoefficientSpectrum& s2) {
+	CoefficientSpectrum operator+(const CoefficientSpectrum& s2) const {
 		CoefficientSpectrum ret = *this;
 		for (int i = 0; i < n_spectrum_samples; i++) {
 			ret.c[i] += s2.c[i];
@@ -349,7 +352,6 @@ inline CoefficientSpectrum<n_spectrum_samples> pow(const CoefficientSpectrum<n_s
 	}
 	return ret;
 }
-
 
 inline RGBSpectrum lerp(float t, const RGBSpectrum& s1, const RGBSpectrum& s2) {
 	return (1 - t) * s1 + t * s2;

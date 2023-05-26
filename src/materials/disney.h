@@ -5,6 +5,25 @@
 
 namespace civet {
 
+struct DisneyBSDFParams {
+	std::shared_ptr<Texture<Spectrum>> color = nullptr;
+	std::shared_ptr<Texture<float>> metallic = nullptr;
+	std::shared_ptr<Texture<float>> eta = nullptr;
+	std::shared_ptr<Texture<float>> roughness = nullptr;
+	std::shared_ptr<Texture<float>> spec_tint = nullptr;
+	std::shared_ptr<Texture<float>> anis = nullptr;
+	std::shared_ptr<Texture<float>> sheen = nullptr;
+	std::shared_ptr<Texture<float>> sheen_tint = nullptr;
+	std::shared_ptr<Texture<float>> cc = nullptr;
+	std::shared_ptr<Texture<float>> cc_gloss = nullptr;
+	std::shared_ptr<Texture<float>> spec_trans = nullptr;
+	std::shared_ptr<Texture<Spectrum>> scatter_dist = nullptr;
+	bool t = false;
+	std::shared_ptr<Texture<float>> flatness = nullptr;
+	std::shared_ptr<Texture<float>> diff_trans = nullptr;
+	std::shared_ptr<Texture<float>> bump = nullptr;
+};
+
 class DisneyMaterial : public Material {
 public:
 	DisneyMaterial(const std::shared_ptr<Texture<Spectrum>>& color,

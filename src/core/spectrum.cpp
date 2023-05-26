@@ -74,6 +74,27 @@ float interpolateSpectrumSamples(const float* lambda, const float* vals, int n, 
 	return lerp(t, vals[offset], vals[offset + 1]);
 }
 
+void blackbody(const float* lambda, int n, float T, float* Le) {
+	const float c = 299792458.0;
+	const float h = 6.62606957e-34;
+	const float kb = 1.3806488e-23;
+	for (int i = 0 ; i < n; i++) {
+		float l = lambda[i] * 1e-9;
+		float lambda5 = (l * l) * (l * l) * l;
+		Le[i] = (2 * h * c * c) / (lambda5 * (std::exp((h * c) / (l * kb * T)) - 1));
+	}
+}
+
+void blackbodyNormalized(const float* lambda, int n, float T, float* Le) {
+	blackbody(lambda, n, T, Le);
+	float lambda_max = 2.8977721e-3 / T * 1e9;
+	float max_L;
+	blackbody(&lambda_max, 1, T, &max_L);
+	for (int i =0; i < n; i++) {
+		Le[i] /= max_L;
+	}
+}
+
 SampledSpectrum SampledSpectrum::fromSampled(const float* lambda, const float* v, int n) {
 	// sort samples if unordered
 	if (!spectrumSamplesSorted(lambda, v, n)) {

@@ -1,8 +1,9 @@
 #ifndef CIVET_LIGHT_POINT_H
 #define CIVET_LIGHT_POINT_H
 
+#include <core/civet.h>
 #include <core/light.h>
-#include <core/spectrum.h>
+#include <core/shape.h>
 
 namespace civet {
 
@@ -15,6 +16,9 @@ public:
 			Light((int)LightFlags::DeltaPosition, ltw, mi), pos_light(p), I(I) {}
 
 	Spectrum sample_Li(const Interaction &ref, const Point2f &u, Vector3f *wi, float *pdf, VisibilityTester *vis) const override;
+	float pdf_Li(const Interaction &ref, const Vector3f &wi) const override {
+		return 0;
+	}
 	Spectrum power() const override;
 
 private:

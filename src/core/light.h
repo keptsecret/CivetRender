@@ -29,6 +29,7 @@ public:
 	}
 
 	virtual Spectrum sample_Li(const Interaction& ref, const Point2f& u, Vector3f* wi, float* pdf, VisibilityTester* vis) const = 0;
+	virtual float pdf_Li(const Interaction& ref, const Vector3f& wi) const  = 0;
 	virtual Spectrum power() const = 0;
 	virtual void preprocess(const Scene& scene) {}
 

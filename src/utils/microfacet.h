@@ -41,6 +41,9 @@ public:
 		return 1.0f / (1 + lambda(wo) + lambda(wi));
 	}
 
+	virtual Vector3f sample_wh(const Vector3f& wo, const Point2f& u) const = 0;
+	float pdf(const Vector3f& wo, const Vector3f& wh) const;
+
 protected:
 	MicrofacetDistribution(bool sample) :
 			sample_visible_area(sample) {}
@@ -63,6 +66,8 @@ public:
 
 	float lambda(const civet::Vector3f &w) const override;
 
+	Vector3f sample_wh(const Vector3f &wo, const Point2f &u) const override;
+
 private:
 	const float alphax, alphay;
 };
@@ -79,10 +84,11 @@ public:
 	}
 
 	float D(const civet::Vector3f &wh) const override;
-
-	float lambda(const civet::Vector3f &w) const override;
+	Vector3f sample_wh(const Vector3f &wo, const Point2f &u) const override;
 
 private:
+	float lambda(const civet::Vector3f &w) const override;
+
 	const float alphax, alphay;
 };
 

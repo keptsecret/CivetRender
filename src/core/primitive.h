@@ -26,7 +26,7 @@ public:
 	GeometricPrimitive(const std::shared_ptr<Shape> _shape,
 			const std::shared_ptr<Material> _material,
 			const std::shared_ptr<AreaLight> _area_light,
-			const MediumInterface* mi);
+			const MediumInterface& mi);
 
 	virtual Bounds3f worldBound() const override;
 	virtual bool intersect(const Ray& r, SurfaceInteraction* isect) const override;
@@ -40,7 +40,7 @@ private:
 	std::shared_ptr<Shape> shape;
 	std::shared_ptr<Material> material;
 	std::shared_ptr<AreaLight> area_light;
-	const MediumInterface* medium_interface; // TODO: turn back into instance when done
+	MediumInterface medium_interface;
 };
 
 class TransformedPrimitve : public Primitive {

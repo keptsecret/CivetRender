@@ -7,7 +7,7 @@ namespace civet {
 GeometricPrimitive::GeometricPrimitive(const std::shared_ptr<Shape> _shape,
 		const std::shared_ptr<Material> _material,
 		const std::shared_ptr<AreaLight> _area_light,
-		const MediumInterface* mi) :
+		const MediumInterface& mi) :
 		shape(_shape), material(_material), area_light(_area_light), medium_interface(mi) {}
 
 Bounds3f GeometricPrimitive::worldBound() const {
@@ -21,7 +21,11 @@ bool GeometricPrimitive::intersect(const Ray& r, SurfaceInteraction* isect) cons
 	}
 	r.t_max = t_hit;
 	isect->primitive = (Primitive*)(this); ///< check if cast causes problems
-	// TODO: initialize MediumInterface when it becomes implemented
+	if (medium_interface.isMediumTransition()) {
+		isect->medium_interface = medium_interface;
+	} else {
+		isect->medium_interface = r.medium;
+	}
 	return true;
 }
 

@@ -10,7 +10,7 @@
  * https://blog.selfshadow.com/publications/s2015-shading-course/burley/s2015_pbs_disney_bsdf_notes.pdf
  * and lots of other places
  *
- * TODO: implement clearcoat and disney bssrdf, computescatteringfunction
+ * TODO: implement disney bssrdf
  */
 
 namespace civet {
@@ -253,51 +253,50 @@ void DisneyMaterial::computeScatteringFunctions(SurfaceInteraction* si, MemoryAr
 
 	// Diffuse
 	Spectrum c = color->evaluate(*si).clamp();
-	float metallicWeight = metallic->evaluate(*si);
+	float metallic_weight = metallic->evaluate(*si);
 	float e = eta->evaluate(*si);
 	float strans = specular_transmission->evaluate(*si);
-	float diffuseWeight = (1 - metallicWeight) * (1 - strans);
+	float diffuse_weight = (1 - metallic_weight) * (1 - strans);
 	float dt = diffuse_transmission->evaluate(*si) / 2; // 0: all diffuse is reflected -> 1, transmitted
 	float rough = roughness->evaluate(*si);
 	float lum = c.y();
 	// normalize lum. to isolate hue+sat
 	Spectrum Ctint = lum > 0 ? (c / lum) : Spectrum(1.);
 
-	float sheenWeight = sheen->evaluate(*si);
+	float sheen_weight = sheen->evaluate(*si);
 	Spectrum Csheen;
-	if (sheenWeight > 0) {
+	if (sheen_weight > 0) {
 		float stint = sheen_tint->evaluate(*si);
 		Csheen = lerp(stint, Spectrum(1.), Ctint);
 	}
 
-	if (diffuseWeight > 0) {
+	if (diffuse_weight > 0) {
 		if (thin) {
 			float flat = flatness->evaluate(*si);
 			// Blend between DisneyDiffuse and fake subsurface based on
 			// flatness.  Additionally, weight using diffTrans.
-			si->bsdf->add(ARENA_ALLOC(arena, DisneyDiffuse)(diffuseWeight * (1 - flat) * (1 - dt) * c));
-			si->bsdf->add(ARENA_ALLOC(arena, DisneyFakeSS)(diffuseWeight * flat * (1 - dt) * c, rough));
+			si->bsdf->add(ARENA_ALLOC(arena, DisneyDiffuse)(diffuse_weight * (1 - flat) * (1 - dt) * c));
+			si->bsdf->add(ARENA_ALLOC(arena, DisneyFakeSS)(diffuse_weight * flat * (1 - dt) * c, rough));
 		} else {
 			Spectrum sd = scatter_distance->evaluate(*si);
-			if (sd.isBlack())
-				// No subsurface scattering; use regular (Fresnel modified)
+			if (sd.isBlack()) { // No subsurface scattering; use regular (Fresnel modified)
 				// diffuse.
-				si->bsdf->add(ARENA_ALLOC(arena, DisneyDiffuse)(diffuseWeight * c));
-			else {
+				si->bsdf->add(ARENA_ALLOC(arena, DisneyDiffuse)(diffuse_weight * c));
+			} else {
 				// Use a BSSRDF instead.
 				// TODO: implement BSSRDFs
 				// si->bsdf->add(ARENA_ALLOC(arena, SpecularTransmission)(1.f, 1.f, e, mode));
-				// si->bssrdf = ARENA_ALLOC(arena, DisneyBSSRDF)(c * diffuseWeight, sd, *si, e, this, mode);
+				// si->bssrdf = ARENA_ALLOC(arena, DisneyBSSRDF)(c * diffuse_weight, sd, *si, e, this, mode);
 			}
 		}
 
 		// Retro-reflection.
 		si->bsdf->add(
-				ARENA_ALLOC(arena, DisneyRetro)(diffuseWeight * c, rough));
+				ARENA_ALLOC(arena, DisneyRetro)(diffuse_weight * c, rough));
 
 		// Sheen (if enabled)
-		if (sheenWeight > 0) {
-			si->bsdf->add(ARENA_ALLOC(arena, DisneySheen)(diffuseWeight * sheenWeight * Csheen));
+		if (sheen_weight > 0) {
+			si->bsdf->add(ARENA_ALLOC(arena, DisneySheen)(diffuse_weight * sheen_weight * Csheen));
 		}
 	}
 
@@ -310,8 +309,8 @@ void DisneyMaterial::computeScatteringFunctions(SurfaceInteraction* si, MemoryAr
 
 	// Specular is Trowbridge-Reitz with a modified Fresnel function.
 	float specTint = specular_tint->evaluate(*si);
-	Spectrum Cspec0 = lerp(metallicWeight, schlickR0FromEta(e) * lerp(specTint, Spectrum(1.), Ctint), c);
-	Fresnel* fresnel = ARENA_ALLOC(arena, DisneyFresnel)(Cspec0, metallicWeight, e);
+	Spectrum Cspec0 = lerp(metallic_weight, schlickR0FromEta(e) * lerp(specTint, Spectrum(1.), Ctint), c);
+	Fresnel* fresnel = ARENA_ALLOC(arena, DisneyFresnel)(Cspec0, metallic_weight, e);
 	si->bsdf->add(ARENA_ALLOC(arena, MicrofacetReflection)(Spectrum(1.), distrib, fresnel));
 
 	// Clearcoat

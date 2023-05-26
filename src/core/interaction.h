@@ -5,6 +5,7 @@
 #include <core/geometry/transform.h>
 #include <core/geometry/vecmath.h>
 #include <core/material.h>
+#include <core/medium.h>
 
 namespace civet {
 
@@ -13,16 +14,32 @@ struct Interaction {
 			time(0) {}
 
 	CIVET_CPU_GPU
-	Interaction(const Point3f& _p, const Normal3f& _n, const Vector3f& _pe, const Vector3f& _wo, float t, const MediumInterface* mi) :
+	Interaction(const Point3f& _p, const Normal3f& _n, const Vector3f& _pe, const Vector3f& _wo, float t, const MediumInterface& mi) :
 			p(_p), time(t), p_error(_pe), wo(normalize(_wo)), n(_n), medium_interface(mi) {}
 
 	CIVET_CPU_GPU
-	Interaction(const Point3f& p, const Vector3f& wo, float time, const MediumInterface* mi) :
+	Interaction(const Point3f& p, const Vector3f& wo, float time, const MediumInterface& mi) :
 			p(p), time(time), wo(wo), medium_interface(mi) {}
 
 	CIVET_CPU_GPU
-	Interaction(const Point3f& p, float time, const MediumInterface* mi) :
+	Interaction(const Point3f& p, float time, const MediumInterface& mi) :
 			p(p), time(time), medium_interface(mi) {}
+
+	Ray spawnRay(const Vector3f& d) const {
+		Point3f o = p;
+		return Ray(o, d, Infinity, time); // TODO: put medium back in
+	}
+	Ray spawnRayTo(const Point3f& p2) const {
+		Point3f origin = p;
+		Vector3f d = p2 - p;
+		return Ray(origin, d, 1 - ShadowEpsilon, time);
+	}
+	Ray spawnRayTo(const Interaction& it) const {
+		Point3f origin = p;
+		Point3f target = it.p;
+		Vector3f d = target - origin;
+		return Ray(origin, d, 1 - ShadowEpsilon, time);
+	}
 
 	CIVET_CPU_GPU
 	bool isSurfaceInteraction() const { return n != Normal3f(); }
@@ -32,7 +49,7 @@ struct Interaction {
 	Vector3f p_error;
 	Vector3f wo; /// negative ray direction, is (0,0,0) when outgoing direction doesn't apply
 	Normal3f n;
-	const MediumInterface* medium_interface = nullptr;
+	MediumInterface medium_interface;
 };
 
 class SurfaceInteraction : public Interaction {
