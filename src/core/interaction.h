@@ -69,7 +69,7 @@ public:
 	void computeDifferentials(const RayDifferential& ray);
 
 	CIVET_CPU_GPU
-	void computeScatteringFunctions(const RayDifferential& ray, MemoryArena& arena, bool allow_multiple_lobes, TransportMode mode);
+	void computeScatteringFunctions(const RayDifferential& ray, MemoryArena& arena, bool allow_multiple_lobes = false, TransportMode mode = TransportMode::Radiance);
 
 	Point2f uv;
 	Vector3f dpdu, dpdv;

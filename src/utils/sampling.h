@@ -161,6 +161,26 @@ inline float powerHeuristic(int nf, float fpdf, int ng, float gpdf) {
 	return (f * f) / (f * f + g * g);
 }
 
+inline float radicalInverseBase2(uint32_t bits) {
+	bits = (bits << 16u) | (bits >> 16u);
+	bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+	bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+	bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+	bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+	return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
+}
+
+inline Vector2f hammersley2D(uint64_t sample_idx, uint64_t num_samples) {
+	return Vector2f(float(sample_idx) / float(num_samples), radicalInverseBase2(uint32_t(sample_idx)));
+}
+
+// Generates hammersley using base 1 and 2
+inline void generateHammersleySamples2D(Vector2f* samples, uint64_t numSamples) {
+	for (uint64_t i = 0; i < numSamples; ++i) {
+		samples[i] = hammersley2D(i, numSamples);
+	}
+}
+
 } // namespace civet
 
 #endif // CIVET_SAMPLING_H

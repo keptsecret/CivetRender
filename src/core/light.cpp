@@ -44,6 +44,7 @@ void GLDirectionalLight::bindShadowMap(Shader& shader, const std::string& name, 
 		}
 		shader.setInt("light.shadow_cascades", tex_offset);
 		shader.setInt("light.cascade_count", cascade_levels.size());
+		glBindBufferBase(GL_UNIFORM_BUFFER, 1, UBO);
 	} else {
 		shader.setMat4("light.light_space_mat", light_space_mat[0].m);
 		shader.setInt("light.shadow_map", tex_offset);

@@ -1,6 +1,7 @@
 #include <core/editor.h>
 
 #include <core/engine.h>
+#include <core/skybox.h>
 #include <ImGuiFileDialog/ImGuiFileDialog.h>
 
 namespace civet {

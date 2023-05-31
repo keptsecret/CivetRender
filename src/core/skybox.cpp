@@ -2,6 +2,7 @@
 
 #include <random>
 #include <utils/parallel.h>
+#include <core/spectrum.h>
 
 namespace civet {
 
@@ -45,15 +46,15 @@ bool Atmosphere::computeIncidentLight(const Vector3f& o, const Vector3f& d, floa
 	float mu = dot(d, sun_direction); // cosine of the angle between the sun direction and the ray direction
 	float phase_R = 3.f / (16.f * Pi) * (1 + mu * mu);
 	float g = 0.76f;
-	float phase_M = 3.f / (8.f * Pi) * ((1.f - g * g) * (1.f + mu * mu)) / ((2.f + g * g) * pow(1.f + g * g - 2.f * g * mu, 1.5f));
+	float phase_M = 3.f / (8.f * Pi) * ((1.f - g * g) * (1.f + mu * mu)) / ((2.f + g * g) * std::pow(1.f + g * g - 2.f * g * mu, 1.5f));
 
 	for (int i = 0; i < num_samples; i++) {
 		Vector3f sample_pos = o + (t + segment_length * 0.5f) * d;
 		float height = sample_pos.length() - earth_radius;
 
 		// optical depth for light
-		float hr = exp(-height / Hr) * segment_length;
-		float hm = exp(-height / Hm) * segment_length;
+		float hr = std::exp(-height / Hr) * segment_length;
+		float hm = std::exp(-height / Hm) * segment_length;
 		optical_depth_R += hr;
 		optical_depth_M += hm;
 
@@ -71,14 +72,14 @@ bool Atmosphere::computeIncidentLight(const Vector3f& o, const Vector3f& d, floa
 			if (height_light < 0) {
 				break;
 			}
-			optical_depth_light_R += exp(-height_light / Hr) * segment_length_light;
-			optical_depth_light_M += exp(-height_light / Hm) * segment_length_light;
+			optical_depth_light_R += std::exp(-height_light / Hr) * segment_length_light;
+			optical_depth_light_M += std::exp(-height_light / Hm) * segment_length_light;
 			tlight += segment_length_light;
 		}
 		if (j == num_light_samples) {
 			Vector3f tau = beta_R * (optical_depth_R + optical_depth_light_R) +
 					beta_M * 1.1f * (optical_depth_M + optical_depth_light_M);
-			Vector3f attenuation{ exp(-tau.x), exp(-tau.y), exp(-tau.z) };
+			Vector3f attenuation{ std::exp(-tau.x), std::exp(-tau.y), std::exp(-tau.z) };
 			sum_R += attenuation * hr;
 			sum_M += attenuation * hm;
 		}
@@ -180,7 +181,7 @@ void Skybox::renderSkyboxToTexture(const Vector3f& sun_dir) {
 	}
 }
 
-Vector3f Skybox::sampleSky(const Vector3f& sample_dir) {
+Spectrum Skybox::sampleSky(const Vector3f& sample_dir) {
 	Vector3f origin{ 0, atmosphere.earth_radius + 1000, 3000 };
 	float t0, t1, tmax = Infinity;
 	if (raySphereIntersect(origin, sample_dir, atmosphere.earth_radius, t0, t1) && t1 > 0) {
@@ -191,7 +192,11 @@ Vector3f Skybox::sampleSky(const Vector3f& sample_dir) {
 		color = parameters.ground_color;
 	}
 
-	return color;
+	RGBSpectrum Li;
+	Li[0] = color.x;
+	Li[1] = color.y;
+	Li[2] = color.z;
+	return Li;
 }
 
 void Skybox::renderSky(int face, float fov, float aspect, int spp) {

@@ -14,6 +14,7 @@ void shuffle(T* sample, int count, int n_dims, RNG& rng);
 class Sampler {
 public:
 	Sampler(int64_t spp);
+	virtual ~Sampler() {}
 
 	virtual void startPixel(const Point2i& p);
 
