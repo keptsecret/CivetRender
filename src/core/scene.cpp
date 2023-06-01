@@ -83,7 +83,7 @@ void Scene::addNode(std::shared_ptr<Node> node, NodeType type) {
 }
 
 void Scene::buildScene() {
-	printf("Building scene for ray tracing...");
+	printf("Building scene for ray tracing...\n");
 	std::vector<std::shared_ptr<Primitive>> prims;
 	for (const auto model : models) {
 		auto meshes = model->getMeshes();
@@ -103,13 +103,15 @@ void Scene::buildScene() {
 				uvs.push_back(tri.uv);
 			}
 
-			auto trimesh = std::make_shared<TriangleMesh>(mesh->getWorldTransform(), indices.size(), indices.data(),
+			mesh->setStaticWorldTransforms();
+			int n_tris = indices.size() / 3;
+			auto trimesh = std::make_shared<TriangleMesh>(mesh->transform_data.static_transform, n_tris, indices.data(),
 					vertices.size(), vertices.data(), tangents.data(), normals.data(), uvs.data(), nullptr);
-			int n_tris = indices.size();
 			std::vector<std::shared_ptr<Shape>> tris;
 			tris.reserve(n_tris);
 			for (int i = 0; i < n_tris; i++) {
-				tris.push_back(std::make_shared<Triangle>(&mesh->transform_data.transform, nullptr, false, trimesh, i)); // TODO: could cause problems
+				tris.push_back(std::make_shared<Triangle>(&mesh->transform_data.static_transform, &mesh->transform_data.static_inv_transform,
+						false, trimesh, i));
 			}
 
 			// Convert material
@@ -120,20 +122,22 @@ void Scene::buildScene() {
 			for (const auto tex : material->textures) {
 				std::unique_ptr<UVMapping2D> map;
 				map.reset(new UVMapping2D(1., 1., 0., 0.));
+				std::string filepath = model->getDirectory() + '/' + tex->path;
+
 				if (tex->type == "texture_albedo") {
-					auto texture = new ImageTexture<RGBSpectrum, Spectrum>(std::move(map), tex->path, false, 8.f, ImageWrap::Repeat, 1.f, true);
+					auto texture = new ImageTexture<RGBSpectrum, Spectrum>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
 					params.color = std::shared_ptr<Texture<Spectrum>>(texture);
 				} else if (tex->type == "texture_metallic") {
-					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), tex->path, false, 8.f, ImageWrap::Repeat, 1.f, true);
+					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
 					params.metallic = std::shared_ptr<Texture<float>>(texture);
 				} else if (tex->type == "texture_roughness") {
-					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), tex->path, false, 8.f, ImageWrap::Repeat, 1.f, true);
+					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
 					params.roughness = std::shared_ptr<Texture<float>>(texture);
 				} else if (tex->type == "texture_ao") {
-					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), tex->path, false, 8.f, ImageWrap::Repeat, 1.f, true);
+					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
 					params.metallic = std::shared_ptr<Texture<float>>(texture);
 				} else if (tex->type == "texture_bump") {
-					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), tex->path, false, 8.f, ImageWrap::Repeat, 1.f, true);
+					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
 					params.bump = std::shared_ptr<Texture<float>>(texture);
 				}
 			}
@@ -165,12 +169,12 @@ void Scene::buildScene() {
 		}
 	}
 
-	printf("Building BVH...");
-	aggregate = std::make_shared<BVH>(prims, 0, BVH::SplitMethod::SAH);
+	printf("Building BVH...\n");
+	aggregate = std::make_shared<BVH>(prims, 64, BVH::SplitMethod::HLBVH);
 	world_bound = aggregate->worldBound();
 
 	// Convert lights
-	printf("Building lights...");
+	printf("Building lights...\n");
 	for (const auto& dir : dir_lights) {
 		RGBSpectrum rgb;
 		rgb[0] = dir->color.x * dir->power;
@@ -189,6 +193,8 @@ void Scene::buildScene() {
 	for (const auto& light : lights) {
 		light->preprocess(*this);
 	}
+
+	is_built = true;
 }
 
 bool Scene::intersect(const Ray& ray, SurfaceInteraction* isect) const {

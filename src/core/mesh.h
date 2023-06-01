@@ -3,9 +3,9 @@
 
 #include <assimp/scene.h>
 #include <core/civet.h>
-#include <core/shader.h>
-#include <core/node.h>
 #include <core/material.h>
+#include <core/node.h>
+#include <core/shader.h>
 
 namespace civet {
 
@@ -51,6 +51,7 @@ public:
 
 	void draw(Shader& shader, unsigned int tex_offset);
 
+	std::string getDirectory() const { return directory; }
 	std::vector<std::shared_ptr<GLMesh>> getMeshes();
 
 private:

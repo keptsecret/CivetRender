@@ -18,11 +18,16 @@ public:
 	void loadScene(const char* path);
 	void addNode(std::shared_ptr<Node> node, NodeType type);
 
-	void clearSelectedNode() { selected_node = nullptr; }
+	void clearSelectedNode() {
+		selected_node = nullptr;
+		selected_self = false;
+	}
 
 	// ray tracing functions
 	const Bounds3f& worldBound() const { return world_bound; }
 	void buildScene();
+	bool isBuildForRT() const { return is_built; }
+
 	bool intersect(const Ray& ray, SurfaceInteraction* isect) const;
 	bool intersectP(const Ray& ray) const;
 	bool intersectTr(Ray ray, Sampler& sampler, SurfaceInteraction* isect, Spectrum* transmittance) const;
@@ -40,6 +45,7 @@ public:
 private:
 	friend Editor;
 
+	bool selected_self = false;
 	std::shared_ptr<Node> selected_node = nullptr;
 
 	// ray tracing variables
@@ -47,6 +53,7 @@ private:
 	// std::map<std::string, std::shared_ptr<Texture<float>>> float_textures;
 	// std::map<std::string, std::shared_ptr<Texture<Spectrum>>> spectrum_textures;
 	Bounds3f world_bound;
+	bool is_built = false;
 };
 
 } // namespace civet

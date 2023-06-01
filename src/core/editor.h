@@ -42,6 +42,7 @@ private:
 	void inspectPointLight(std::shared_ptr<Node> node);
 	void inspectDirectionalLight(std::shared_ptr<Node> node);
 	void inspectSkybox(std::shared_ptr<Node> node);
+	void inspectScene(Scene& active_scene);
 
 	void materialEditor(std::shared_ptr<Node> node);
 

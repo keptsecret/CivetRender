@@ -40,6 +40,7 @@ void Editor::debugWindow(Scene& active_scene) {
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
 	scalarRangeButton(&engine->view_camera.mvmt_speed, 0.0f, 50.0f, 0xffffffffu, 0x00ffffffu, "Camera Speed", "##CS");
 	scalarRangeButton(&engine->view_camera.zoom, 27.0f, 78.0f, 0xffffffffu, 0x00ffffffu, "Camera FOV", "##CFOV");
+	ImGui::Text("Camera position %.3f %.3f %.3f", engine->view_camera.position.x, engine->view_camera.position.y, engine->view_camera.position.z);
 
 	if (ImGui::TreeNodeEx("Clip range", ImGuiTreeNodeFlags_DefaultOpen)) {
 		ImGui::Indent(15.0f);
@@ -78,6 +79,11 @@ void Editor::sceneTree(Scene& active_scene) {
 		ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize() * 1.5);
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 0.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2{ 3.0f, 3.0f });
+
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+			active_scene.selected_node = nullptr;
+			active_scene.selected_self = true;
+		}
 
 		for (int i = 0; i < active_scene.nodes.size(); i++) {
 			auto node = active_scene.nodes[i];
@@ -120,15 +126,22 @@ TreeNodeState Editor::sceneTreeNode(Scene& active_scene, std::shared_ptr<Node> n
 
 	if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 		active_scene.selected_node = node;
+		active_scene.selected_self = false;
 	}
 
 	return TreeNodeState{ node_open, !is_leaf };
 }
 
 void Editor::inspector(Scene& active_scene) {
-	show_inspector = active_scene.selected_node != nullptr;
+	show_inspector = (active_scene.selected_node != nullptr) || active_scene.selected_self;
 	if (show_inspector) {
 		ImGui::Begin("Inspector", &show_inspector, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysAutoResize);
+
+		if (active_scene.selected_self) {
+			inspectScene(active_scene);
+			ImGui::End();
+			return;
+		}
 
 		ImGui::Text("Selected item: %s", active_scene.selected_node->name.c_str());
 
@@ -282,6 +295,13 @@ void Editor::inspectSkybox(std::shared_ptr<Node> node) {
 
 	ImGui::Unindent(15.0f);
 	ImGui::TreePop();
+}
+
+void Editor::inspectScene(Scene& active_scene) {
+	ImGui::Text("Scene built: %s", active_scene.isBuildForRT() ? "ready" : "pending build...");
+	if (ImGui::Button("Build scene")) {
+		active_scene.buildScene();
+	}
 }
 
 void Editor::materialEditor(std::shared_ptr<Node> node) {

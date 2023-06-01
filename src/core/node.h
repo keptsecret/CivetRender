@@ -31,6 +31,10 @@ struct TransformData {
 	}
 
 	Transform transform;	// local transform
+
+	// static world transforms
+	Transform static_transform;
+	Transform static_inv_transform;
 };
 
 class Node {
@@ -47,6 +51,11 @@ public:
 		}
 
 		return transform_data.transform;
+	}
+
+	void setStaticWorldTransforms() {
+		transform_data.static_transform = getWorldTransform();
+		transform_data.static_inv_transform = inverse(transform_data.static_transform);
 	}
 
 	virtual void updateWorldBounds() {
