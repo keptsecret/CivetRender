@@ -16,9 +16,10 @@ void* allocAligned(size_t size) {
 }
 
 void freeAligned(void* ptr) {
-	if (!ptr)
+	if (!ptr) {
 		return;
-#if defined(PBRT_HAVE__ALIGNED_MALLOC)
+	}
+#if defined(CIVET_HAVE__ALIGNED_MALLOC)
 	_aligned_free(ptr);
 #else
 	free(ptr);

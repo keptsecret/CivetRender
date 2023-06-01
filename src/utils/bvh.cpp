@@ -87,7 +87,7 @@ BVH::BVH(const std::vector<std::shared_ptr<Primitive>>& ps, int max_prims, BVH::
 	primitives.swap(ordered_prims);
 
 	primitive_info.resize(0);
-	printf("BVH created with %d nodes for %d primitives (%.2f MB), arena allocated %.2f MB",
+	printf("BVH created with %d nodes for %d primitives (%.2f MB), arena allocated %.2f MB\n",
 			total_nodes, int(primitives.size()), float(total_nodes * sizeof(LinearBVHNode)) / (1024 * 1024),
 			float(arena.totalAllocated()) / (1024 * 1024));
 	nodes = allocAligned<LinearBVHNode>(total_nodes);
