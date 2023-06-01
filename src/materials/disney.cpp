@@ -253,12 +253,12 @@ void DisneyMaterial::computeScatteringFunctions(SurfaceInteraction* si, MemoryAr
 
 	// Diffuse
 	Spectrum c = color->evaluate(*si).clamp();
-	float metallic_weight = metallic->evaluate(*si);
+	float metallic_weight = metallic->evaluate(*si, 2);
 	float e = eta->evaluate(*si);
 	float strans = specular_transmission->evaluate(*si);
 	float diffuse_weight = (1 - metallic_weight) * (1 - strans);
 	float dt = diffuse_transmission->evaluate(*si) / 2; // 0: all diffuse is reflected -> 1, transmitted
-	float rough = roughness->evaluate(*si);
+	float rough = roughness->evaluate(*si, 1);
 	float lum = c.y();
 	// normalize lum. to isolate hue+sat
 	Spectrum Ctint = lum > 0 ? (c / lum) : Spectrum(1.);
