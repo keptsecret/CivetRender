@@ -19,6 +19,8 @@ Scene::Scene(const char* path) {
 	skybox->init(params);
 	nodes.push_back(skybox);
 
+	probe_grid = std::make_shared<IlluminanceField>();
+
 	loadScene(path);
 }
 
@@ -91,10 +93,14 @@ void Scene::buildScene() {
 			// Convert mesh data into shapes
 			std::vector<int> indices(mesh->indices.begin(), mesh->indices.end());
 
-			std::vector<Point3f> vertices(mesh->vertices.size());
-			std::vector<Normal3f> normals(mesh->vertices.size());
-			std::vector<Vector3f> tangents(mesh->vertices.size());
-			std::vector<Point2f> uvs(mesh->vertices.size());
+			std::vector<Point3f> vertices;
+			std::vector<Normal3f> normals;
+			std::vector<Vector3f> tangents;
+			std::vector<Point2f> uvs;
+			vertices.reserve(mesh->vertices.size());
+			normals.reserve(mesh->vertices.size());
+			tangents.reserve(mesh->vertices.size());
+			uvs.reserve(mesh->vertices.size());
 
 			for (const auto tri : mesh->vertices) {
 				vertices.push_back(tri.position);

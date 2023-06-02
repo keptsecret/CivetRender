@@ -92,6 +92,10 @@ BVH::BVH(const std::vector<std::shared_ptr<Primitive>>& ps, int max_prims, BVH::
 			float(arena.totalAllocated()) / (1024 * 1024));
 	nodes = allocAligned<LinearBVHNode>(total_nodes);
 	int offset = 0;
+	flattenBVHTree(root, &offset);
+	if (offset != total_nodes) {
+		printf("Error::BVH::BVH: missing nodes, should have %d, found %d\n", total_nodes, offset);
+	}
 }
 
 struct BucketInfo {
