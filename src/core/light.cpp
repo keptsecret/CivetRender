@@ -8,6 +8,12 @@ bool VisibilityTester::unoccluded(const Scene& scene) const {
 	return !scene.intersectP(p0.spawnRayTo(p1));
 }
 
+GLDirectionalLight::~GLDirectionalLight() {
+	if (!shadow_map) {
+		glDeleteTextures(1, &shadow_map);
+	}
+}
+
 void GLDirectionalLight::generateShadowMap(Shader& shader) {
 	Engine* engine = Engine::getSingleton();
 	glViewport(0, 0, resolution, resolution);
@@ -177,6 +183,12 @@ std::vector<Transform> GLDirectionalLight::getLightSpaceMatrices() {
 		}
 	}
 	return mats;
+}
+
+GLPointLight::~GLPointLight() {
+	if (!shadow_map) {
+		glDeleteTextures(1, &shadow_map);
+	}
 }
 
 void GLPointLight::generateShadowMap(Shader& shader, float near_plane, float far_plane) {

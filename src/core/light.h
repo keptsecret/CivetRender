@@ -108,6 +108,8 @@ public:
 		should_update = true;
 	}
 
+	~GLDirectionalLight();
+
 	void generateShadowMap(Shader& shader);
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
 
@@ -148,6 +150,8 @@ public:
 		cast_shadow = true;
 		should_update = true;
 	}
+
+	~GLPointLight();
 
 	void generateShadowMap(Shader& shader, float near_plane, float far_plane);
 	void bindShadowMap(Shader& shader, const std::string& name, unsigned int tex_offset) override;
