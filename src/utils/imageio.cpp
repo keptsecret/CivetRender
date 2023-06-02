@@ -27,7 +27,7 @@ static RGBSpectrum* readImagePNG(const std::string& name, int* w, int* h) {
 	int width, height, n_channels;
 	unsigned char* data = stbi_load(name.c_str(), &width, &height, &n_channels, 3);	// follow pbrt loading only 24-bits from images
 	if (!data) {
-		fprintf(stderr, "Error::readImagePNG: error reading PNG %s", name.c_str());
+		fprintf(stderr, "Error::readImagePNG: error reading PNG %s\n", name.c_str());
 		return nullptr;
 	}
 	*w = width;

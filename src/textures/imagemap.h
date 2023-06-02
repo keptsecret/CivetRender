@@ -73,13 +73,13 @@ private:
 		*to = scale * (gamma ? inverseGammaCorrect(from.y()) : from.y());
 	}
 
-	static void convertOut(const RGBSpectrum& from, Spectrum* to) {
+	static void convertOut(const RGBSpectrum& from, Spectrum* to, int channel) {
 		float rgb[3];
 		from.toRGB(rgb);
 		*to = Spectrum::fromRGB(rgb);
 	}
 
-	static void convertOut(const RGBSpectrum& from, Treturn* to, int channel) {
+	static void convertOut(const RGBSpectrum& from, float* to, int channel) {
 		float rgb[3];
 		from.toRGB(rgb);
 		RGBSpectrum s = Spectrum::fromRGB(rgb);
