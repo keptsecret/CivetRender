@@ -469,7 +469,7 @@ Bounds3f BVH::worldBound() const {
 bool BVH::intersect(const Ray& ray, SurfaceInteraction* isect) const {
 	bool hit = false;
 	Vector3f inv_dir(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
-	int dir_is_neg[3] = { inv_dir.x > 0, inv_dir.y > 0, inv_dir.z > 0 };
+	int dir_is_neg[3] = { inv_dir.x < 0, inv_dir.y < 0, inv_dir.z < 0 };
 
 	int to_visit_offset = 0, current_node_idx = 0;
 	int nodes_to_visit[64];
