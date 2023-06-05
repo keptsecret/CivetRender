@@ -73,6 +73,14 @@ void Shader::setVec3(const std::string& name, const Vector3f& value) {
 	glUniform3f(glGetUniformLocation(ID, name.c_str()), value.x, value.y, value.z);
 }
 
+void Shader::setIVec3(const std::string& name, int x, int y, int z) {
+	glUniform3i(glGetUniformLocation(ID, name.c_str()), x, y, z);
+}
+
+void Shader::setIVec3(const std::string& name, const Point3i& value) {
+	glUniform3i(glGetUniformLocation(ID, name.c_str()), value.x, value.y, value.z);
+}
+
 void Shader::setVec4(const std::string& name, float x, float y, float z, float w) {
 	glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w);
 }

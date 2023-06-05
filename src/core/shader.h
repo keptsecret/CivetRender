@@ -22,6 +22,8 @@ public:
 	void setVec2(const std::string& name, float x, float y);
 	void setVec3(const std::string& name, float x, float y, float z);
 	void setVec3(const std::string& name, const Vector3f& value);
+	void setIVec3(const std::string& name, int x, int y, int z);
+	void setIVec3(const std::string& name, const Point3i& value);
 	void setVec4(const std::string& name, float x, float y, float z, float w);
 	void setMat4(const std::string& name, const Matrix4& value);
 
