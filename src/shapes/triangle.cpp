@@ -32,18 +32,31 @@ bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect
 	Point3f p2t = p2 - Vector3f(ray.o);
 
 	// Permute vertices and ray so largest ray dimension in z-axis (x and y axis arbitrary) --> +z direction
-	Vector3f d = permute(ray.d, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
-	p0t = permute(p0t, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
-	p1t = permute(p1t, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
-	p2t = permute(p2t, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
+	int kz = maxDimension(abs(ray.d));
+	int kx = kz + 1;
+	if (kx == 3) {
+		kx = 0;
+	}
+	int ky = kx + 1;
+	if (ky == 3) {
+		ky = 0;
+	}
+
+	Vector3f d = permute(ray.d, kx, ky, kz);
+	p0t = permute(p0t, kx, ky, kz);
+	p1t = permute(p1t, kx, ky, kz);
+	p2t = permute(p2t, kx, ky, kz);
 
 	// Shear to align ray along z-axis
-	p0t.x += ray.isect_coeff.Sx * p0t.z;
-	p0t.y += ray.isect_coeff.Sy * p0t.z;
-	p1t.x += ray.isect_coeff.Sx * p1t.z;
-	p1t.y += ray.isect_coeff.Sy * p1t.z;
-	p2t.x += ray.isect_coeff.Sx * p2t.z;
-	p2t.y += ray.isect_coeff.Sy * p2t.z;
+	float Sx = -d.x / d.z;
+	float Sy = -d.y / d.z;
+	float Sz = 1.f / d.z;
+	p0t.x += Sx * p0t.z;
+	p0t.y += Sy * p0t.z;
+	p1t.x += Sx * p1t.z;
+	p1t.y += Sy * p1t.z;
+	p2t.x += Sx * p2t.z;
+	p2t.y += Sy * p2t.z;
 
 	// Now with transformation, just have to check if point (0,0) is inside triangle in x,y-plane
 	float e0 = p1t.x * p2t.y - p1t.y * p2t.x;
@@ -73,9 +86,9 @@ bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect
 	}
 
 	// Compute scaled hit distance t and test
-	p0t.z *= ray.isect_coeff.Sz;
-	p1t.z *= ray.isect_coeff.Sz;
-	p2t.z *= ray.isect_coeff.Sz;
+	p0t.z *= Sz;
+	p1t.z *= Sz;
+	p2t.z *= Sz;
 	float t_scaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
 	if (det < 0 && (t_scaled >= 0 || t_scaled < ray.t_max * det)) {
 		return false;
@@ -246,18 +259,32 @@ bool Triangle::intersectP(const Ray& ray, bool test_alpha_texture) const {
 	Point3f p2t = p2 - Vector3f(ray.o);
 
 	// Permute vertices and ray so largest ray dimension in z-axis (x and y axis arbitrary) --> +z direction
-	Vector3f d = permute(ray.d, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
-	p0t = permute(p0t, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
-	p1t = permute(p1t, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
-	p2t = permute(p2t, ray.isect_coeff.kx, ray.isect_coeff.ky, ray.isect_coeff.kz);
+	int kz = maxDimension(abs(ray.d));
+	int kx = kz + 1;
+	if (kx == 3) {
+		kx = 0;
+	}
+	int ky = kx + 1;
+	if (ky == 3) {
+		ky = 0;
+	}
+
+	Vector3f d = permute(ray.d, kx, ky, kz);
+	p0t = permute(p0t, kx, ky, kz);
+	p1t = permute(p1t, kx, ky, kz);
+	p2t = permute(p2t, kx, ky, kz);
 
 	// Shear to align ray along z-axis
-	p0t.x += ray.isect_coeff.Sx * p0t.z;
-	p0t.y += ray.isect_coeff.Sy * p0t.z;
-	p1t.x += ray.isect_coeff.Sx * p1t.z;
-	p1t.y += ray.isect_coeff.Sy * p1t.z;
-	p2t.x += ray.isect_coeff.Sx * p2t.z;
-	p2t.y += ray.isect_coeff.Sy * p2t.z;
+	float Sx = -d.x / d.z;
+	float Sy = -d.y / d.z;
+	float Sz = 1.f / d.z;
+	p0t.x += Sx * p0t.z;
+	p0t.y += Sy * p0t.z;
+	p1t.x += Sx * p1t.z;
+	p1t.y += Sy * p1t.z;
+	p2t.x += Sx * p2t.z;
+	p2t.y += Sy * p2t.z;
+
 
 	// Now with transformation, just have to check if point (0,0) is inside triangle in x,y-plane
 	float e0 = p1t.x * p2t.y - p1t.y * p2t.x;
@@ -287,9 +314,9 @@ bool Triangle::intersectP(const Ray& ray, bool test_alpha_texture) const {
 	}
 
 	// Compute scaled hit distance t and test
-	p0t.z *= ray.isect_coeff.Sz;
-	p1t.z *= ray.isect_coeff.Sz;
-	p2t.z *= ray.isect_coeff.Sz;
+	p0t.z *= Sz;
+	p1t.z *= Sz;
+	p2t.z *= Sz;
 	float t_scaled = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
 	if (det < 0 && (t_scaled >= 0 || t_scaled < ray.t_max * det)) {
 		return false;
