@@ -133,29 +133,29 @@ MIPMap<T>::MIPMap(const Point2i& res, const T* img, bool do_trilinear, float max
 		}
 
 		resolution = res_pow2;
+	}
 
-		// initialize levels of mipmap
-		int n_levels = 1 + log2Int(std::max(resolution[0], resolution[1]));
-		pyramid.resize(n_levels);
+	// initialize levels of mipmap
+	int n_levels = 1 + log2Int(std::max(resolution[0], resolution[1]));
+	pyramid.resize(n_levels);
 
-		// most detailed level
-		pyramid[0].reset(new BlockedArray<T>(resolution[0], resolution[1], resampled_image ? resampled_image.get() : img));
+	// most detailed level
+	pyramid[0].reset(new BlockedArray<T>(resolution[0], resolution[1], resampled_image ? resampled_image.get() : img));
 
-		for (int i = 1; i < n_levels; i++) {
-			int sres = std::max(1, pyramid[i - 1]->uSize() / 2);
-			int tres = std::max(1, pyramid[i - 1]->vSize() / 2);
-			pyramid[i].reset(new BlockedArray<T>(sres, tres));
+	for (int i = 1; i < n_levels; i++) {
+		int sres = std::max(1, pyramid[i - 1]->uSize() / 2);
+		int tres = std::max(1, pyramid[i - 1]->vSize() / 2);
+		pyramid[i].reset(new BlockedArray<T>(sres, tres));
 
-			parallelFor(
-					[&](int t) {
-						for (int s = 0; s < sres; ++s) {
-							(*pyramid[i])(s, t) = .25f *
-									(texel(i - 1, 2 * s, 2 * t) + texel(i - 1, 2 * s + 1, 2 * t) +
-											texel(i - 1, 2 * s, 2 * t + 1) + texel(i - 1, 2 * s + 1, 2 * t + 1));
-						}
-					},
-					tres, 16);
-		}
+		parallelFor(
+				[&](int t) {
+					for (int s = 0; s < sres; ++s) {
+						(*pyramid[i])(s, t) = .25f *
+								(texel(i - 1, 2 * s, 2 * t) + texel(i - 1, 2 * s + 1, 2 * t) +
+										texel(i - 1, 2 * s, 2 * t + 1) + texel(i - 1, 2 * s + 1, 2 * t + 1));
+					}
+				},
+				tres, 16);
 	}
 }
 
