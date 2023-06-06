@@ -117,8 +117,8 @@ vec3 calcPointLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
     // shadow
     float shadow = calcShadowCube(worldPos, NdotL);
 
-    vec3 ambient = vec3(0.03) * albedo * ao * attenuation; // should be 0.03, will revert when indirect lighting
-    vec3 color = ambient + (1.0 - shadow) * Lo;
+    //vec3 ambient = vec3(0.03) * albedo * ao * attenuation; // should be 0.03, will revert when indirect lighting
+    vec3 color = (1.0 - shadow) * Lo;
 
     return color;
 }

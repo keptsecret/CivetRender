@@ -28,6 +28,7 @@ public:
 private:
 	void geometryPass(GLModel& model);
 	void lightsPass(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights);
+	void indirectLightingPass(Scene& scene);
 	void postProcessPass(Scene& scene);
 	void finalPass();
 
@@ -48,6 +49,7 @@ private:
 	Shader pointlight_pass_shader;
 	Shader dirlight_pass_shader;
 	Shader stencil_pass_shader; ///< doesn't actually do anything except population depth and stencil
+	Shader indirect_pass_shader;
 	Shader postprocess_shader;
 
 	Shader depth_shader;

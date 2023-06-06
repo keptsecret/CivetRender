@@ -14,7 +14,7 @@
 namespace civet {
 
 Scene::Scene(const char* path) {
-	SkyboxParameters params{ Vector3f(0.f, 0.2f, 0.5f), 128, 4 };
+	SkyboxParameters params{ Vector3f(0.f, 0.5f, 0.5f), 128 };
 	skybox = std::make_shared<Skybox>();
 	skybox->init(params);
 	nodes.push_back(skybox);

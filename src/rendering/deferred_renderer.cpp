@@ -23,6 +23,7 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	pointlight_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_pointlight_pass_frag.glsl");
 	dirlight_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_dirlight_pass_frag.glsl");
 	stencil_pass_shader = Shader("../civet/src/shaders/null_vert.glsl", "../civet/src/shaders/null_frag.glsl");
+	indirect_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_indirect_pass_frag.glsl");
 	postprocess_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/postprocess_pass_frag.glsl");
 
 	pointlight_pass_shader.use();
@@ -36,6 +37,14 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	dirlight_pass_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
 	dirlight_pass_shader.setInt("AORoughMetallicMap", GBuffer::GBUFFER_TEXTURE_AOROUGHMETALLIC);
 	dirlight_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
+
+	indirect_pass_shader.use();
+	indirect_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
+	indirect_pass_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
+	indirect_pass_shader.setInt("AORoughMetallicMap", GBuffer::GBUFFER_TEXTURE_AOROUGHMETALLIC);
+	indirect_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
+
+	indirect_pass_shader.setInt("SGAmplitudes", gbuffer.num_textures);
 
 	postprocess_shader.use();
 	Transform identity;
@@ -66,6 +75,7 @@ void DeferredRenderer::draw(Scene& scene) {
 		geometryPass(*model);
 		lightsPass(*model, scene.dir_lights, scene.point_lights);
 	}
+	indirectLightingPass(scene);
 	postProcessPass(scene);
 	finalPass();
 }
@@ -121,6 +131,37 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 			dirLightPass(model, *light);
 		}
 	}
+}
+
+void DeferredRenderer::indirectLightingPass(Scene& scene) {
+	if (!scene.probe_grid->hasBakeData()) {
+		return;
+	}
+
+	indirect_pass_shader.use();
+	gbuffer.bindLightPass();
+
+	Transform identity;
+	indirect_pass_shader.setMat4("projection", identity.m);
+	indirect_pass_shader.setMat4("view", identity.m);
+	indirect_pass_shader.setMat4("model", identity.m);
+	indirect_pass_shader.setVec3("viewPos", Vector3f(camera->position));
+	indirect_pass_shader.setVec2("screenSize", width, height);
+
+	scene.probe_grid->bind(indirect_pass_shader, gbuffer.num_textures);
+
+	glDisable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE, GL_ONE);
+
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
+
+	bounding_quad.draw(indirect_pass_shader, gbuffer.num_textures + SGProbe::SG_count);
+
+	glCullFace(GL_BACK);
+	glDisable(GL_BLEND);
 }
 
 void DeferredRenderer::postProcessPass(Scene& scene) {

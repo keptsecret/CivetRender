@@ -283,7 +283,6 @@ void Editor::inspectSkybox(std::shared_ptr<Node> node) {
 	colorEditVector3(&sky->editing_params.ground_color, "Color");
 
 	node_state.merge(scalarButton(&sky->editing_params.resolution, 0xffffffffu, 0x00ffffffu, "Resolution", "##Res"));
-	node_state.merge(scalarButton(&sky->editing_params.samples_per_pixel, 0xffffffffu, 0x00ffffffu, "Samples per pixel", "##SPP"));
 
 	if (ImGui::Button("Apply")) {
 		sky->update(sky->editing_params);
@@ -301,6 +300,19 @@ void Editor::inspectScene(Scene& active_scene) {
 	ImGui::Text("Scene built: %s", active_scene.isBuildForRT() ? "ready" : "pending build...");
 	if (ImGui::Button("Build scene")) {
 		active_scene.buildScene();
+	}
+	if (active_scene.isBuildForRT()) {
+		ImGui::Text("Light probes baked: %s", active_scene.probe_grid->hasBakeData() ? "ready" : "pending bake...");
+		if (ImGui::Button("Fit probe grid to scene")) {
+			active_scene.probe_grid->fitGridToBounds(active_scene.worldBound());
+		}
+		if (ImGui::Button("Bake light probes")) {
+			active_scene.probe_grid->initialize();
+			active_scene.probe_grid->bake(active_scene);
+		}
+
+		ImGui::Text("Probe grid corner: %.3f %.3f %.3f", active_scene.probe_grid->corner_position.x, active_scene.probe_grid->corner_position.y, active_scene.probe_grid->corner_position.z);
+		ImGui::Text("Probe grid dims: %d %d %d", active_scene.probe_grid->probe_grid_size.x, active_scene.probe_grid->probe_grid_size.y, active_scene.probe_grid->probe_grid_size.z);
 	}
 }
 

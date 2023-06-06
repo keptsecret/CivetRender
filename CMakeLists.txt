@@ -268,6 +268,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/geometry/ray.h
 		src/core/geometry/transform.h
 		src/core/geometry/quaternion.h
+		src/core/geometry/SG.h
 		src/core/interaction.h
 		src/core/medium.h
 		src/core/shape.h
@@ -287,6 +288,7 @@ set ( CIVET_CORE_HEADERS
 		src/core/film.h
 		src/core/shader.h
         src/core/light.h
+		src/core/illuminancefield.h
 		)
 
 set ( CIVET_CORE_SOURCE
@@ -294,6 +296,7 @@ set ( CIVET_CORE_SOURCE
 		src/core/input_manager.cpp
 		src/core/geometry/transform.cpp
 		src/core/geometry/quaternion.cpp
+		src/core/geometry/SG.cpp
 		src/core/interaction.cpp
 		src/core/medium.cpp
 		src/core/shape.cpp
@@ -313,17 +316,121 @@ set ( CIVET_CORE_SOURCE
 		src/core/film.cpp
 		src/core/shader.cpp
         src/core/light.cpp
+		src/core/illuminancefield.cpp
+		)
+
+set ( CIVET_UTILS_HEADERS
+		src/utils/bvh.h
+		src/utils/imageio.h
+		src/utils/interpolation.h
+		src/utils/memory.h
+		src/utils/microfacet.h
+		src/utils/parallel.h
+		src/utils/reflection.h
+		src/utils/rng.h
+		src/utils/sampling.h
+		src/utils/subdivide.h
+		src/utils/samplers/random.h
+		src/utils/samplers/stratified.h
+		src/utils/hosek/ArHosekSkyModel.h
+		src/utils/hosek/ArHosekSkyModelData_RGB.h
+		src/utils/hosek/ArHosekSkyModelData_CIEXYZ.h
+		src/utils/hosek/ArHosekSkyModelData_Spectral.h
+		)
+
+set (CIVET_UTILS_SOURCE
+		src/utils/bvh.cpp
+		src/utils/imageio.cpp
+		src/utils/interpolation.cpp
+		src/utils/memory.cpp
+		src/utils/microfacet.cpp
+		src/utils/parallel.cpp
+		src/utils/reflection.cpp
+		src/utils/sampling.cpp
+		src/utils/subdivide.cpp
+		src/utils/samplers/random.cpp
+		src/utils/samplers/stratified.cpp
+		src/utils/hosek/ArHosekSkyModel.cpp
+		)
+
+set ( CIVET_SHAPES_HEADERS
+		src/shapes/triangle.h
+		src/shapes/sphere.h
+		)
+
+set ( CIVET_SHAPES_SOURCE
+		src/shapes/triangle.cpp
+		src/shapes/sphere.cpp
+		)
+
+set ( CIVET_CAMERA_HEADERS
+		src/cameras/perspective.h
+		src/cameras/orthographic.h
+		src/cameras/environment.h
+		)
+
+set ( CIVET_CAMERA_SOURCE
+		src/cameras/perspective.cpp
+		src/cameras/orthographic.cpp
+		src/cameras/environment.cpp
+		)
+
+set ( CIVET_TEXTURES_HEADERS
+		src/textures/bilerp.h
+		src/textures/constant.h
+		src/textures/imagemap.h
+		src/textures/mix.h
+		src/textures/scale.h
+		)
+
+set ( CIVET_TEXTURES_SOURCE
+		src/textures/bilerp.cpp
+		src/textures/constant.cpp
+		src/textures/imagemap.cpp
+		src/textures/mix.cpp
+		src/textures/scale.cpp
+		)
+
+set ( CIVET_MATERIALS_HEADERS
+		src/materials/dielectric.h
+		src/materials/diffuse.h
+		src/materials/disney.h
+		src/materials/fourier.h
+		src/materials/mix.h
+		)
+
+set ( CIVET_MATERIALS_SOURCE
+		src/materials/dielectric.cpp
+		src/materials/diffuse.cpp
+		src/materials/disney.cpp
+		src/materials/fourier.cpp
+		src/materials/mix.cpp
+		)
+
+set ( CIVET_LIGHTS_HEADERS
+		src/lights/point.h
+		src/lights/distant.h
+		)
+
+set ( CIVET_LIGHTS_SOURCE
+		src/lights/point.cpp
+		src/lights/distant.cpp
+		)
+
+set ( CIVET_RENDERING_HEADERS
+		src/rendering/gbuffer.h
+		src/rendering/forward_renderer.h
+		src/rendering/deferred_renderer.h
+		)
+
+set ( CIVET_RENDERING_SOURCE
+		src/rendering/gbuffer.cpp
+		src/rendering/forward_renderer.cpp
+		src/rendering/deferred_renderer.cpp
 		)
 
 file ( GLOB CIVET_SOURCE
-		src/shapes/*
-		src/utils/*
-		src/cameras/*
 		src/shaders/*
-		src/textures/*
-		src/materials/*
-		src/lights/*
-		src/rendering/*
 		)
 
 if (CUDA_ENABLED)
@@ -344,6 +451,20 @@ endif()
 add_library ( civet_lib STATIC
 		${CIVET_CORE_HEADERS}
 		${CIVET_CORE_SOURCE}
+		${CIVET_UTILS_HEADERS}
+		${CIVET_UTILS_SOURCE}
+		${CIVET_SHAPES_HEADERS}
+		${CIVET_SHAPES_SOURCE}
+		${CIVET_CAMERA_HEADERS}
+		${CIVET_CAMERA_SOURCE}
+		${CIVET_TEXTURES_HEADERS}
+		${CIVET_TEXTURES_SOURCE}
+		${CIVET_MATERIALS_HEADERS}
+		${CIVET_MATERIALS_SOURCE}
+		${CIVET_LIGHTS_HEADERS}
+		${CIVET_LIGHTS_SOURCE}
+		${CIVET_RENDERING_HEADERS}
+		${CIVET_RENDERING_SOURCE}
 		${CIVET_GPU_SOURCE}
 		${CIVET_SOURCE}
 		)

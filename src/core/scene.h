@@ -3,6 +3,7 @@
 
 #include <core/civet.h>
 #include <core/skybox.h>
+#include <core/illuminancefield.h>
 #include <map>
 
 namespace civet {
@@ -39,6 +40,7 @@ public:
 
 	std::vector<std::shared_ptr<Node>> nodes;
 	std::shared_ptr<Skybox> skybox;
+	std::shared_ptr<IlluminanceField> probe_grid;
 
 	std::vector<std::shared_ptr<Light>> lights;
 
