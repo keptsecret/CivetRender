@@ -17,21 +17,13 @@ public:
 		scene.worldBound().boundingSphere(&world_center, &world_radius);
 	}
 
-	Spectrum sample_Li(const Interaction &ref, const Point2f &u, Vector3f *wi, float *pdf, VisibilityTester *vis) const override {
-		*wi = w_light;
-		*pdf = 1;
-		Point3f p_outside = ref.p + w_light * (2 * world_radius);
-		*vis = VisibilityTester(ref, Interaction(p_outside, ref.time, medium_interface));
-		return L;
-	}
+	Spectrum sample_Li(const Interaction &ref, const Point2f &u, Vector3f *wi, float *pdf, VisibilityTester *vis) const override;
 
 	float pdf_Li(const Interaction &ref, const Vector3f &wi) const override {
 		return 0;
 	}
 
-	Spectrum power() const override {
-		return L * Pi * world_radius * world_radius;
-	}
+	Spectrum power() const override;
 
 private:
 	const Spectrum L;
