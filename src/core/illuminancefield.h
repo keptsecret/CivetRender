@@ -53,8 +53,7 @@ struct SGProbe {
 		samples[curr_sample] = sample;
 		curr_sample++;
 
-//		SGRunningAverage(sample_dir, sample, projected_result, SG_count, (float)sample_idx, running_avg_weights, true);
-		projectOntoSGs(sample_dir, sample, projected_result, SG_count);
+		SGRunningAverage(sample_dir, sample, projected_result, SG_count, (float)sample_idx, running_avg_weights, true);
 	}
 
 	void bakeResult() {

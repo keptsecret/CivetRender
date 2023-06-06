@@ -156,8 +156,7 @@ void solveSGs(SGSolveParam& params) {
 		params.out_SGs[i] = defaultInitialGuess[i];
 	}
 
-//	solveRunningAverage(params, true);
-	solveProjection(params);
+	solveRunningAverage(params, true);
 }
 
 

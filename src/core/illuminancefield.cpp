@@ -140,7 +140,7 @@ Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryAre
 		}
 
 		if (!found_isect) {
-			Spectrum Le = std::exp2(-15.6f) * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d); // expose down value from sky sample
+			Spectrum Le = std::exp2(-16.f) * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d); // expose down value from sky sample
 			L += beta * Le;
 			break;
 		}
