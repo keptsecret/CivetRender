@@ -125,8 +125,6 @@ void main() {
     }
 
     FragColor.rgb = irradiance / sum_weight;
-//    FragColor.rgb = vec3(float(baseCoord.x) / float(probeGridDims.x), float(baseCoord.y) / float(probeGridDims.y), float(baseCoord.z) / float(probeGridDims.z));
-//    FragColor.rgb = vec3(sum_weight);
 }
 
 //-------------------------------------------------------------------------------------------------

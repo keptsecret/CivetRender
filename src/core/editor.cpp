@@ -75,7 +75,7 @@ void Editor::debugWindow(Scene& active_scene) {
 void Editor::sceneTree(Scene& active_scene) {
 	ImGui::Begin("Scene Tree", &show_scene_tree, ImGuiWindowFlags_HorizontalScrollbar);
 
-	if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
+	if (ImGui::TreeNodeEx("Scene", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow)) {
 		ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize() * 1.5);
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0.0f, 0.0f });
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2{ 3.0f, 3.0f });
@@ -83,6 +83,7 @@ void Editor::sceneTree(Scene& active_scene) {
 		if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup) && ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
 			active_scene.selected_node = nullptr;
 			active_scene.selected_self = true;
+			show_material_editor = false;
 		}
 
 		for (int i = 0; i < active_scene.nodes.size(); i++) {

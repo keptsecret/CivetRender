@@ -182,6 +182,10 @@ void Scene::buildScene() {
 	// Convert lights
 	printf("Building lights...\n");
 	for (const auto& dir : dir_lights) {
+		if (!dir->active) {
+			continue;
+		}
+
 		RGBSpectrum rgb;
 		rgb[0] = dir->color.x * dir->power;
 		rgb[1] = dir->color.y * dir->power;
@@ -189,6 +193,10 @@ void Scene::buildScene() {
 		lights.push_back(std::make_shared<DistantLight>(dir->transform_data.transform, rgb, dir->direction));
 	}
 	for (const auto& point : point_lights) {
+		if (!point->active) {
+			continue;
+		}
+
 		RGBSpectrum rgb;
 		rgb[0] = point->color.x * point->power;
 		rgb[1] = point->color.y * point->power;
