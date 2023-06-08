@@ -6,6 +6,58 @@
 
 namespace civet {
 
+struct BVHPrimitiveInfo {
+	BVHPrimitiveInfo() {}
+	BVHPrimitiveInfo(size_t prim_no, const Bounds3f& b) :
+			primitive_num(prim_no), bounds(b), centroid(0.5f * b.p_min + 0.5f * b.p_max) {}
+
+	size_t primitive_num;
+	Bounds3f bounds;
+	Point3f centroid;
+};
+
+struct BVHBuildNode {
+	void initLeaf(int first, int n, const Bounds3f& b) {
+		first_prim_offset = first;
+		n_primitives = n;
+		bounds = b;
+		children[0] = children[1] = nullptr;
+	}
+
+	void initInterior(int axis, BVHBuildNode* c0, BVHBuildNode* c1) {
+		children[0] = c0;
+		children[1] = c1;
+		bounds = bUnion(c0->bounds, c1->bounds);
+		split_axis = axis;
+		n_primitives = 0;
+	}
+
+	Bounds3f bounds;
+	BVHBuildNode* children[2];
+	int split_axis, first_prim_offset, n_primitives;
+};
+
+struct MortonPrimitive {
+	int primitive_index;
+	uint32_t morton_code;
+};
+
+struct LBVHTreelet {
+	int start_idx, n_primitives;
+	BVHBuildNode* build_nodes;
+};
+
+struct LinearBVHNode {
+	Bounds3f bounds;
+	union {
+		int primitives_offset; // for leaf node
+		int second_child_offset; // for interior node
+	};
+	uint16_t n_primitives;
+	uint8_t axis;
+	uint8_t pad[1];
+};
+
 // BVH utility functions
 inline uint32_t leftShift3(uint32_t x) {
 	if (x == (1 << 10)) {
@@ -40,7 +92,7 @@ static void radixSort(std::vector<MortonPrimitive>* v) {
 		CIVET_CONSTEXPR int n_buckets = 1 << bits_per_pass;
 		int bucket_count[n_buckets] = { 0 };
 		CIVET_CONSTEXPR int bit_mask = (1 << bits_per_pass) - 1;
-		for (auto& mp : in) {
+		for (const auto& mp : in) {
 			int bucket = (mp.morton_code >> low_bit) & bit_mask;
 			++bucket_count[bucket];
 		}
@@ -51,7 +103,7 @@ static void radixSort(std::vector<MortonPrimitive>* v) {
 			out_idx[i] = out_idx[i - 1] + bucket_count[i - 1];
 		}
 
-		for (auto& mp : in) {
+		for (const auto& mp : in) {
 			int bucket = (mp.morton_code >> low_bit) & bit_mask;
 			out[out_idx[bucket]++] = mp;
 		}
@@ -63,8 +115,8 @@ static void radixSort(std::vector<MortonPrimitive>* v) {
 }
 
 BVH::BVH(const std::vector<std::shared_ptr<Primitive>>& ps, int max_prims, BVH::SplitMethod sm) :
-		max_prims_in_node(std::min(255, max_prims)), split_method(sm), primitives(ps) {
-	if (primitives.size() == 0) {
+		max_prims_in_node(std::min(255, max_prims)), split_method(sm), primitives(std::move(ps)) {
+	if (primitives.empty()) {
 		return;
 	}
 
@@ -202,17 +254,17 @@ BVHBuildNode* BVH::recursiveBuild(MemoryArena& arena,
 								b0 = bUnion(b0, buckets[j].bounds);
 								count0 += buckets[i].count;
 							}
-							for (int j = i; j <= n_buckets; j++) {
+							for (int j = i + 1; j <= n_buckets; j++) {
 								b1 = bUnion(b1, buckets[j].bounds);
 								count1 += buckets[i].count;
 							}
-							cost[i] = 0.125 + (count0 * b0.surfaceArea() + count1 * b1.surfaceArea()) / bounds.surfaceArea();
+							cost[i] = 1.f + (count0 * b0.surfaceArea() + count1 * b1.surfaceArea()) / bounds.surfaceArea();
 						}
 
 						// find bucket to split with minimal SAH cost
 						float min_cost = cost[0];
 						int min_split_bucket = 0;
-						for (int i = 0; i < n_buckets - 1; i++) {
+						for (int i = 1; i < n_buckets - 1; i++) {
 							if (cost[i] < min_cost) {
 								min_cost = cost[i];
 								min_split_bucket = i;
@@ -254,7 +306,8 @@ BVHBuildNode* BVH::recursiveBuild(MemoryArena& arena,
 	return node;
 }
 
-BVHBuildNode* BVH::HLBVHBuild(MemoryArena& arena, const std::vector<BVHPrimitiveInfo>& primitive_info, int* total_nodes, std::vector<std::shared_ptr<Primitive>>& ordered_prims) {
+BVHBuildNode* BVH::HLBVHBuild(MemoryArena& arena, const std::vector<BVHPrimitiveInfo>& primitive_info,
+		int* total_nodes, std::vector<std::shared_ptr<Primitive>>& ordered_prims) {
 	Bounds3f bounds;
 	for (auto& pi : primitive_info) {
 		bounds = bUnion(bounds, pi.centroid);
@@ -281,7 +334,7 @@ BVHBuildNode* BVH::HLBVHBuild(MemoryArena& arena, const std::vector<BVHPrimitive
 		if (end == morton_prims.size() || ((morton_prims[start].morton_code & mask) != (morton_prims[end].morton_code & mask))) {
 			// add entry to treelet vectors for this treelet
 			int n_primitives = end - start;
-			int max_bvh_nodes = 2 * n_primitives - 1;
+			int max_bvh_nodes = 2 * n_primitives;
 			BVHBuildNode* nodes = arena.alloc<BVHBuildNode>(max_bvh_nodes, false);
 			trees_to_build.push_back({ start, n_primitives, nodes });
 			start = end;
@@ -305,6 +358,7 @@ BVHBuildNode* BVH::HLBVHBuild(MemoryArena& arena, const std::vector<BVHPrimitive
 
 	// create and return SAH BVH from LBVH treelets
 	std::vector<BVHBuildNode*> finished_treelets;
+	finished_treelets.reserve(trees_to_build.size());
 	for (auto& treelet : trees_to_build) {
 		finished_treelets.push_back(treelet.build_nodes);
 	}
@@ -467,6 +521,10 @@ Bounds3f BVH::worldBound() const {
 }
 
 bool BVH::intersect(const Ray& ray, SurfaceInteraction* isect) const {
+	if (!nodes) {
+		return false;
+	}
+
 	bool hit = false;
 	Vector3f inv_dir(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
 	int dir_is_neg[3] = { inv_dir.x < 0, inv_dir.y < 0, inv_dir.z < 0 };
@@ -475,7 +533,8 @@ bool BVH::intersect(const Ray& ray, SurfaceInteraction* isect) const {
 	int nodes_to_visit[64];
 	while (true) {
 		const LinearBVHNode* node = &nodes[current_node_idx];
-		if (node->bounds.intersectP(ray.o, ray.d, ray.t_max, inv_dir, dir_is_neg)) {
+		float t0, t1;
+		if (node->bounds.intersectP(ray.o, ray.d, ray.t_max, &t0, &t1)) {
 			if (node->n_primitives > 0) {
 				// intersect ray with primitives in leaf node
 				for (int i = 0; i < node->n_primitives; i++) {
@@ -493,7 +552,7 @@ bool BVH::intersect(const Ray& ray, SurfaceInteraction* isect) const {
 					current_node_idx = node->second_child_offset;
 				} else {
 					nodes_to_visit[to_visit_offset++] = node->second_child_offset;
-					current_node_idx++;
+					current_node_idx = current_node_idx + 1;
 				}
 			}
 		} else {
@@ -508,14 +567,19 @@ bool BVH::intersect(const Ray& ray, SurfaceInteraction* isect) const {
 }
 
 bool BVH::intersectP(const Ray& ray) const {
+	if (!nodes) {
+		return false;
+	}
+
 	Vector3f inv_dir(1 / ray.d.x, 1 / ray.d.y, 1 / ray.d.z);
-	int dir_is_neg[3] = { inv_dir.x > 0, inv_dir.y > 0, inv_dir.z > 0 };
+	int dir_is_neg[3] = { inv_dir.x < 0, inv_dir.y < 0, inv_dir.z < 0 };
 
 	int to_visit_offset = 0, current_node_idx = 0;
 	int nodes_to_visit[64];
 	while (true) {
 		const LinearBVHNode* node = &nodes[current_node_idx];
-		if (node->bounds.intersectP(ray.o, ray.d, ray.t_max, inv_dir, dir_is_neg)) {
+		float t0, t1;
+		if (node->bounds.intersectP(ray.o, ray.d, ray.t_max, &t0, &t1)) {	// TODO: check other intersectP that doesn't work
 			if (node->n_primitives > 0) {
 				// intersect ray with primitives in leaf node
 				for (int i = 0; i < node->n_primitives; i++) {
@@ -533,7 +597,7 @@ bool BVH::intersectP(const Ray& ray) const {
 					current_node_idx = node->second_child_offset;
 				} else {
 					nodes_to_visit[to_visit_offset++] = node->second_child_offset;
-					current_node_idx++;
+					current_node_idx = current_node_idx + 1;
 				}
 			}
 		} else {
