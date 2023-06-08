@@ -148,6 +148,7 @@ Spectrum Skybox::sampleSky(const Atmosphere& cache, const Vector3f& sample_dir) 
 	radiance.z = float(arhosek_tristim_skymodel_radiance(cache.stateR, t, g, 2));
 	radiance *= 683.f;
 
+	radiance = clampSkyExposure(radiance, parameters.exposure);
 	float rgb[3] = {radiance.x, radiance.y, radiance.z};
 	Spectrum Li = Spectrum::fromRGB(rgb);
 	return Li;

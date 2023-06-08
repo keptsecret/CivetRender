@@ -34,6 +34,7 @@ struct SkyboxParameters {
 	unsigned int resolution = 1024;
 	Vector3f ground_color{ 0.5f, 0.5f, 0.5f };
 	float turbidity = 2.f;
+	float exposure = 16.f;
 };
 
 class Skybox : public Node {
@@ -54,6 +55,10 @@ public:
 
 private:
 	Vector3f mapToDirection(float x, float y, int s);
+
+	static Vector3f clampSkyExposure(const Vector3f& color, float exposure) {
+		return std::exp2(-exposure) * color;
+	}
 
 	SkyboxParameters parameters;
 
