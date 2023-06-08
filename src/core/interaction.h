@@ -27,18 +27,25 @@ struct Interaction {
 
 	Ray spawnRay(const Vector3f& d) const {
 		Point3f o = p;
-		return Ray(o, d, Infinity, time); // TODO: put medium back in
+		return Ray(o, d, Infinity, time, getMedium(d));
 	}
 	Ray spawnRayTo(const Point3f& p2) const {
 		Point3f origin = p;
 		Vector3f d = p2 - p;
-		return Ray(origin, d, 1 - ShadowEpsilon, time);
+		return Ray(origin, d, 1 - ShadowEpsilon, time, getMedium(d));
 	}
 	Ray spawnRayTo(const Interaction& it) const {
 		Point3f origin = p;
 		Point3f target = it.p;
 		Vector3f d = target - origin;
-		return Ray(origin, d, 1 - ShadowEpsilon, time);
+		return Ray(origin, d, 1 - ShadowEpsilon, time, getMedium(d));
+	}
+
+	const Medium* getMedium(const Vector3f& v) const {
+		return dot(v, n) > 0 ? medium_interface.outside : medium_interface.inside;
+	}
+	const Medium* getMedium() const {
+		return medium_interface.inside;
 	}
 
 	CIVET_CPU_GPU

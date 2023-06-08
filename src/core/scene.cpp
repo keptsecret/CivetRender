@@ -111,14 +111,8 @@ void Scene::buildScene() {
 
 			mesh->setStaticWorldTransforms();
 			int n_tris = indices.size() / 3;
-			auto trimesh = std::make_shared<TriangleMesh>(mesh->transform_data.static_transform, n_tris, indices.data(),
-					vertices.size(), vertices.data(), tangents.data(), normals.data(), uvs.data(), nullptr);
-			std::vector<std::shared_ptr<Shape>> tris;
-			tris.reserve(n_tris);
-			for (int i = 0; i < n_tris; i++) {
-				tris.push_back(std::make_shared<Triangle>(&mesh->transform_data.static_transform, &mesh->transform_data.static_inv_transform,
-						false, trimesh, i));
-			}
+			std::vector<std::shared_ptr<Shape>> tris = createTriangleMesh(&mesh->transform_data.static_transform, &mesh->transform_data.static_inv_transform,
+					false, n_tris, indices.data(), vertices.size(), vertices.data(), tangents.data(), normals.data(), uvs.data(), nullptr);
 
 			// Convert material
 			///< we only have Disney BRDF so far in glsl
@@ -176,7 +170,7 @@ void Scene::buildScene() {
 	}
 
 	printf("Building BVH...\n");
-	aggregate = std::make_shared<BVH>(prims, 64, BVH::SplitMethod::HLBVH);
+	aggregate = std::make_shared<BVH>(prims, 4, BVH::SplitMethod::EqualCounts);
 	world_bound = aggregate->worldBound();
 
 	// Convert lights

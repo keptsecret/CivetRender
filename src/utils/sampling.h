@@ -87,9 +87,9 @@ inline float uniformHemispherePdf() {
 }
 
 inline Vector3f uniformSampleSphere(const Point2f& u) {
-	float z = 1 - 2 * u[0];
+	float z = 2.f * u[0] - 1.f;
 	float r = std::sqrt(std::max(0.f, 1.f - z * z));
-	float phi = 2 * Pi * u[1];
+	float phi = 2.f * Pi * u[1];
 	return Vector3f(r * std::cos(phi), r * std::sin(phi), z);
 }
 
