@@ -904,10 +904,10 @@ public:
 	}
 
 	CIVET_CPU_GPU
-	bool intersectP(Point3f o, Vector3f d, float t_max = Infinity, float* hitt0 = nullptr, float* hitt1 = nullptr) const;
+	bool intersectP(const Point3f& o, const Vector3f& d, float t_max = Infinity, float* hitt0 = nullptr, float* hitt1 = nullptr) const;
 
 	CIVET_CPU_GPU
-	bool intersectP(Point3f o, Vector3f d, float t_max, Vector3f& inv_dir, const int dir_is_neg[3]) const;
+	bool intersectP(const Point3f& o, const Vector3f& d, float t_max, const Vector3f& inv_dir, const int dir_is_neg[3]) const;
 
 	CIVET_CPU_GPU
 	friend std::ostream& operator<<(std::ostream& os, const Bounds3<T>& b) {
@@ -1420,7 +1420,7 @@ CIVET_CPU_GPU inline Bounds3<T> bExpand(const Bounds3<T>& b, U delta) {
 }
 
 template <typename T>
-CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float t_max, float* hitt0, float* hitt1) const {
+CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(const Point3f& o, const Vector3f& d, float t_max, float* hitt0, float* hitt1) const {
 	float t0 = 0, t1 = t_max;
 	for (int i = 0; i < 3; i++) {
 		float inv_dir = 1 / d[i];
@@ -1447,7 +1447,7 @@ CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float t_
 }
 
 template <typename T>
-CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(Point3f o, Vector3f d, float ray_t_max, Vector3f& inv_dir, const int dir_is_neg[3]) const {
+CIVET_CPU_GPU inline bool Bounds3<T>::intersectP(const Point3f& o, const Vector3f& d, float ray_t_max, const Vector3f& inv_dir, const int dir_is_neg[3]) const {
 	const Bounds3f& bounds = *this;
 	float t_min = (bounds[dir_is_neg[0]].x - o.x) * inv_dir.x;
 	float t_max = (bounds[1 - dir_is_neg[0]].x - o.x) * inv_dir.x;
