@@ -59,7 +59,7 @@ public:
 			diffuse_transmission(diff_trans),
 			bump_map(bump) {}
 
-	void computeScatteringFunctions(SurfaceInteraction *isect, MemoryArena &arena, TransportMode mode, bool allow_multiple_lobes) const override;
+	void computeScatteringFunctions(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const override;
 
 private:
 	std::shared_ptr<Texture<Spectrum>> color;

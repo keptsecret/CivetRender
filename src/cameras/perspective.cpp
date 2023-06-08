@@ -1,5 +1,7 @@
 #include <cameras/perspective.h>
 
+#include <utils/sampling.h>
+
 namespace civet {
 
 PerspectiveCamera::PerspectiveCamera(const AnimatedTransform& ctw, const Bounds2f& screen_window,
@@ -16,7 +18,7 @@ float PerspectiveCamera::generateRay(const CameraSample& sample, Ray* ray) const
 	*ray = Ray(Point3f(0, 0, 0), normalize(Vector3f(p_camera)));
 	///< modify ray for depth of field
 	if (lens_radius > 0) {
-		Point2f p_lens = lens_radius * concentricSamplingDisk(sample.p_lens);
+		Point2f p_lens = lens_radius * concentricSampleDisk(sample.p_lens);
 
 		float ft = focal_distance / ray->d.z;
 		Point3f p_focus = (*ray)(ft);
@@ -36,7 +38,7 @@ float PerspectiveCamera::generateRayDifferential(const CameraSample& sample, Ray
 
 	*rd = RayDifferential(Point3f(0, 0, 0), normalize(Vector3f(p_camera)));
 	if (lens_radius > 0) {
-		Point2f p_lens = lens_radius * concentricSamplingDisk(sample.p_lens);
+		Point2f p_lens = lens_radius * concentricSampleDisk(sample.p_lens);
 
 		float ft = focal_distance / rd->d.z;
 		Point3f p_focus = (*rd)(ft);
@@ -47,7 +49,7 @@ float PerspectiveCamera::generateRayDifferential(const CameraSample& sample, Ray
 
 	if (lens_radius > 0) {
 		// account for lens shape and dof in differentials
-		Point2f p_lens = lens_radius * concentricSamplingDisk(sample.p_lens);
+		Point2f p_lens = lens_radius * concentricSampleDisk(sample.p_lens);
 
 		float ft = focal_distance / rd->d.z;
 

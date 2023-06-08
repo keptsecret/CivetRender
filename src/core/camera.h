@@ -7,9 +7,6 @@
 
 namespace civet {
 
-// TODO: remove when sampling is properly implemented
-Point2f concentricSamplingDisk(const Point2f& p2f);
-
 struct CameraSample {
 	Point2f p_film;
 	Point2f p_lens;

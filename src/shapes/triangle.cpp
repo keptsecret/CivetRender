@@ -1,6 +1,9 @@
 #include <shapes/triangle.h>
 
-#include <core/interaction.h>
+#include <core/texture.h>
+#include <textures/constant.h>
+#include <utils/sampling.h>
+#include <array>
 
 namespace civet {
 
@@ -116,14 +119,11 @@ bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect
 	float delta_y = gamma(5) * (max_yt + max_zt);
 
 	// Compute $\delta_e$ term for triangle $t$ error bounds
-	float deltaE =
-			2 * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
+	float deltaE = 2 * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
 
 	// Compute $\delta_t$ term for triangle $t$ error bounds and check _t_
 	float max_e = maxComponent(abs(Vector3f(e0, e1, e2)));
-	float delta_t = 3 *
-			(gamma(3) * max_e * max_zt + deltaE * max_zt + delta_z * max_e) *
-			std::abs(inv_det);
+	float delta_t = 3 * (gamma(3) * max_e * max_zt + deltaE * max_zt + delta_z * max_e) * std::abs(inv_det);
 	if (t <= delta_t) {
 		return false;
 	}
@@ -163,10 +163,9 @@ bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect
 	if (test_alpha_texture && mesh->alpha_mask) {
 		SurfaceInteraction isect_local(p_hit, Vector3f(0, 0, 0), uv_hit, Vector3f(0, 0, 0),
 				dpdu, dpdv, Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time, this);
-		// TODO: implement texture class
-//		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
-//			return false;
-//		}
+		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
+			return false;
+		}
 	}
 
 	*isect = SurfaceInteraction(p_hit, p_error, uv_hit, -ray.d,
@@ -285,7 +284,6 @@ bool Triangle::intersectP(const Ray& ray, bool test_alpha_texture) const {
 	p2t.x += Sx * p2t.z;
 	p2t.y += Sy * p2t.z;
 
-
 	// Now with transformation, just have to check if point (0,0) is inside triangle in x,y-plane
 	float e0 = p1t.x * p2t.y - p1t.y * p2t.x;
 	float e1 = p2t.x * p0t.y - p2t.y * p0t.x;
@@ -392,9 +390,9 @@ bool Triangle::intersectP(const Ray& ray, bool test_alpha_texture) const {
 		SurfaceInteraction isect_local(p_hit, Vector3f(0, 0, 0), uv_hit, Vector3f(0, 0, 0),
 				dpdu, dpdv, Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time, this);
 		// TODO: also implement texture class
-//		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
-//			return false;
-//		}
+		if (mesh->alpha_mask->evaluate(isect_local) == 0) {
+			return false;
+		}
 	}
 
 	return true;

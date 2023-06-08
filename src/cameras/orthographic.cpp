@@ -1,5 +1,7 @@
 #include <cameras/orthographic.h>
 
+#include <utils/sampling.h>
+
 namespace civet {
 
 OrthographicCamera::OrthographicCamera(const AnimatedTransform& ctw, const Bounds2f& screen_window,
@@ -16,7 +18,7 @@ float OrthographicCamera::generateRay(const CameraSample& sample, Ray* ray) cons
 	*ray = Ray(p_camera, Vector3f(0, 0, 1));
 	///< modify ray for depth of field
 	if (lens_radius > 0) {
-		Point2f p_lens = lens_radius * concentricSamplingDisk(sample.p_lens);
+		Point2f p_lens = lens_radius * concentricSampleDisk(sample.p_lens);
 
 		float ft = focal_distance / ray->d.z;
 		Point3f p_focus = (*ray)(ft);
@@ -37,7 +39,7 @@ float OrthographicCamera::generateRayDifferential(const CameraSample& sample, Ra
 
 	*rd = RayDifferential(p_camera, Vector3f(0, 0, 1));
 	if (lens_radius > 0) {
-		Point2f p_lens = lens_radius * concentricSamplingDisk(sample.p_lens);
+		Point2f p_lens = lens_radius * concentricSampleDisk(sample.p_lens);
 
 		float ft = focal_distance / rd->d.z;
 		Point3f p_focus = (*rd)(ft);
@@ -48,7 +50,7 @@ float OrthographicCamera::generateRayDifferential(const CameraSample& sample, Ra
 
 	if (lens_radius > 0) {
 		// account for lens shape and dof in differentials
-		Point2f p_lens = lens_radius * concentricSamplingDisk(sample.p_lens);
+		Point2f p_lens = lens_radius * concentricSampleDisk(sample.p_lens);
 
 		float ft = focal_distance / rd->d.z;
 
