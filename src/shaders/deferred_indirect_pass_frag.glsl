@@ -88,15 +88,15 @@ void main() {
     float metallic = texture(AORoughMetallicMap, texCoords).b;
 
     vec3 diffuseAlbedo = mix(albedo, vec3(0.0), vec3(metallic));
-    vec3 specularAlbedo = mix(vec3(0.03), albedo, vec3(metallic));
+    vec3 specularAlbedo = mix(vec3(0.003), albedo, vec3(metallic));
 
     vec3 worldPos = texture(PositionMap, texCoords).xyz;
     vec3 normal = normalize(texture(NormalMap, texCoords).xyz);
-    vec3 viewDir = worldPos - viewPos;
+    vec3 viewDir = viewPos - worldPos;
 
     ivec3 baseCoord = baseGridCoord(worldPos);
     vec3 basePos = gridCoordToPosition(baseCoord);
-    vec3 alpha = clamp((worldPos - basePos) / gridCellSize, vec3(0.0), vec3(1.0));// interpolation weights
+    vec3 alpha = clamp((worldPos - basePos) / gridCellSize, vec3(0.0), vec3(1.0));  // interpolation weights
 
     // selects 8 probes surrounding fragment
     vec3 irradiance = vec3(0.0);
@@ -121,7 +121,7 @@ void main() {
         computeSGContribution(probeIndex, normal, specularAlbedo, roughness, viewDir, indirectDiffuse, indirectSpecular);
 
         irradiance += indirectDiffuse * (diffuseAlbedo / Pi) * weight;
-        irradiance += indirectSpecular * weight;
+//        irradiance += indirectSpecular * weight;
     }
 
     FragColor.rgb = irradiance / sum_weight;

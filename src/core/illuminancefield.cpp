@@ -1,5 +1,8 @@
 #include <core/illuminancefield.h>
 
+#include <core/engine.h>
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <thirdparty/stb/stb_image_write.h>
 #include <core/interaction.h>
 #include <core/light.h>
 #include <core/primitive.h>
@@ -140,8 +143,7 @@ Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryAre
 		}
 
 		if (!found_isect) {
-			Spectrum Le = std::exp2(-16.f) * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d); // expose down value from sky sample
-			L += beta * Le;
+			L += beta * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d);
 			break;
 		}
 		if (bounces >= max_depth) {
@@ -166,6 +168,7 @@ Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryAre
 		}
 		beta *= f * absDot(wi, isect.shading.n) / pdf;
 		specular_bounce = (flags & BSDF_SPECULAR) != 0;
+		wi = normalize(wi);
 		ray = isect.spawnRay(wi);
 
 		///< possibly subsurface here
@@ -189,7 +192,7 @@ Point3i flatIndexToGridIndex(const Point3i& grid_dims, int idx) {
 }
 
 void IlluminanceField::bake(const Scene& scene) {
-	printf("Baking %zu probes at %llu samples per probe", probes.size(), rays_per_probe);
+	printf("Baking %zu probes at %llu samples per probe\n", probes.size(), rays_per_probe);
 
 	RandomSampler sampler(rays_per_probe);
 	parallelFor([&](int idx) {
@@ -206,9 +209,7 @@ void IlluminanceField::bake(const Scene& scene) {
 		probe_sampler->startPixel(Point2i());
 		uint64_t sample_idx = 0;
 		do {
-			Ray ray;
-			ray.o = probe_pos;
-			ray.d = probe->sampleDirection(probe_sampler->get2D());
+			Ray ray(probe_pos, normalize(probe->sampleDirection(probe_sampler->get2D())));
 
 			Spectrum L(0.f);
 			L = pathTrace(ray, scene, *probe_sampler, arena, 5);
@@ -224,14 +225,12 @@ void IlluminanceField::bake(const Scene& scene) {
 			probes.size(), 1);
 
 	glBindTexture(GL_TEXTURE_1D_ARRAY, SG_data_texture_array);
-	for (int i = 0; i < SGProbe::SG_count; i++) {
-		for (int j = 0; j < probes.size(); j++) {
-			glTexSubImage2D(GL_TEXTURE_1D_ARRAY, 0, j, i, 1, 1, GL_RGB, GL_FLOAT, &probes[j].amplitudes[i]);
-		}
+	for (int i = 0; i < probes.size(); i++) {
+		glTexSubImage2D(GL_TEXTURE_1D_ARRAY, 0, i, 0, 1, SGProbe::SG_count, GL_RGB, GL_FLOAT, probes[i].amplitudes.data());
 	}
 	glBindTexture(GL_TEXTURE_1D_ARRAY, 0);
 
-	glCheckError("ERROR::IlluminanceField::bake: OpenGL error code");
+	glCheckError("ERROR::IlluminanceField::bake SGs: OpenGL error code");
 	has_bake_data = true;
 }
 
@@ -246,7 +245,7 @@ void IlluminanceField::bind(Shader& shader, int tex_offset) {
 		shader.setVec3("SGDirections[" + std::to_string(i) + "]", SG_directions[i]);
 	}
 
-	glActiveTexture(GL_TEXTURE0 + tex_offset);	///< ensure tex_offset is num textures in gbuffer
+	glActiveTexture(GL_TEXTURE0 + tex_offset); ///< ensure tex_offset is num textures in gbuffer
 	glBindTexture(GL_TEXTURE_1D_ARRAY, SG_data_texture_array);
 }
 
@@ -257,6 +256,66 @@ void IlluminanceField::fitGridToBounds(const Bounds3f& bounds) {
 	int y_dim = std::ceil(std::abs(fitbounds.p_max.y - fitbounds.p_min.y) / cell_size);
 	int z_dim = std::ceil(std::abs(fitbounds.p_max.z - fitbounds.p_min.z) / cell_size);
 	probe_grid_size = Point3i(x_dim, y_dim, z_dim);
+}
+
+void IlluminanceField::testPathtracer(const Scene& scene) {
+	// has problem with left handed coordinates
+	printf("started testing pathtrace...");
+	Point2i resolution(64, 64);
+	GLCamera camera = Engine::getSingleton()->view_camera;
+
+	Bounds2f screen_window(Point2f(-1,-1), Point2f(1,1));
+	Transform camera_to_screen = perspective(45.f, 1e-2f, 1000.0f);
+	Transform screen_to_camera = inverse(camera_to_screen);
+	Transform screen_to_raster = scale(resolution.x, resolution.y, 1) *
+			scale(1 / (screen_window.p_max.x - screen_window.p_min.x), 1 / (screen_window.p_max.y - screen_window.p_min.y), 1) *
+			translate(Vector3f(-screen_window.p_min.x, -screen_window.p_max.y, 0));
+	Transform raster_to_screen = inverse(screen_to_raster);
+	Transform raster_to_camera = screen_to_camera * raster_to_screen;
+
+	Transform world_to_camera = lookAtLH(camera.position, camera.position + camera.front, camera.up);
+	Transform camera_to_world = inverse(world_to_camera);
+
+	int num_samples = 1024;
+	RandomSampler sampler(num_samples);
+	std::vector<unsigned char> pixels(3 * resolution.x * resolution.y, 0);
+	parallelFor2D([&](Point2i xy) {
+			MemoryArena arena;
+
+			int seed = xy.y * resolution.x + xy.x;
+			std::unique_ptr<Sampler> pixel_sampler = sampler.clone(seed);
+			pixel_sampler->startPixel(xy);
+
+			unsigned char* p = pixels.data() + 3 * seed;
+
+			Vector3f col;
+			do {
+				Point2f st = pixel_sampler->get2D();
+				Ray ray(Point3f(0, 0, 0), normalize(Vector3f(raster_to_camera(Point3f(xy.x + st.x, xy.y + st.y, 0)))));
+				ray = camera_to_world(ray);
+
+				Spectrum L(0.f);
+				L = pathTrace(ray, scene, *pixel_sampler, arena, 5);
+
+				float rgb[3];
+				L.toRGB(rgb);
+
+				col.x += rgb[0];
+				col.y += rgb[1];
+				col.z += rgb[2];
+			} while (pixel_sampler->startNextSample());
+
+			col /= (float)num_samples;
+
+			p[0] = int(255.99 * std::sqrt(col.x));
+			p[1] = int(255.99 * std::sqrt(col.y));
+			p[2] = int(255.99 * std::sqrt(col.z));
+	},
+			resolution);
+
+	stbi_flip_vertically_on_write(true);
+	stbi_write_jpg("testpathtrace.jpg", resolution.x, resolution.y, 3, pixels.data(), 80);
+	printf("finished pathtrace\n");
 }
 
 } // namespace civet
