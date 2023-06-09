@@ -142,7 +142,8 @@ void Scene::buildScene() {
 				}
 			}
 
-			std::shared_ptr<Texture<Spectrum>> color = params.color ? params.color : std::make_shared<ConstantTexture<Spectrum>>(Spectrum(0.5f));
+			float rgb[3] = {material->albedo.x, material->albedo.y, material->albedo.z};
+			std::shared_ptr<Texture<Spectrum>> color = params.color ? params.color : std::make_shared<ConstantTexture<Spectrum>>(Spectrum::fromRGB(rgb));
 			std::shared_ptr<Texture<float>> metallic = params.metallic ? params.metallic : std::make_shared<ConstantTexture<float>>(material->metallic);
 			std::shared_ptr<Texture<float>> eta = params.eta ? params.eta : std::make_shared<ConstantTexture<float>>(1.5f);
 			std::shared_ptr<Texture<float>> roughness = params.metallic ? params.metallic : std::make_shared<ConstantTexture<float>>(material->roughness);
@@ -170,7 +171,7 @@ void Scene::buildScene() {
 	}
 
 	printf("Building BVH...\n");
-	aggregate = std::make_shared<BVH>(prims, 4, BVH::SplitMethod::EqualCounts);
+	aggregate = std::make_shared<BVH>(prims, 4, BVH::SplitMethod::HLBVH);
 	world_bound = aggregate->worldBound();
 
 	// Convert lights
@@ -181,9 +182,9 @@ void Scene::buildScene() {
 		}
 
 		RGBSpectrum rgb;
-		rgb[0] = dir->color.x * dir->power;
-		rgb[1] = dir->color.y * dir->power;
-		rgb[2] = dir->color.z * dir->power;
+		rgb[0] = dir->color.x;
+		rgb[1] = dir->color.y;
+		rgb[2] = dir->color.z;
 		lights.push_back(std::make_shared<DistantLight>(dir->transform_data.transform, rgb, dir->direction));
 	}
 	for (const auto& point : point_lights) {
@@ -192,9 +193,9 @@ void Scene::buildScene() {
 		}
 
 		RGBSpectrum rgb;
-		rgb[0] = point->color.x * point->power;
-		rgb[1] = point->color.y * point->power;
-		rgb[2] = point->color.z * point->power;
+		rgb[0] = point->color.x;
+		rgb[1] = point->color.y;
+		rgb[2] = point->color.z;
 		lights.push_back(std::make_shared<PointLight>(point->transform_data.transform, MediumInterface(), point->position, rgb));
 	}
 
