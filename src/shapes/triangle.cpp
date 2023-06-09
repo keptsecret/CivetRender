@@ -186,7 +186,10 @@ bool Triangle::intersect(const Ray& ray, float* t_hit, SurfaceInteraction* isect
 		}
 
 		Vector3f ss;
-		if (mesh->s) {
+		if (mesh->s &&
+				(mesh->s[v[0]].lengthSquared() > 0 &&
+						mesh->s[v[1]].lengthSquared() > 0 &&
+						mesh->s[v[2]].lengthSquared() > 0)) {
 			ss = normalize(b0 * mesh->s[v[0]] + b1 * mesh->s[v[1]] + b2 * mesh->s[v[2]]);
 			if (ss.lengthSquared() > 0) {
 				ss = normalize(ss);
