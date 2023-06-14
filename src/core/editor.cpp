@@ -312,6 +312,10 @@ void Editor::inspectScene(Scene& active_scene) {
 			active_scene.probe_grid->bake(active_scene);
 		}
 
+		if (ImGui::Button("test path tracer")) {
+			active_scene.probe_grid->testPathtracer(active_scene);
+		}
+
 		ImGui::Text("Probe grid corner: %.3f %.3f %.3f", active_scene.probe_grid->corner_position.x, active_scene.probe_grid->corner_position.y, active_scene.probe_grid->corner_position.z);
 		ImGui::Text("Probe grid dims: %d %d %d", active_scene.probe_grid->probe_grid_size.x, active_scene.probe_grid->probe_grid_size.y, active_scene.probe_grid->probe_grid_size.z);
 	}
