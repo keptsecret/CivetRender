@@ -8,7 +8,7 @@
 namespace civet {
 
 float angleBetween(const Vector3f& v1, const Vector3f& v2) {
-	return std::acos(std::max(dot(v1, v2), 0.00001f));
+	return std::acos(clamp(dot(v1, v2), 0.00001f, 1.f));
 }
 
 void Atmosphere::init(Vector3f sun_dir, Vector3f ground_albedo, float turbid) {
