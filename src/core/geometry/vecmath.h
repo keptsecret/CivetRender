@@ -32,7 +32,7 @@ public:
 	}
 
 	CIVET_CPU_GPU
-	Vector2<T>& operator+=(const Vector2<T>& v) const {
+	Vector2<T>& operator+=(const Vector2<T>& v) {
 		x += v.x;
 		y += v.y;
 		return *this;
@@ -77,7 +77,7 @@ public:
 	}
 
 	CIVET_CPU_GPU
-	Vector2<T>& operator/=(T s) const {
+	Vector2<T>& operator/=(T s) {
 		if (s == 0.0f) {
 			printf("ERROR::Vector2: Divide by zero.\n");
 		}
