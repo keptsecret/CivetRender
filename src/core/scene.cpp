@@ -133,9 +133,6 @@ void Scene::buildScene() {
 				} else if (tex->type == "texture_roughness") {
 					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
 					params.roughness = std::shared_ptr<Texture<float>>(texture);
-				} else if (tex->type == "texture_ao") {
-					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
-					params.metallic = std::shared_ptr<Texture<float>>(texture);
 				} else if (tex->type == "texture_bump") {
 					auto texture = new ImageTexture<RGBSpectrum, float>(std::move(map), filepath, false, 8.f, ImageWrap::Repeat, 1.f, true);
 					params.bump = std::shared_ptr<Texture<float>>(texture);
@@ -146,7 +143,7 @@ void Scene::buildScene() {
 			std::shared_ptr<Texture<Spectrum>> color = params.color ? params.color : std::make_shared<ConstantTexture<Spectrum>>(Spectrum::fromRGB(rgb));
 			std::shared_ptr<Texture<float>> metallic = params.metallic ? params.metallic : std::make_shared<ConstantTexture<float>>(material->metallic);
 			std::shared_ptr<Texture<float>> eta = params.eta ? params.eta : std::make_shared<ConstantTexture<float>>(1.5f);
-			std::shared_ptr<Texture<float>> roughness = params.metallic ? params.metallic : std::make_shared<ConstantTexture<float>>(material->roughness);
+			std::shared_ptr<Texture<float>> roughness = params.roughness ? params.roughness : std::make_shared<ConstantTexture<float>>(material->roughness);
 			std::shared_ptr<Texture<float>> spec_tint = params.spec_tint ? params.spec_tint : std::make_shared<ConstantTexture<float>>(0.f);
 			std::shared_ptr<Texture<float>> anisotropic = params.anis ? params.anis : std::make_shared<ConstantTexture<float>>(0.f);
 			std::shared_ptr<Texture<float>> sheen = params.sheen ? params.sheen : std::make_shared<ConstantTexture<float>>(0.f);
@@ -162,7 +159,7 @@ void Scene::buildScene() {
 			auto mapped_mat = std::make_shared<DisneyMaterial>(color, metallic, eta, roughness, spec_tint,
 					anisotropic, sheen, sheen_tint, clearcoat,
 					clearcoat_gloss, spec_trans, scatter_dist, thin,
-					flatness, diff_trans, bump);
+					flatness, diff_trans, bump, material->is_glossy_rough);
 
 			for (auto& t : tris) {
 				prims.push_back(std::make_shared<GeometricPrimitive>(t, mapped_mat, nullptr, nullptr));

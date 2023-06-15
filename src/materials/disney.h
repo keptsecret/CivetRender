@@ -41,7 +41,8 @@ public:
 			bool t,
 			const std::shared_ptr<Texture<float>>& flatness,
 			const std::shared_ptr<Texture<float>>& diff_trans,
-			const std::shared_ptr<Texture<float>>& bump) :
+			const std::shared_ptr<Texture<float>>& bump,
+			bool gr = false) :
 			color(color),
 			metallic(metallic),
 			eta(eta),
@@ -57,7 +58,8 @@ public:
 			thin(t),
 			flatness(flatness),
 			diffuse_transmission(diff_trans),
-			bump_map(bump) {}
+			bump_map(bump),
+			is_glossy_rough(gr) {}
 
 	void computeScatteringFunctions(SurfaceInteraction* isect, MemoryArena& arena, TransportMode mode, bool allow_multiple_lobes) const override;
 
@@ -70,6 +72,7 @@ private:
 	std::shared_ptr<Texture<Spectrum>> scatter_distance;
 	bool thin;
 	std::shared_ptr<Texture<float>> flatness, diffuse_transmission, bump_map;
+	bool is_glossy_rough;
 };
 
 } // namespace civet
