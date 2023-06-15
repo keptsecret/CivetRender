@@ -39,9 +39,6 @@ private:
 	float irradiance_lobe_size = 0.99f;
 	float distance_lobe_size = 0.5f;
 
-	std::vector<std::vector<Vector3f>> probe_radiance;
-	std::vector<std::vector<Vector2f>> probe_distance;
-
 	unsigned int FBO;
 	int cubemap_resolution = 256;
 	int octahedral_resolution = 128;

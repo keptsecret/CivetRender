@@ -64,15 +64,7 @@ void IlluminanceField::initialize() {
 		distance_cubemap_data[i].resize(cubemap_resolution * cubemap_resolution);
 	}
 
-	probe_radiance.resize(probe_grid_size.x * probe_grid_size.y * probe_grid_size.z);
-	for (int i = 0; i < probe_radiance.size(); i++) {
-		probe_radiance[i].resize(octahedral_resolution * octahedral_resolution);
-	}
-
-	probe_distance.resize(probe_grid_size.x * probe_grid_size.y * probe_grid_size.z);
-	for (int i = 0; i < probe_distance.size(); i++) {
-		probe_distance[i].resize(octahedral_resolution * octahedral_resolution);
-	}
+	const int num_total_probes = probe_grid_size.x * probe_grid_size.y * probe_grid_size.z;
 	has_bake_data = false;
 
 	glGenTextures(1, &radiance_cubemap);
@@ -99,25 +91,25 @@ void IlluminanceField::initialize() {
 
 	glGenTextures(1, &radiance_texture_array);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, radiance_texture_array);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, octahedral_resolution, octahedral_resolution, probe_radiance.size(), 0, GL_RGB, GL_FLOAT, nullptr);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RGB, GL_FLOAT, nullptr);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glGenTextures(1, &distance_texture_array);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, distance_texture_array);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RG32F, octahedral_resolution, octahedral_resolution, probe_distance.size(), 0, GL_RG, GL_FLOAT, nullptr);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RG32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RG, GL_FLOAT, nullptr);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glGenTextures(1, &irradiance_texture_array);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, irradiance_texture_array);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, octahedral_resolution, octahedral_resolution, probe_radiance.size(), 0, GL_RGB, GL_FLOAT, nullptr);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RGB, GL_FLOAT, nullptr);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glGenTextures(1, &filtered_distance_texture_array);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, filtered_distance_texture_array);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RG32F, octahedral_resolution, octahedral_resolution, probe_distance.size(), 0, GL_RG, GL_FLOAT, nullptr);
+	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RG32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RG, GL_FLOAT, nullptr);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
@@ -358,9 +350,9 @@ Vector3f octDecode(Point2f o) {
 }
 
 void IlluminanceField::bake(const Scene& scene) {
-	printf("Baking %zu probes\n", probe_radiance.size());
-
 	const int num_total_probes = probe_grid_size.x * probe_grid_size.y * probe_grid_size.z;
+	printf("Baking %zu probes\n", num_total_probes);
+
 	GLModel screenspace_quad("bounding_quad");
 	screenspace_quad.loadModel("../civet/resources/basic-meshes/quad.obj");
 
