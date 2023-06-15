@@ -31,7 +31,7 @@ private:
 	friend Editor;
 	Point3f corner_position{ 0, 0, 0 };
 	Point3i probe_grid_size{ 16, 16, 16 };
-	Vector3f cell_dim{ 0.1, 0.1, 0.1 };
+	Vector3f cell_dim{ 30, 40, 30 };
 	uint64_t rays_per_texel_radiance = 1;
 
 	uint64_t num_irradiance_samples = 4096;
@@ -43,7 +43,7 @@ private:
 	std::vector<std::vector<Vector2f>> probe_distance;
 
 	unsigned int FBO;
-	int cubemap_resolution = 128;
+	int cubemap_resolution = 256;
 	int octahedral_resolution = 128;
 	unsigned int radiance_cubemap;
 	unsigned int distance_cubemap;

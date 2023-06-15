@@ -13,6 +13,8 @@
 
 namespace civet {
 
+Spectrum pathTraceDirect(const Ray& ray, const Scene& scene, Sampler& sampler, MemoryArena& arena, int depth);
+
 IlluminanceField::~IlluminanceField() {
 	if (!radiance_texture_array) {
 		glDeleteTextures(1, &radiance_texture_array);
@@ -226,7 +228,56 @@ Spectrum uniformSampleOneLight(const Interaction& it, const Scene& scene, Memory
 	return (float)n_lights * estimateDirect(it, u_scattering, *light, u_light, scene, sampler, arena);
 }
 
-Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryArena& arena, int max_depth) {
+Spectrum uniformSampleAllLights(const Interaction& it, const Scene& scene, MemoryArena& arena, Sampler& sampler) {
+	Spectrum L(0.f);
+	for (size_t i = 0; i < scene.lights.size(); i++) {
+		const std::shared_ptr<Light>& light = scene.lights[i];
+		Point2f u_light = sampler.get2D();
+		Point2f u_scattering = sampler.get2D();
+		L += estimateDirect(it, u_scattering, *light, u_light, scene, sampler, arena);
+	}
+
+	return L;
+}
+
+Spectrum specularReflect(const Ray& ray, const SurfaceInteraction& isect, const Scene& scene, Sampler& sampler, MemoryArena& arena, int depth) {
+	Vector3f wo = isect.wo, wi;
+	float pdf;
+	BxDFType type = BxDFType(BSDF_REFLECTION | BSDF_SPECULAR);
+	Spectrum f = isect.bsdf->sample_f(wo, &wi, sampler.get2D(), &pdf, type);
+
+	const Normal3f& ns = isect.shading.n;
+	if (pdf > 0.f && !f.isBlack() && absDot(wi, ns) != 0.f) {
+		Ray rd = isect.spawnRay(wi);
+		return f * pathTraceDirect(rd, scene, sampler, arena, depth + 1) * absDot(wi, ns) / pdf;
+	} else {
+		return Spectrum (0.f);
+	}
+}
+
+Spectrum pathTraceDirect(const Ray& ray, const Scene& scene, Sampler& sampler, MemoryArena& arena, int depth) {
+	Spectrum L(0.f);
+	SurfaceInteraction isect;
+	if (!scene.intersect(ray, &isect)) {
+		return scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d);
+	}
+
+	isect.computeScatteringFunctions(ray, arena);
+	if (!isect.bsdf) {
+		return pathTraceDirect(isect.spawnRay(ray.d), scene, sampler, arena, depth);
+	}
+
+	if (scene.lights.size() > 0) {
+		L += uniformSampleAllLights(isect, scene, arena, sampler);
+	}
+	if (depth + 1 < 5) {
+		L += specularReflect(ray, isect, scene, sampler, arena, depth);
+	}
+
+	return L;
+}
+
+Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryArena& arena, int max_depth, bool sample_sky) {
 	Spectrum L(0.f), beta(1.f);
 	Ray ray(r);
 	bool specular_bounce = false;
@@ -239,7 +290,9 @@ Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryAre
 		}
 
 		if (!found_isect) {
-			L += beta * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d);
+			if (sample_sky) {
+				L += beta * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d);
+			}
 			break;
 		}
 		if (bounces >= max_depth) {
@@ -352,7 +405,7 @@ void IlluminanceField::bake(const Scene& scene) {
 					Ray ray(probe_pos, normalize(sample_dir));
 
 					Spectrum L(0.f);
-					L = pathTrace(ray, scene, *probe_sampler, arena, 5);
+					L = pathTrace(ray, scene, *probe_sampler, arena, 5, false);
 
 					float rgb[3];
 					L.toRGB(rgb);
@@ -483,7 +536,7 @@ void IlluminanceField::testPathtracer(const Scene& scene) {
 			ray = camera_to_world(ray);
 
 			Spectrum L(0.f);
-			L = pathTrace(ray, scene, *pixel_sampler, arena, 5);
+			L = pathTrace(ray, scene, *pixel_sampler, arena, 5, true);
 
 			float rgb[3];
 			L.toRGB(rgb);
@@ -495,9 +548,9 @@ void IlluminanceField::testPathtracer(const Scene& scene) {
 
 		col /= (float)num_samples;
 
-		p[0] = int(255.99 * std::sqrt(col.x));
-		p[1] = int(255.99 * std::sqrt(col.y));
-		p[2] = int(255.99 * std::sqrt(col.z));
+		p[0] = int(255.99 * clamp(std::sqrt(col.x), 0, 1));
+		p[1] = int(255.99 * clamp(std::sqrt(col.y), 0, 1));
+		p[2] = int(255.99 * clamp(std::sqrt(col.z), 0, 1));
 	},
 			resolution);
 
