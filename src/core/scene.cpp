@@ -185,7 +185,7 @@ void Scene::buildScene() {
 		rgb[0] = dir->color.x * dir->power;
 		rgb[1] = dir->color.y * dir->power;
 		rgb[2] = dir->color.z * dir->power;
-		lights.push_back(std::make_shared<DistantLight>(dir->transform_data.transform, rgb, dir->direction));
+		lights.push_back(std::make_shared<DistantLight>(dir->transform_data.transform, rgb, -dir->direction));
 	}
 	for (const auto& point : point_lights) {
 		if (!point->active) {
