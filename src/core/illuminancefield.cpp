@@ -351,7 +351,7 @@ Vector3f octDecode(Point2f o) {
 
 void IlluminanceField::bake(const Scene& scene) {
 	const int num_total_probes = probe_grid_size.x * probe_grid_size.y * probe_grid_size.z;
-	printf("Baking %zu probes\n", num_total_probes);
+	printf("Baking %d probes\n", num_total_probes);
 
 	GLModel screenspace_quad("bounding_quad");
 	screenspace_quad.loadModel("../civet/resources/basic-meshes/quad.obj");
