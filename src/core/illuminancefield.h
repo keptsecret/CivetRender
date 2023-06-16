@@ -31,16 +31,16 @@ private:
 	friend Editor;
 	Point3f corner_position{ 0, 0, 0 };
 	Point3i probe_grid_size{ 16, 16, 16 };
-	Vector3f cell_dim{ 30, 40, 30 };
-	uint64_t rays_per_texel_radiance = 1;
+	Vector3f cell_dim{ 1, 1, 1 };
+	uint64_t rays_per_texel_radiance = 4;
 
 	uint64_t num_irradiance_samples = 4096;
-	uint64_t num_distance_samples = 256;
+	uint64_t num_distance_samples = 512;
 	float irradiance_lobe_size = 0.99f;
 	float distance_lobe_size = 0.5f;
 
 	unsigned int FBO;
-	int cubemap_resolution = 256;
+	int cubemap_resolution = 128;
 	int octahedral_resolution = 128;
 	unsigned int radiance_cubemap;
 	unsigned int distance_cubemap;
