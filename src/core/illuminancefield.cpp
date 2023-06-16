@@ -269,7 +269,7 @@ Spectrum pathTraceDirect(const Ray& ray, const Scene& scene, Sampler& sampler, M
 	return L;
 }
 
-Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryArena& arena, int max_depth, bool sample_sky) {
+Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryArena& arena, int max_depth) {
 	Spectrum L(0.f), beta(1.f);
 	Ray ray(r);
 	bool specular_bounce = false;
@@ -282,9 +282,7 @@ Spectrum pathTrace(const Ray& r, const Scene& scene, Sampler& sampler, MemoryAre
 		}
 
 		if (!found_isect) {
-			if (sample_sky) {
-				L += beta * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d);
-			}
+			L += beta * scene.skybox->sampleSky(scene.skybox->atmosphere, ray.d);
 			break;
 		}
 		if (bounces >= max_depth) {
@@ -397,7 +395,7 @@ void IlluminanceField::bake(const Scene& scene) {
 					Ray ray(probe_pos, normalize(sample_dir));
 
 					Spectrum L(0.f);
-					L = pathTrace(ray, scene, *probe_sampler, arena, 5, false);
+					L = pathTrace(ray, scene, *probe_sampler, arena, 5);
 
 					float rgb[3];
 					L.toRGB(rgb);
@@ -528,7 +526,7 @@ void IlluminanceField::testPathtracer(const Scene& scene) {
 			ray = camera_to_world(ray);
 
 			Spectrum L(0.f);
-			L = pathTrace(ray, scene, *pixel_sampler, arena, 5, true);
+			L = pathTrace(ray, scene, *pixel_sampler, arena, 5);
 
 			float rgb[3];
 			L.toRGB(rgb);
