@@ -44,7 +44,7 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	indirect_pass_shader.setInt("AORoughMetallicMap", GBuffer::GBUFFER_TEXTURE_AOROUGHMETALLIC);
 	indirect_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
 
-	indirect_pass_shader.setInt("radianceOctMap", gbuffer.num_textures);
+	indirect_pass_shader.setInt("SGAmplitudes", gbuffer.num_textures);
 	indirect_pass_shader.setInt("distanceOctMap", gbuffer.num_textures + 1);
 
 	postprocess_shader.use();

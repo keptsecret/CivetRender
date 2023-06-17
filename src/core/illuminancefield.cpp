@@ -16,14 +16,6 @@ namespace civet {
 Spectrum pathTraceDirect(const Ray& ray, const Scene& scene, Sampler& sampler, MemoryArena& arena, int depth);
 
 IlluminanceField::~IlluminanceField() {
-	if (!radiance_texture_array) {
-		glDeleteTextures(1, &radiance_texture_array);
-	}
-
-	if (!distance_texture_array) {
-		glDeleteTextures(1, &distance_texture_array);
-	}
-
 	if (!sphere_samples_UBO) {
 		glDeleteBuffers(1, &sphere_samples_UBO);
 	}
@@ -51,32 +43,34 @@ std::vector<Vector3f> generateDirectionsInSphere(int num_samples) {
 }
 
 void IlluminanceField::initialize() {
-	glGenFramebuffers(1, &FBO);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
+	initializeSGSolver(SGProbe::SG_count, SGDistribution::Spherical);
 
-	radiance_cubemap_data.resize(6);
-	for (int i = 0; i < 6; i++) {
-		radiance_cubemap_data[i].resize(cubemap_resolution * cubemap_resolution);
+	const SG* initial_guess = initialGuess();
+	SG_sharpness = initial_guess[0].sharpness;
+	for (int i = 0; i < SGProbe::SG_count; i++) {
+		SG_directions[i] = initial_guess[i].axis;
 	}
+
+	const int num_total_probes = probe_grid_size.x * probe_grid_size.y * probe_grid_size.z;
+	probes.resize(probe_grid_size.x * probe_grid_size.y * probe_grid_size.z);
 
 	distance_cubemap_data.resize(6);
 	for (int i = 0; i < 6; i++) {
 		distance_cubemap_data[i].resize(cubemap_resolution * cubemap_resolution);
 	}
 
-	const int num_total_probes = probe_grid_size.x * probe_grid_size.y * probe_grid_size.z;
 	has_bake_data = false;
 
-	glGenTextures(1, &radiance_cubemap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, radiance_cubemap);
-	for (unsigned int i = 0; i < 6; i++) {
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, cubemap_resolution, cubemap_resolution, 0, GL_RGB, GL_FLOAT, nullptr);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glGenTextures(1, &SG_data_texture_array);
+	glBindTexture(GL_TEXTURE_1D_ARRAY, SG_data_texture_array);
+	glTexImage2D(GL_TEXTURE_1D_ARRAY, 0, GL_RGB32F, SGProbe::SG_count, num_total_probes, 0, GL_RGB, GL_FLOAT, nullptr);
+	glTexParameterf(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_1D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glBindTexture(GL_TEXTURE_1D_ARRAY, 0);
+
+	glGenFramebuffers(1, &FBO);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
 
 	glGenTextures(1, &distance_cubemap);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, distance_cubemap);
@@ -89,24 +83,6 @@ void IlluminanceField::initialize() {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-	glGenTextures(1, &radiance_texture_array);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, radiance_texture_array);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RGB, GL_FLOAT, nullptr);
-	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glGenTextures(1, &distance_texture_array);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, distance_texture_array);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RG32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RG, GL_FLOAT, nullptr);
-	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	glGenTextures(1, &irradiance_texture_array);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, irradiance_texture_array);
-	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RGB, GL_FLOAT, nullptr);
-	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
 	glGenTextures(1, &filtered_distance_texture_array);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, filtered_distance_texture_array);
 	glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RG32F, octahedral_resolution, octahedral_resolution, num_total_probes, 0, GL_RG, GL_FLOAT, nullptr);
@@ -114,7 +90,7 @@ void IlluminanceField::initialize() {
 	glTexParameterf(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
-	int max_samples = std::max(num_irradiance_samples, num_distance_samples);
+	int max_samples = num_distance_samples;
 	std::vector<Vector3f> samples = generateDirectionsInSphere(max_samples);
 
 	glGenBuffers(1, &sphere_samples_UBO);
@@ -123,10 +99,11 @@ void IlluminanceField::initialize() {
 	glBindBufferBase(GL_UNIFORM_BUFFER, 2, sphere_samples_UBO);
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
-	irradiance_shader = Shader("../civet/src/shaders/screen_space_vert.glsl", "../civet/src/shaders/irradiance_frag.glsl");
+	distance_cubemap_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/precompute_distance_frag.glsl", "../civet/src/shaders/precompute_distance_geom.glsl");
+	filtered_distance_shader = Shader("../civet/src/shaders/screen_space_vert.glsl", "../civet/src/shaders/irradiance_frag.glsl");
 
-	unsigned int sampledirs_index = glGetUniformBlockIndex(irradiance_shader.ID, "SphereDirectionSamples");
-	glUniformBlockBinding(irradiance_shader.ID, sampledirs_index, 2);
+	unsigned int sampledirs_index = glGetUniformBlockIndex(filtered_distance_shader.ID, "SphereDirectionSamples");
+	glUniformBlockBinding(filtered_distance_shader.ID, sampledirs_index, 2);
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glCheckError("ERROR::IlluminanceField::initialize: OpenGL error code");
@@ -330,131 +307,102 @@ Point3i flatIndexToGridIndex(const Point3i& grid_dims, int idx) {
 			idx / (grid_dims.x * grid_dims.y));
 }
 
-float signNotZero(float f) {
-	return (f >= 0.f) ? 1.f : -1.f;
-}
-
-/** Returns a unit vector. Argument o is an octahedral vector packed via octEncode,
-	on the [-1, +1] square
-	Matches glsl code
- */
-Vector3f octDecode(Point2f o) {
-	Vector3f v(o.x, o.y, 1.0 - std::abs(o.x) - std::abs(o.y));
-	if (v.z < 0.0) {
-		v.x = (1.0 - std::abs(v.y)) * signNotZero(v.x);
-		v.y = (1.0 - std::abs(v.x)) * signNotZero(v.y);
-	}
-	return normalize(v);
-}
-
 void IlluminanceField::bake(const Scene& scene) {
 	const int num_total_probes = probe_grid_size.x * probe_grid_size.y * probe_grid_size.z;
-	printf("Baking %d probes\n", num_total_probes);
+	printf("Baking %d probe SGs\n", num_total_probes);
 
-	GLModel screenspace_quad("bounding_quad");
-	screenspace_quad.loadModel("../civet/resources/basic-meshes/quad.obj");
+	RandomSampler sampler(rays_per_probe);
+	parallelFor([&](int idx) {
+		MemoryArena arena;
+		SGProbe* probe = &probes[idx];
+		probe->init(rays_per_probe);
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
-	glViewport(0, 0, octahedral_resolution, octahedral_resolution);
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
-
-	irradiance_shader.use();
-	irradiance_shader.setInt("cubemap", 0);
-
-	for (int idx = 0; idx < num_total_probes; idx++) {
-		printf("Baking probe %d\r", idx);
-
-		irradiance_shader.setInt("probeIndex", idx);
-
-		RandomSampler radiance_sampler(rays_per_texel_radiance);
 		Point3i probe_grid_idx = flatIndexToGridIndex(probe_grid_size, idx);
 		Point3f probe_pos{ probe_grid_idx.x * cell_dim.x + corner_position.x,
 			probe_grid_idx.y * cell_dim.y + corner_position.y,
 			probe_grid_idx.z * cell_dim.z + corner_position.z };
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, radiance_cubemap);
+		std::unique_ptr<Sampler> probe_sampler = sampler.clone(idx);
+		probe_sampler->startPixel(Point2i());
+		uint64_t sample_idx = 0;
+		do {
+			Ray ray(probe_pos, normalize(probe->sampleDirection(probe_sampler->get2D())));
 
-		// Bake radiance cube map
-		for (int face = 0; face < 6; face++) {
-			std::vector<Vector3f>& face_data = radiance_cubemap_data[face];
-			std::fill(face_data.begin(), face_data.end(), Vector3f());
+			Spectrum L(0.f);
+			L = pathTrace(ray, scene, *probe_sampler, arena, 5);
 
-			parallelFor2D([&](Point2i texel) {
-				MemoryArena arena;
+			float rgb[3];
+			L.toRGB(rgb);
 
-				Vector3f* p = face_data.data() + texel.y * cubemap_resolution + texel.x;
+			probe->addSample(ray.d, sample_idx++, Vector3f(rgb[0], rgb[1], rgb[2]));
+		} while (probe_sampler->startNextSample());
 
-				std::unique_ptr<Sampler> probe_sampler = radiance_sampler.clone(idx);
-				probe_sampler->startPixel(texel);
-				do {
-					Point2f offset = probe_sampler->get2D();
-					Vector3f sample_dir = mapToDirection(texel.x + offset.x, texel.y + offset.y, face);
-					Ray ray(probe_pos, normalize(sample_dir));
+		probe->bakeResult();
+	}, num_total_probes, 1);
 
-					Spectrum L(0.f);
-					L = pathTrace(ray, scene, *probe_sampler, arena, 5);
+	glBindTexture(GL_TEXTURE_1D_ARRAY, SG_data_texture_array);
+	for (int i = 0; i < probes.size(); i++) {
+		glTexSubImage2D(GL_TEXTURE_1D_ARRAY, 0, 0, i, SGProbe::SG_count, 1, GL_RGB, GL_FLOAT, probes[i].amplitudes.data());
+	}
+	glBindTexture(GL_TEXTURE_1D_ARRAY, 0);
 
-					float rgb[3];
-					L.toRGB(rgb);
+	glCheckError("ERROR::IlluminanceField::bake SGs: OpenGL error code");
 
-					*p += Vector3f(rgb[0], rgb[1], rgb[2]);
-				} while (probe_sampler->startNextSample());
+	GLModel screenspace_quad("screenspace_quad");
+	screenspace_quad.loadModel("../civet/resources/basic-meshes/quad.obj");
 
-				*p /= rays_per_texel_radiance;
-			},
-					Point2i(cubemap_resolution, cubemap_resolution));
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
+	glEnable(GL_CULL_FACE);
 
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 0, 0, cubemap_resolution, cubemap_resolution, GL_RGB, GL_FLOAT, radiance_cubemap_data[face].data());
-			glCheckError("ERROR::IlluminanceField::bake radiance cubemap: OpenGL error code");
+	for (int idx = 0; idx < num_total_probes; idx++) {
+		printf("Baking probe %d filtered distance\r", idx);
+
+		Point3i probe_grid_idx = flatIndexToGridIndex(probe_grid_size, idx);
+		Point3f probe_pos{ probe_grid_idx.x * cell_dim.x + corner_position.x,
+			probe_grid_idx.y * cell_dim.y + corner_position.y,
+			probe_grid_idx.z * cell_dim.z + corner_position.z };
+
+		// Bake distance cube map
+		glViewport(0, 0, cubemap_resolution, cubemap_resolution);
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_BACK);
+
+		distance_cubemap_shader.use();
+		std::vector<Transform> view_transforms;
+		view_transforms.push_back(lookAtRH(probe_pos, probe_pos + Vector3f(1, 0, 0), Vector3f(0, -1, 0)));
+		view_transforms.push_back(lookAtRH(probe_pos, probe_pos + Vector3f(-1, 0, 0), Vector3f(0, -1, 0)));
+		view_transforms.push_back(lookAtRH(probe_pos, probe_pos + Vector3f(0, 1, 0), Vector3f(0, 0, 1)));
+		view_transforms.push_back(lookAtRH(probe_pos, probe_pos + Vector3f(0, -1, 0), Vector3f(0, 0, -1)));
+		view_transforms.push_back(lookAtRH(probe_pos, probe_pos + Vector3f(0, 0, 1), Vector3f(0, -1, 0)));
+		view_transforms.push_back(lookAtRH(probe_pos, probe_pos + Vector3f(0, 0, -1), Vector3f(0, -1, 0)));
+
+		for (unsigned int i = 0; i < 6; i++) {
+			distance_cubemap_shader.setMat4("viewMatrices[" + std::to_string(i) + "]", view_transforms[i].m);
 		}
 
-		irradiance_shader.setInt("numSamples", num_irradiance_samples);
-		irradiance_shader.setFloat("lobeSize", irradiance_lobe_size);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, distance_cubemap, 0);
 
-		glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, irradiance_texture_array, 0, idx);
-		screenspace_quad.draw(irradiance_shader, 1);
-		glCheckError("ERROR::IlluminanceField::bake irradiance: OpenGL error code");
+		for (const auto& model : scene.models) {
+			model->draw(distance_cubemap_shader, 2);
+		}
+
+		// Bake filtered distance
+		glViewport(0, 0, octahedral_resolution, octahedral_resolution);
+		glDisable(GL_DEPTH_TEST);
+		glCullFace(GL_FRONT);
+
+		filtered_distance_shader.use();
+		filtered_distance_shader.setInt("cubemap", 0);
+		filtered_distance_shader.setInt("probeIndex", idx);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, distance_cubemap);
 
-		// Bake distance cube map
-		for (int face = 0; face < 6; face++) {
-			std::vector<Vector2f>& face_data = distance_cubemap_data[face];
-			std::fill(face_data.begin(), face_data.end(), Vector2f());
-
-			parallelFor2D([&](Point2i texel) {
-				MemoryArena arena;
-
-				Vector2f* p = face_data.data() + texel.y * cubemap_resolution + texel.x;
-
-				Vector3f sample_dir = mapToDirection(texel.x, texel.y, face);
-				Ray ray(probe_pos, normalize(sample_dir));
-
-				SurfaceInteraction isect;
-				bool found_isect = scene.intersect(ray, &isect);
-
-				float distance_sq = Infinity;
-				if (found_isect) {
-					distance_sq = (isect.p - probe_pos).lengthSquared();
-				}
-
-				*p = Vector2f(std::sqrt(distance_sq), distance_sq);
-			},
-					Point2i(cubemap_resolution, cubemap_resolution));
-
-			glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, 0, 0, cubemap_resolution, cubemap_resolution, GL_RG, GL_FLOAT, distance_cubemap_data[face].data());
-			glCheckError("ERROR::IlluminanceField::bake distance cubemap: OpenGL error code");
-		}
-
-		irradiance_shader.setInt("numSamples", num_distance_samples);
-		irradiance_shader.setFloat("lobeSize", distance_lobe_size);
+		filtered_distance_shader.setInt("numSamples", num_distance_samples);
+		filtered_distance_shader.setFloat("lobeSize", distance_lobe_size);
 
 		glFramebufferTextureLayer(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, filtered_distance_texture_array, 0, idx);
-		screenspace_quad.draw(irradiance_shader, 1);
+		screenspace_quad.draw(filtered_distance_shader, 1);
 		glCheckError("ERROR::IlluminanceField::bake filtered distance: OpenGL error code");
 	}
 	printf("\n");
@@ -468,13 +416,16 @@ void IlluminanceField::bind(Shader& shader, int tex_offset) {
 	shader.setIVec3("probeGridDims", probe_grid_size);
 	shader.setVec3("gridCornerCoord", corner_position.x, corner_position.y, corner_position.z);
 	shader.setVec3("gridCellSize", cell_dim);
-	shader.setInt("numIrradianceSamples", num_irradiance_samples);
-	shader.setInt("numDistanceSamples", num_distance_samples);
-	shader.setFloat("irradianceLobeSize", irradiance_lobe_size);
+	shader.setInt("SGCount", SGProbe::SG_count);
+	shader.setFloat("SGSharpness", SG_sharpness);
 	shader.setFloat("distanceLobeSize", distance_lobe_size);
 
+	for (int i = 0; i < SGProbe::SG_count; i++) {
+		shader.setVec3("SGDirections[" + std::to_string(i) + "]", SG_directions[i]);
+	}
+
 	glActiveTexture(GL_TEXTURE0 + tex_offset); ///< ensure tex_offset is num textures in gbuffer
-	glBindTexture(GL_TEXTURE_2D_ARRAY, irradiance_texture_array);
+	glBindTexture(GL_TEXTURE_1D_ARRAY, SG_data_texture_array);
 	glActiveTexture(GL_TEXTURE0 + tex_offset + 1);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, filtered_distance_texture_array);
 	glActiveTexture(GL_TEXTURE0);

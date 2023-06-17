@@ -1,7 +1,7 @@
 #version 420 core
 layout (location = 0) out vec4 irradianceOut;
 
-const int NUM_SPHERE_SAMPLES = 4096;
+const int NUM_SPHERE_SAMPLES = 128;
 layout (std140, binding = 2) uniform SphereDirectionSamples {
     vec3 sphereSamples[NUM_SPHERE_SAMPLES];
 };
