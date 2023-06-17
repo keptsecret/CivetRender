@@ -495,36 +495,4 @@ void IlluminanceField::testPathtracer(const Scene& scene) {
 	printf("finished pathtrace\n");
 }
 
-Vector3f IlluminanceField::mapToDirection(float x, float y, int s) {
-	float u = ((x + 0.5f) / (float)cubemap_resolution) * 2.f - 1.f;
-	float v = ((y + 0.5f) / (float)cubemap_resolution) * 2.f - 1.f;
-	v *= -1.f;
-
-	Vector3f dir;
-
-	// +x, -x, +y, -y, +z, -z
-	switch (s) {
-		case 0:
-			dir = normalize(Vector3(1.0f, v, -u));
-			break;
-		case 1:
-			dir = normalize(Vector3(-1.0f, v, u));
-			break;
-		case 2:
-			dir = normalize(Vector3(u, 1.0f, -v));
-			break;
-		case 3:
-			dir = normalize(Vector3(u, -1.0f, v));
-			break;
-		case 4:
-			dir = normalize(Vector3(u, v, 1.0f));
-			break;
-		case 5:
-			dir = normalize(Vector3(-u, v, -1.0f));
-			break;
-	}
-
-	return dir;
-}
-
 } // namespace civet

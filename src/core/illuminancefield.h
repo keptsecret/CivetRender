@@ -90,13 +90,10 @@ public:
 	void testPathtracer(const Scene& scene);
 
 private:
-	Vector3f mapToDirection(float x, float y, int s);
-
-private:
 	friend Editor;
 	Point3f corner_position{ 0, 0, 0 };
 	Point3i probe_grid_size{ 16, 16, 16 };
-	Vector3f cell_dim{ 0.2, 0.2, 0.2 };
+	Vector3f cell_dim{ 30, 30, 30 };
 	uint64_t rays_per_probe = 4096;
 
 	std::vector<SGProbe> probes;
