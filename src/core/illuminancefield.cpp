@@ -54,11 +54,6 @@ void IlluminanceField::initialize() {
 	const int num_total_probes = probe_grid_size.x * probe_grid_size.y * probe_grid_size.z;
 	probes.resize(probe_grid_size.x * probe_grid_size.y * probe_grid_size.z);
 
-	distance_cubemap_data.resize(6);
-	for (int i = 0; i < 6; i++) {
-		distance_cubemap_data[i].resize(cubemap_resolution * cubemap_resolution);
-	}
-
 	has_bake_data = false;
 
 	glGenTextures(1, &SG_data_texture_array);

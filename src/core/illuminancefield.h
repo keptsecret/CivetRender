@@ -96,7 +96,7 @@ private:
 	friend Editor;
 	Point3f corner_position{ 0, 0, 0 };
 	Point3i probe_grid_size{ 16, 16, 16 };
-	Vector3f cell_dim{ 0.3, 0.3, 0.3 };
+	Vector3f cell_dim{ 0.2, 0.2, 0.2 };
 	uint64_t rays_per_probe = 4096;
 
 	std::vector<SGProbe> probes;
@@ -110,7 +110,6 @@ private:
 	int cubemap_resolution = 256;
 	int octahedral_resolution = 128;
 	unsigned int distance_cubemap;
-	std::vector<std::vector<Vector2f>> distance_cubemap_data;
 
 	unsigned int SG_data_texture_array;
 	unsigned int filtered_distance_texture_array;
