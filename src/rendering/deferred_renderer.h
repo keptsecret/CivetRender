@@ -40,15 +40,16 @@ private:
 	void generateShadowMaps(GLModel& model, std::vector<std::shared_ptr<GLDirectionalLight>>& dir_lights, std::vector<std::shared_ptr<GLPointLight>>& point_lights);
 
 	unsigned int width, height;
-	const unsigned int shadow_res = 4096;
 	Transform view_mat, projection_mat;
 	GLCamera* camera;
 	GBuffer gbuffer;
 
+	float exposure_bias = 0.f;
+
 	Shader geometry_pass_shader;
 	Shader pointlight_pass_shader;
 	Shader dirlight_pass_shader;
-	Shader stencil_pass_shader; ///< doesn't actually do anything except population depth and stencil
+	Shader stencil_pass_shader; ///< doesn't actually do anything except populate depth and stencil
 	Shader indirect_pass_shader;
 	Shader postprocess_shader;
 

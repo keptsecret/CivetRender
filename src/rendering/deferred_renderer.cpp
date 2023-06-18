@@ -183,11 +183,12 @@ void DeferredRenderer::postProcessPass(Scene& scene) {
 
 	postprocess_shader.setVec2("screenSize", width, height);
 	postprocess_shader.setVec3("averageBrightness", avg_brightness[0], avg_brightness[1], avg_brightness[2]);
-	postprocess_shader.setFloat("bias", 0);
+	postprocess_shader.setFloat("bias", exposure_bias);
 	bounding_quad.draw(postprocess_shader, 2);
 
 	glCullFace(GL_BACK);
 	glCheckError("ERROR::Engine::postProcessPass: OpenGL error code");
+
 }
 
 void DeferredRenderer::finalPass() {
