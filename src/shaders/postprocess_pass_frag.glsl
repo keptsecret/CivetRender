@@ -4,6 +4,8 @@ out vec4 FragColor;
 uniform sampler2D RawFinalImage;
 
 uniform vec2 screenSize;
+uniform vec3 averageBrightness;
+uniform float bias;
 
 vec2 getTexCoords() {
     return gl_FragCoord.xy / screenSize;
@@ -47,6 +49,18 @@ vec3 aces_approx(vec3 color) {
     return clamp((color * (a * color + b)) / (color * (c * color + d) + e), 0.0, 1.0);
 }
 
+float log10(float x) {
+    const float inv_log10 = 1.0 / log(10.0);
+    return inv_log10 * log(x);
+}
+
+vec3 calcAutoExposure(vec3 color) {
+    float avgLuminance = dot(averageBrightness, vec3(0.2126, 0.7152, 0.0722));
+    float keyValue = 1.03 - (2.0 / (log10(avgLuminance + 1.0) + 2.0));
+    float exposure = log2(max(keyValue / avgLuminance, 0.00001f)) + bias;
+    return exp2(exposure) * color;
+}
+
 // Approximate conversion to srgb from http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 // Use instead of gamma correction
 vec3 linear_to_srgb(vec3 color) {
@@ -57,7 +71,8 @@ void main() {
     vec2 texCoords = getTexCoords();
     vec3 color = texture(RawFinalImage, texCoords).xyz;
 
-    vec3 tonemapped = aces_fitted(color);
+    vec3 exposed = calcAutoExposure(color);
+    vec3 tonemapped = aces_fitted(exposed);
 
     FragColor.rgb = linear_to_srgb(tonemapped);
 }

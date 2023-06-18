@@ -171,15 +171,23 @@ void DeferredRenderer::postProcessPass(Scene& scene) {
 	postprocess_shader.use();
 	gbuffer.bindPostProcessPass();
 
+	glGenerateMipmap(GL_TEXTURE_2D);	// generate mipmap of current bound frame
+	int max_mipmap_level = std::floor(std::log2(std::max(width, height)));	// get highest mipmap level
+	float avg_brightness[3];
+	glGetTexImage(GL_TEXTURE_2D, max_mipmap_level, GL_RGB, GL_FLOAT, avg_brightness);
+
 	glDisable(GL_DEPTH_TEST);
 
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
 
 	postprocess_shader.setVec2("screenSize", width, height);
+	postprocess_shader.setVec3("averageBrightness", avg_brightness[0], avg_brightness[1], avg_brightness[2]);
+	postprocess_shader.setFloat("bias", 0);
 	bounding_quad.draw(postprocess_shader, 2);
 
 	glCullFace(GL_BACK);
+	glCheckError("ERROR::Engine::postProcessPass: OpenGL error code");
 }
 
 void DeferredRenderer::finalPass() {
