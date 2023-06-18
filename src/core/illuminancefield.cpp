@@ -19,6 +19,18 @@ IlluminanceField::~IlluminanceField() {
 	if (!sphere_samples_UBO) {
 		glDeleteBuffers(1, &sphere_samples_UBO);
 	}
+
+	if (!distance_cubemap) {
+		glDeleteTextures(1, &distance_cubemap);
+	}
+
+	if (!filtered_distance_texture_array) {
+		glDeleteTextures(1, &filtered_distance_texture_array);
+	}
+
+	if (!FBO) {
+		glDeleteFramebuffers(1, &FBO);
+	}
 }
 
 Vector3f sampleSphereDirection() {
@@ -95,6 +107,7 @@ void IlluminanceField::initialize() {
 	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	distance_cubemap_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/precompute_distance_frag.glsl", "../civet/src/shaders/precompute_distance_geom.glsl");
+	background_distance_shader = Shader("../civet/src/shaders/skybox_quad_vert.glsl", "../civet/src/shaders/skybox_quad_frag.glsl");
 	filtered_distance_shader = Shader("../civet/src/shaders/screen_space_vert.glsl", "../civet/src/shaders/irradiance_frag.glsl");
 
 	unsigned int sampledirs_index = glGetUniformBlockIndex(filtered_distance_shader.ID, "SphereDirectionSamples");
@@ -349,6 +362,10 @@ void IlluminanceField::bake(const Scene& scene) {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
 	glEnable(GL_CULL_FACE);
 
+	// set a distance further away from all geometry in the scene
+	Bounds3f world_bounds = scene.worldBound();
+	float environment_distance = (world_bounds.p_max - world_bounds.p_min).length() * 1.1;
+
 	for (int idx = 0; idx < num_total_probes; idx++) {
 		printf("Baking probe %d filtered distance\r", idx);
 
@@ -359,7 +376,17 @@ void IlluminanceField::bake(const Scene& scene) {
 
 		// Bake distance cube map
 		glViewport(0, 0, cubemap_resolution, cubemap_resolution);
+
+		background_distance_shader.use();	// fill distance in background
+		background_distance_shader.setFloat("distanceValue", environment_distance);
 		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LEQUAL);
+		glCullFace(GL_FRONT);
+		for (unsigned int i = 0; i < 6; i++) {
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, distance_cubemap, 0);
+			screenspace_quad.draw(background_distance_shader, 1);
+		}
+		glDepthFunc(GL_LESS);
 		glCullFace(GL_BACK);
 
 		distance_cubemap_shader.use();
@@ -374,8 +401,7 @@ void IlluminanceField::bake(const Scene& scene) {
 		for (unsigned int i = 0; i < 6; i++) {
 			distance_cubemap_shader.setMat4("viewMatrices[" + std::to_string(i) + "]", view_transforms[i].m);
 		}
-
-		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, distance_cubemap, 0);
+		glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, distance_cubemap, 0);
 
 		for (const auto& model : scene.models) {
 			model->draw(distance_cubemap_shader, 2);
@@ -413,7 +439,6 @@ void IlluminanceField::bind(Shader& shader, int tex_offset) {
 	shader.setVec3("gridCellSize", cell_dim);
 	shader.setInt("SGCount", SGProbe::SG_count);
 	shader.setFloat("SGSharpness", SG_sharpness);
-	shader.setFloat("distanceLobeSize", distance_lobe_size);
 
 	for (int i = 0; i < SGProbe::SG_count; i++) {
 		shader.setVec3("SGDirections[" + std::to_string(i) + "]", SG_directions[i]);

@@ -93,7 +93,7 @@ private:
 	friend Editor;
 	Point3f corner_position{ 0, 0, 0 };
 	Point3i probe_grid_size{ 16, 16, 16 };
-	Vector3f cell_dim{ 30, 30, 30 };
+	Vector3f cell_dim{ 1, 1, 1 };
 	uint64_t rays_per_probe = 4096;
 
 	std::vector<SGProbe> probes;
@@ -113,6 +113,7 @@ private:
 	unsigned int sphere_samples_UBO;
 
 	Shader distance_cubemap_shader;
+	Shader background_distance_shader;
 	Shader filtered_distance_shader;
 	bool has_bake_data = false;
 };
