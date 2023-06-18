@@ -152,7 +152,6 @@ void main() {
         float t_sub_mean = probeDist - mean;
         float chebychev = variance / (variance + (t_sub_mean * t_sub_mean));
         weight *= ((probeDist <= mean)) ? 1.0 : max(chebychev, 0.0);
-        irradiance = vec3(mean, variance, probeDist);
 
         weight = max(0.002, weight);
         sum_weight += weight;
