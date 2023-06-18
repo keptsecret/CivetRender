@@ -132,24 +132,27 @@ void main() {
     for (int idx = 0; idx < 8; idx++) {
         ivec3 offset = ivec3(idx, idx >> 1, idx >> 2) & ivec3(1);
         ivec3 probeGridCoord = ivec3(clamp(baseCoord + offset, vec3(0.0), vec3(probeGridDims.x, probeGridDims.y, probeGridDims.z) - vec3(1.0)));
-        int probeIndex = gridCoordToFlatIndex(probeGridCoord);
+        int probeIndex = gridCoordToFlatIndex(vec3(probeGridCoord));
 
-        vec3 trilinear = mix(1 - alpha, alpha, offset);
+        vec3 trilinear = mix(1.0 - alpha, alpha, vec3(offset));
         float weight = trilinear.x * trilinear.y * trilinear.z;
 
         vec3 probePos = gridCoordToPosition(probeGridCoord);
-        vec3 probeDir = normalize(worldPos - probePos);
+        vec3 probeToPos = worldPos - probePos;
+        vec3 dir = normalize(-probeToPos);
 
-        weight *= max(0.05, dot(-probeDir, normal));
+        weight *= max(0.05, dot(dir, normal));
 
-        vec2 temp = texture(distanceOctMap, vec3(octEncode(probeDir) * 0.5 + 0.5, probeIndex)).xy;
+        vec2 octDir = octEncode(-dir) * 0.5 + 0.5;
+        vec2 temp = texture(distanceOctMap, vec3(octDir, probeIndex)).xy;
         float mean = temp.x;
         float variance = abs(temp.y - (mean * mean));
 
-        float probeDist = length(worldPos - probePos);
+        float probeDist = length(probeToPos);
         float t_sub_mean = probeDist - mean;
         float chebychev = variance / (variance + (t_sub_mean * t_sub_mean));
-        weight *= ((probeDist <= mean)) ? 1.0 : max(0.0, chebychev);
+        weight *= ((probeDist <= mean)) ? 1.0 : max(chebychev, 0.0);
+        irradiance = vec3(mean, variance, probeDist);
 
         weight = max(0.002, weight);
         sum_weight += weight;
@@ -158,8 +161,7 @@ void main() {
         vec3 indirectSpecular = vec3(0.0);
         computeSGContribution(probeIndex, normal, F0, roughness, viewDir, indirectDiffuse, indirectSpecular);
 
-        irradiance += 2 * indirectDiffuse * (diffuseAlbedo / Pi) * weight;
-//        irradiance += indirectSpecular * weight;
+        irradiance += indirectDiffuse * (diffuseAlbedo / Pi) * weight;
     }
 
     FragColor.rgb = irradiance * ao / sum_weight;
