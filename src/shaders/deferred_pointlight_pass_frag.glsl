@@ -33,6 +33,40 @@ uniform vec3 viewPos;
 uniform PointLight light;
 
 const float PI = 3.14159265359;
+const uint NUM_PCF_SAMPLES = 32;
+const vec2 Poisson[32] = vec2[](
+    vec2(-0.975402, -0.0711386),
+    vec2(-0.920347, -0.41142),
+    vec2(-0.883908, 0.217872),
+    vec2(-0.884518, 0.568041),
+    vec2(-0.811945, 0.90521),
+    vec2(-0.792474, -0.779962),
+    vec2(-0.614856, 0.386578),
+    vec2(-0.580859, -0.208777),
+    vec2(-0.53795, 0.716666),
+    vec2(-0.515427, 0.0899991),
+    vec2(-0.454634, -0.707938),
+    vec2(-0.420942, 0.991272),
+    vec2(-0.261147, 0.588488),
+    vec2(-0.211219, 0.114841),
+    vec2(-0.146336, -0.259194),
+    vec2(-0.139439, -0.888668),
+    vec2(0.0116886, 0.326395),
+    vec2(0.0380566, 0.625477),
+    vec2(0.0625935, -0.50853),
+    vec2(0.125584, 0.0469069),
+    vec2(0.169469, -0.997253),
+    vec2(0.320597, 0.291055),
+    vec2(0.359172, -0.633717),
+    vec2(0.435713, -0.250832),
+    vec2(0.507797, -0.916562),
+    vec2(0.545763, 0.730216),
+    vec2(0.56859, 0.11655),
+    vec2(0.743156, -0.505173),
+    vec2(0.736442, -0.189734),
+    vec2(0.843562, 0.357036),
+    vec2(0.865413, 0.763726),
+    vec2(0.872005, -0.927));
 
 float distributionGGX(vec3 N, vec3 H, float roughness);
 float geometrySchlickGGX(float NdotV, float roughness);
@@ -43,34 +77,35 @@ vec2 getTexCoords() {
     return gl_FragCoord.xy / screenSize;
 }
 
-vec3 sampleOffsetDirections[20] = vec3[]
-(
-vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1),
-vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
-vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
-vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
-vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
-);
-
-float calcShadowCube(vec3 fragPos, float cosTheta) {
+float calcShadowCube(vec3 fragPos, float cosTheta, vec3 normal) {
     vec3 fragToLight = fragPos - light.position;
 
     float currentDepth = length(fragToLight);
     float shadow = 0.0;
-    float bias = 0.005 * tan(acos(cosTheta));
-    bias = clamp(bias, 0.0, 0.2);
-    int samples = 20;
+    float bias = 0.001;//max(0.05 * (1.0 - dot(normal, -fragToLight)), 0.005);
     float viewDistance = length(viewPos - fragPos);
-    float radius = (1.0 + (viewDistance / light.radius)) / 25.0;;
+    float radius = (1.0 + (viewDistance / light.radius)) / 25.0;
 
-    for (int i = 0; i < samples; i++) {
-        float closestDepth = texture(light.shadow_map, fragToLight + sampleOffsetDirections[i] * radius).r;
+    vec3 T = vec3(1.0);
+    vec3 t1 = cross(normal, vec3(0, 1, 0));
+    vec3 t2 = cross(normal, vec3(0, 0, 1));
+    if (length(t1) > length(t2)) {
+        T = t1;
+    } else {
+        T = t2;
+    }
+    T = normalize(T);
+    vec3 B = cross(T, normal);
+
+    for (int i = 0; i < NUM_PCF_SAMPLES; i++) {
+        vec2 P = Poisson[i];
+        float closestDepth = texture(light.shadow_map, fragToLight + (T * P.x + B * P.y) * radius).r;
         closestDepth *= light.radius;
         if (currentDepth - bias > closestDepth) {
             shadow += 1.0;
         }
     }
-    shadow /= float(samples);
+    shadow /= float(NUM_PCF_SAMPLES);
 
     return shadow;
 }
@@ -115,9 +150,8 @@ vec3 calcPointLight(vec3 worldPos, vec3 normal, vec2 texCoords) {
     vec3 Lo = (kD * albedo / PI + specular) * radiance * NdotL;
 
     // shadow
-    float shadow = calcShadowCube(worldPos, NdotL);
+    float shadow = calcShadowCube(worldPos, NdotL, normal);
 
-    //vec3 ambient = vec3(0.03) * albedo * ao * attenuation; // should be 0.03, will revert when indirect lighting
     vec3 color = (1.0 - shadow) * Lo;
 
     return color;

@@ -13,10 +13,10 @@ struct DirLight {
     bool use_cascaded_shadows;
     float far_plane;
     int cascade_count;
-    float cascade_distances[4]; // limit to 4 cascade levels
+    float cascade_distances[4];// limit to 4 cascade levels
     sampler2DArray shadow_cascades;
 
-    mat4 light_space_mat;   // only if shadow not cascade
+    mat4 light_space_mat;// only if shadow not cascade
     sampler2D shadow_map;
 };
 
@@ -44,6 +44,40 @@ uniform vec3 viewPos;
 uniform DirLight light;
 
 const float PI = 3.14159265359;
+const uint NUM_PCF_SAMPLES = 32;
+const vec2 Poisson[32] = vec2[](
+    vec2(-0.975402, -0.0711386),
+    vec2(-0.920347, -0.41142),
+    vec2(-0.883908, 0.217872),
+    vec2(-0.884518, 0.568041),
+    vec2(-0.811945, 0.90521),
+    vec2(-0.792474, -0.779962),
+    vec2(-0.614856, 0.386578),
+    vec2(-0.580859, -0.208777),
+    vec2(-0.53795, 0.716666),
+    vec2(-0.515427, 0.0899991),
+    vec2(-0.454634, -0.707938),
+    vec2(-0.420942, 0.991272),
+    vec2(-0.261147, 0.588488),
+    vec2(-0.211219, 0.114841),
+    vec2(-0.146336, -0.259194),
+    vec2(-0.139439, -0.888668),
+    vec2(0.0116886, 0.326395),
+    vec2(0.0380566, 0.625477),
+    vec2(0.0625935, -0.50853),
+    vec2(0.125584, 0.0469069),
+    vec2(0.169469, -0.997253),
+    vec2(0.320597, 0.291055),
+    vec2(0.359172, -0.633717),
+    vec2(0.435713, -0.250832),
+    vec2(0.507797, -0.916562),
+    vec2(0.545763, 0.730216),
+    vec2(0.56859, 0.11655),
+    vec2(0.743156, -0.505173),
+    vec2(0.736442, -0.189734),
+    vec2(0.843562, 0.357036),
+    vec2(0.865413, 0.763726),
+    vec2(0.872005, -0.927));
 
 float distributionGGX(vec3 N, vec3 H, float roughness);
 float geometrySchlickGGX(float NdotV, float roughness);
@@ -92,19 +126,17 @@ float calcShadow(vec3 worldPos, vec3 normal) {
             texelSize /= textureSize(light.shadow_map, 0);
         }
 
-        // PCF, 4x4 filter
-        for (int x = -1; x <= 2; x++) {
-            for (int y = -1; y <= 2; y++) {
-                float pcfDepth = 1.0;
-                if (light.use_cascaded_shadows) {
-                    pcfDepth = texture(light.shadow_cascades, vec3(projCoords.xy + vec2(x, y) * texelSize, layer)).r;
-                } else {
-                    pcfDepth = texture(light.shadow_map, projCoords.xy + vec2(x, y) * texelSize).r;
-                }
-                shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
+        // PCF
+        for (uint i = 0; i < NUM_PCF_SAMPLES; i++) {
+            float pcfDepth = 1.0;
+            if (light.use_cascaded_shadows) {
+                pcfDepth = texture(light.shadow_cascades, vec3(projCoords.xy + Poisson[i] * texelSize, layer)).r;
+            } else {
+                pcfDepth = texture(light.shadow_map, projCoords.xy + Poisson[i] * texelSize).r;
             }
+            shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
         }
-        shadow /= 16.0;
+        shadow /= float(NUM_PCF_SAMPLES);
     }
 
     return shadow;

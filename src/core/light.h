@@ -116,10 +116,12 @@ public:
 	Vector3f direction{ 1.f, 0.f, 0.f };
 	std::vector<Transform> light_space_mat{ 4 };
 
+	bool use_cascaded_shadows;
+
+	// cascaded shadows
 	unsigned int UBO;
 	std::vector<float> cascade_levels;
-	float frustum_fitting_factor = 100.f;
-	bool use_cascaded_shadows;
+	float frustum_fitting_factor = 10.f;
 
 	void init() override;
 
