@@ -44,7 +44,8 @@ GPU accelerated rendering features is baked in but not currently fully implement
 ## Samples
 
 ![Cornell box](resources/screenshots/cornell-box.png)
-Original Cornell box render (shadow parameters need adjustment)
+Original Cornell box render  
+_(Peter panning artifacts present due to small size of model)_
 
 ---
 
