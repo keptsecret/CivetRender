@@ -24,7 +24,7 @@ GPU accelerated rendering features is baked in but not currently fully implement
 * __PBR shaders__ based on Disney BRDF and Unreal Engine adaptation
 * __Image textures__: albedo, metallic, roughness and ambient occlusion
 * __Real time shadows__ through cascaded shadow mapping for directional lights and omnidirectional shadow mapping for point lights
-  * Shadow map filtering with PCF
+  * Shadow map filtering with Poisson sampling PCF
 * __Normal mapping and bump mapping__ for surface details
 * __Deferred rendering__ allows handling large scenes and lots of light sources while maintaining performance through multiple rendering passes
 * Indirect lighting using path-traced __radiance and pre-filtered irradiance probes__
@@ -45,7 +45,6 @@ GPU accelerated rendering features is baked in but not currently fully implement
 
 ![Cornell box](resources/screenshots/cornell-box.png)
 Original Cornell box render  
-_(Peter panning artifacts present due to small size of model)_
 
 ---
 
