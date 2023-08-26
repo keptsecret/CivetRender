@@ -17,7 +17,9 @@ void processInput(GLFWwindow* window, GLCamera& camera, float delta_time) {
 	}
 
 	Engine* engine = Engine::getSingleton();
+	Editor* editor = Editor::getSingleton();
 	if (engine->input_manager.isKeyPressed(GLFW_KEY_ESCAPE)) {
+		editor->setShowMaterialEditor(false);
 		engine->active_scene.clearSelectedNode();
 	}
 
@@ -41,7 +43,6 @@ void processInput(GLFWwindow* window, GLCamera& camera, float delta_time) {
 	}
 
 	if (engine->input_manager.isKeyPressed(GLFW_KEY_H)) {
-		Editor* editor = Editor::getSingleton();
 		editor->toggleShowEditor();
 	}
 }
@@ -105,11 +106,11 @@ int Engine::start() {
 	const unsigned int SHADOW_RES = 4096;
 	auto dir_light = std::make_shared<GLDirectionalLight>("Light_1", Vector3f(2, -1, -2), SHADOW_RES);
 	dir_light->init();
-	active_scene.addNode(dir_light, DirectionalLight);
+	active_scene.addNode(dir_light, NodeType::DirectionalLight);
 
 	auto point_light = std::make_shared<GLPointLight>("Light_2", Point3f(0, 1, 2), SHADOW_RES);
 	point_light->init();
-	active_scene.addNode(point_light, PointLight);
+	active_scene.addNode(point_light, NodeType::PointLight);
 
 	DeferredRenderer* renderer = DeferredRenderer::getSingleton();
 	Editor* editor = Editor::getSingleton();

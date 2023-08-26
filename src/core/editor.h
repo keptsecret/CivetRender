@@ -31,6 +31,7 @@ public:
 	void draw(Scene& active_scene);
 
 	void toggleShowEditor() { show_editor = !show_editor; }
+	void setShowMaterialEditor(bool me) { show_material_editor = me; }
 
 private:
 	void debugWindow(Scene& active_scene);
