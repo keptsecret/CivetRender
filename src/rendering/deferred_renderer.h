@@ -53,6 +53,9 @@ private:
 	Shader indirect_pass_shader;
 	Shader postprocess_shader;
 
+	Shader screenspace_reflection_shader;
+	Shader reflection_shader;
+
 	Shader depth_shader;
 	Shader depth_cascade_shader;
 	Shader depth_cube_shader;

@@ -27,6 +27,7 @@ bool GBuffer::init(unsigned int width, unsigned int height) {
 
 	glGenTextures(num_textures, textures);
 	glGenTextures(1, &depth_map);
+	glGenTextures(1, &reflected_texture);
 	glGenTextures(1, &raw_texture);
 	glGenTextures(1, &final_texture);
 
@@ -42,17 +43,23 @@ bool GBuffer::init(unsigned int width, unsigned int height) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH32F_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_FLOAT_32_UNSIGNED_INT_24_8_REV, nullptr);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depth_map, 0);
 
+	glBindTexture(GL_TEXTURE_2D, reflected_texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, reflected_texture, 0);
+
 	glBindTexture(GL_TEXTURE_2D, raw_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT4, GL_TEXTURE_2D, raw_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, raw_texture, 0);
 
 	glBindTexture(GL_TEXTURE_2D, final_texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGB, GL_FLOAT, nullptr);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, final_texture, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT6, GL_TEXTURE_2D, final_texture, 0);
 
 	GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 
@@ -68,7 +75,7 @@ bool GBuffer::init(unsigned int width, unsigned int height) {
 
 void GBuffer::start() {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
-	glDrawBuffer(GL_COLOR_ATTACHMENT4);
+	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -82,8 +89,8 @@ void GBuffer::bindStencilPass() {
 	glDrawBuffer(GL_NONE);
 }
 
-void GBuffer::bindLightPass() {
-	glDrawBuffer(GL_COLOR_ATTACHMENT4);
+void GBuffer::bindLightingPass() {
+	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 
 	for (unsigned int i = 0 ; i < num_textures; i++) {
 		glActiveTexture(GL_TEXTURE0 + i);
@@ -92,7 +99,8 @@ void GBuffer::bindLightPass() {
 }
 
 void GBuffer::bindPostProcessPass() {
-	glDrawBuffer(GL_COLOR_ATTACHMENT5);
+	glDrawBuffer(GL_COLOR_ATTACHMENT6);
+//	glClear(GL_COLOR_BUFFER_BIT);
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, raw_texture);
@@ -101,7 +109,26 @@ void GBuffer::bindPostProcessPass() {
 void GBuffer::bindFinalPass() {
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
-	glReadBuffer(GL_COLOR_ATTACHMENT5);
+	glReadBuffer(GL_COLOR_ATTACHMENT6);
+}
+
+void GBuffer::bindGenReflection() {
+	glDrawBuffer(GL_COLOR_ATTACHMENT4);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, depth_map);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, textures[GBUFFER_TEXTURE_NORMAL]);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, textures[GBUFFER_TEXTURE_AOROUGHMETALLIC]);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, raw_texture);
+}
+
+void GBuffer::bindReflectionTexture(unsigned int offset) {
+	glActiveTexture(GL_TEXTURE0 + offset);
+	glBindTexture(GL_TEXTURE_2D, reflected_texture);
 }
 
 } // namespace civet

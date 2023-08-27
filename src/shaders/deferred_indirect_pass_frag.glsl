@@ -10,8 +10,7 @@ struct SG {
 
 // AnisotropicSphericalGaussian(dir) :=
 //    Amplitude * exp(-SharpnessX * dot(BasisX, dir)^2 - SharpnessY * dot(BasisY, dir)^2)
-struct ASG
-{
+struct ASG {
     vec3 amplitude;
     vec3 basisZ;              // Direction the ASG points
     vec3 basisX;

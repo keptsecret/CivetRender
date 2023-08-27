@@ -26,6 +26,9 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	indirect_pass_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/deferred_indirect_pass_frag.glsl");
 	postprocess_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/postprocess_pass_frag.glsl");
 
+	screenspace_reflection_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/SSR_frag.glsl");
+	reflection_shader = Shader("../civet/src/shaders/deferred_light_pass_vert.glsl", "../civet/src/shaders/reflection_frag.glsl");
+
 	pointlight_pass_shader.use();
 	pointlight_pass_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
 	pointlight_pass_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
@@ -44,11 +47,34 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	indirect_pass_shader.setInt("AORoughMetallicMap", GBuffer::GBUFFER_TEXTURE_AOROUGHMETALLIC);
 	indirect_pass_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
 
+	Transform identity;
+	indirect_pass_shader.setMat4("projection", identity.m);
+	indirect_pass_shader.setMat4("view", identity.m);
+	indirect_pass_shader.setMat4("model", identity.m);
 	indirect_pass_shader.setInt("SGAmplitudes", gbuffer.num_textures);
 	indirect_pass_shader.setInt("distanceOctMap", gbuffer.num_textures + 1);
 
-	postprocess_shader.use();
-	Transform identity;
+	screenspace_reflection_shader.use();
+	screenspace_reflection_shader.setInt("DepthMap", 0);
+	screenspace_reflection_shader.setInt("NormalMap", 1);
+	screenspace_reflection_shader.setInt("AORoughMetallicMap", 2);
+	screenspace_reflection_shader.setInt("RawFinalImage", 3);
+
+	screenspace_reflection_shader.setMat4("projection", identity.m);
+	screenspace_reflection_shader.setMat4("view", identity.m);
+	screenspace_reflection_shader.setMat4("model", identity.m);
+
+	reflection_shader.use();
+	reflection_shader.setInt("PositionMap", GBuffer::GBUFFER_TEXTURE_POSITION);
+	reflection_shader.setInt("AlbedoMap", GBuffer::GBUFFER_TEXTURE_ALBEDO);
+	reflection_shader.setInt("AORoughMetallicMap", GBuffer::GBUFFER_TEXTURE_AOROUGHMETALLIC);
+	reflection_shader.setInt("NormalMap", GBuffer::GBUFFER_TEXTURE_NORMAL);
+	reflection_shader.setInt("ReflectedMap", gbuffer.num_textures);
+
+	reflection_shader.setMat4("projection", identity.m);
+	reflection_shader.setMat4("view", identity.m);
+	reflection_shader.setMat4("model", identity.m);
+
 	postprocess_shader.use();
 	postprocess_shader.setMat4("projection", identity.m);
 	postprocess_shader.setMat4("view", identity.m);
@@ -87,6 +113,8 @@ void DeferredRenderer::geometryPass(GLModel& model) {
 
 	glDepthMask(GL_TRUE); // only update depth buffer on geometry pass
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//	const float distance[] = { camera->far_plane, camera->far_plane, camera->far_plane, camera->far_plane };
+//	glClearBufferfv(GL_COLOR, 0, distance);
 	glEnable(GL_DEPTH_TEST);
 
 	geometry_pass_shader.use();
@@ -135,39 +163,64 @@ void DeferredRenderer::lightsPass(GLModel& model, std::vector<std::shared_ptr<GL
 }
 
 void DeferredRenderer::indirectLightingPass(Scene& scene) {
-	if (!scene.probe_grid->hasBakeData()) {
-		return;
-	}
-
-	indirect_pass_shader.use();
-	gbuffer.bindLightPass();
-
-	Transform identity;
-	indirect_pass_shader.setMat4("projection", identity.m);
-	indirect_pass_shader.setMat4("view", identity.m);
-	indirect_pass_shader.setMat4("model", identity.m);
-	indirect_pass_shader.setVec3("viewPos", Vector3f(camera->position));
-	indirect_pass_shader.setVec2("screenSize", width, height);
-
-	scene.probe_grid->bind(indirect_pass_shader, gbuffer.num_textures);
-
 	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_ONE, GL_ONE);
-
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
 
-	bounding_quad.draw(indirect_pass_shader, gbuffer.num_textures + 2);
+	if (scene.probe_grid->hasBakeData()) {
+		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_ONE, GL_ONE);
+
+		// Diffuse indirect lighting from light probes
+		indirect_pass_shader.use();
+		gbuffer.bindLightingPass();
+
+		indirect_pass_shader.setVec3("viewPos", Vector3f(camera->position));
+		indirect_pass_shader.setVec2("screenSize", width, height);
+
+		scene.probe_grid->bind(indirect_pass_shader, gbuffer.num_textures);
+		bounding_quad.draw(indirect_pass_shader, gbuffer.num_textures + 2);
+
+		glDisable(GL_BLEND);
+	}
 
 	glCullFace(GL_BACK);
 	glDisable(GL_BLEND);
+	glCheckError("ERROR::DeferredRenderer::indirectLightingPass: indirect diffuse: OpenGL error code");
+
+	scene.skybox->draw(projection_mat, view_mat);
+
+	// Generate screen space reflections in texture
+	glCullFace(GL_FRONT);
+	screenspace_reflection_shader.use();
+	gbuffer.bindGenReflection();
+
+	screenspace_reflection_shader.setVec2("screenSize", width, height);
+	screenspace_reflection_shader.setMat4("sceneProjection", projection_mat.m);
+	screenspace_reflection_shader.setMat4("sceneInvProjection", projection_mat.m_inv);
+	screenspace_reflection_shader.setMat4("sceneView", view_mat.m);
+
+	bounding_quad.draw(screenspace_reflection_shader, 3);
+
+	// Blend screen space reflections to current render
+	glEnable(GL_BLEND);
+
+	reflection_shader.use();
+	gbuffer.bindLightingPass();
+	gbuffer.bindReflectionTexture(gbuffer.num_textures);
+
+	reflection_shader.setVec2("screenSize", width, height);
+	reflection_shader.setVec3("viewPos", Vector3f(camera->position));
+
+	bounding_quad.draw(reflection_shader, gbuffer.num_textures + 1);
+
+	glCullFace(GL_BACK);
+	glDisable(GL_BLEND);
+	glCheckError("ERROR::DeferredRenderer::indirectLightingPass: SSR: OpenGL error code");
 }
 
 void DeferredRenderer::postProcessPass(Scene& scene) {
-	scene.skybox->draw(projection_mat, view_mat);
-
 	postprocess_shader.use();
 	gbuffer.bindPostProcessPass();
 
@@ -198,7 +251,7 @@ void DeferredRenderer::finalPass() {
 
 void DeferredRenderer::pointLightPass(GLModel& model, GLPointLight& light) {
 	pointlight_pass_shader.use();
-	gbuffer.bindLightPass();
+	gbuffer.bindLightingPass();
 
 	glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
 
@@ -244,7 +297,7 @@ void DeferredRenderer::stencilPass(GLModel& model, GLPointLight& light) {
 
 void DeferredRenderer::dirLightPass(GLModel& model, GLDirectionalLight& light) {
 	dirlight_pass_shader.use();
-	gbuffer.bindLightPass();
+	gbuffer.bindLightingPass();
 
 	glDisable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
