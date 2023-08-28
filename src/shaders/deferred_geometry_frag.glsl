@@ -58,7 +58,7 @@ void main() {
     MetallicRoughAOOut.g = material.is_glossy_rough ? 1 - MetallicRoughAOOut.g : MetallicRoughAOOut.g;
     MetallicRoughAOOut.b = material.use_metallic_map ? texture(material.texture_metallic, TexCoords).b : material.metallic;
 
-    NormalOut = Normal;
+    NormalOut = normalize(Normal);
     if (material.use_normal_map) {
         NormalOut = texture(material.texture_normal, TexCoords).rgb;
         NormalOut = NormalOut * 2.0 - 1.0;
