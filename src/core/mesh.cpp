@@ -212,8 +212,7 @@ std::shared_ptr<GLMesh> GLModel::processMesh(aiMesh* mesh, const aiScene* scene)
 		aiColor3D color;
 		if (aimaterial->Get(AI_MATKEY_BASE_COLOR, color) == AI_SUCCESS) {
 			material->albedo = Vector3f(color.r, color.g, color.b);
-		}
-		if (aimaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
+		} else if (aimaterial->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
 			material->albedo = Vector3f(color.r, color.g, color.b);
 		}
 

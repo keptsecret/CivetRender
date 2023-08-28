@@ -23,7 +23,7 @@ GBuffer::~GBuffer() {
 
 bool GBuffer::init(unsigned int width, unsigned int height) {
 	glGenFramebuffers(1, &FBO);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 
 	glGenTextures(num_textures, textures);
 	glGenTextures(1, &depth_map);
@@ -68,7 +68,7 @@ bool GBuffer::init(unsigned int width, unsigned int height) {
 		return false;
 	}
 
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glCheckError("ERROR::GBuffer::init: OpenGL error code");
 	return true;
 }

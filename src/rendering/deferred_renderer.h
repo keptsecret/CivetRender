@@ -45,6 +45,7 @@ private:
 	GBuffer gbuffer;
 
 	float exposure_bias = 0.f;
+	bool enable_SSR = true;
 
 	Shader geometry_pass_shader;
 	Shader pointlight_pass_shader;

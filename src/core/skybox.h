@@ -48,6 +48,8 @@ public:
 	void renderSkyboxToTexture(const Vector3f& sun_dir);
 	Spectrum sampleSky(const Atmosphere& atmosphere, const Vector3f& sample_dir);
 
+	unsigned int getCubemap() const { return cubemap; }
+
 	void resetEditingParameters() { editing_params = parameters; }
 
 	SkyboxParameters editing_params;

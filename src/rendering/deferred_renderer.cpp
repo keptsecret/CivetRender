@@ -59,6 +59,7 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	screenspace_reflection_shader.setInt("NormalMap", 1);
 	screenspace_reflection_shader.setInt("AORoughMetallicMap", 2);
 	screenspace_reflection_shader.setInt("RawFinalImage", 3);
+	screenspace_reflection_shader.setInt("skyboxSampler", 4);
 
 	screenspace_reflection_shader.setMat4("projection", identity.m);
 	screenspace_reflection_shader.setMat4("view", identity.m);
@@ -113,8 +114,6 @@ void DeferredRenderer::geometryPass(GLModel& model) {
 
 	glDepthMask(GL_TRUE); // only update depth buffer on geometry pass
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//	const float distance[] = { camera->far_plane, camera->far_plane, camera->far_plane, camera->far_plane };
-//	glClearBufferfv(GL_COLOR, 0, distance);
 	glEnable(GL_DEPTH_TEST);
 
 	geometry_pass_shader.use();
@@ -192,32 +191,44 @@ void DeferredRenderer::indirectLightingPass(Scene& scene) {
 	scene.skybox->draw(projection_mat, view_mat);
 
 	// Generate screen space reflections in texture
-	glCullFace(GL_FRONT);
-	screenspace_reflection_shader.use();
-	gbuffer.bindGenReflection();
+	if (enable_SSR) {
+		glCullFace(GL_FRONT);
+		screenspace_reflection_shader.use();
+		gbuffer.bindGenReflection();
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, scene.skybox->getCubemap());
 
-	screenspace_reflection_shader.setVec2("screenSize", width, height);
-	screenspace_reflection_shader.setMat4("sceneProjection", projection_mat.m);
-	screenspace_reflection_shader.setMat4("sceneInvProjection", projection_mat.m_inv);
-	screenspace_reflection_shader.setMat4("sceneView", view_mat.m);
+		Transform trs = translate({0.5, 0.5, 0.5});
+		trs = trs * scale(0.5, 0.5, 1.0);
+		Transform screen_scale = scale(width, height, 1.0);
+		Transform proj_to_pixel = screen_scale * trs * projection_mat;
+		screenspace_reflection_shader.setMat4("projToPixel", proj_to_pixel.m);
+		screenspace_reflection_shader.setVec2("screenSize", width, height);
+		screenspace_reflection_shader.setMat4("sceneProjection", projection_mat.m);
+		screenspace_reflection_shader.setMat4("sceneInvProjection", projection_mat.m_inv);
+		screenspace_reflection_shader.setMat4("sceneView", view_mat.m);
+		screenspace_reflection_shader.setMat4("sceneInvView", view_mat.m_inv);
+		screenspace_reflection_shader.setFloat("nearPlane", camera->near_plane);
+		screenspace_reflection_shader.setFloat("farPlane", camera->far_plane);
 
-	bounding_quad.draw(screenspace_reflection_shader, 3);
+		bounding_quad.draw(screenspace_reflection_shader, 5);
 
-	// Blend screen space reflections to current render
-	glEnable(GL_BLEND);
+		// Blend screen space reflections to current render
+		glEnable(GL_BLEND);
 
-	reflection_shader.use();
-	gbuffer.bindLightingPass();
-	gbuffer.bindReflectionTexture(gbuffer.num_textures);
+		reflection_shader.use();
+		gbuffer.bindLightingPass();
+		gbuffer.bindReflectionTexture(gbuffer.num_textures);
 
-	reflection_shader.setVec2("screenSize", width, height);
-	reflection_shader.setVec3("viewPos", Vector3f(camera->position));
+		reflection_shader.setVec2("screenSize", width, height);
+		reflection_shader.setVec3("viewPos", Vector3f(camera->position));
 
-	bounding_quad.draw(reflection_shader, gbuffer.num_textures + 1);
+		bounding_quad.draw(reflection_shader, gbuffer.num_textures + 1);
 
-	glCullFace(GL_BACK);
-	glDisable(GL_BLEND);
-	glCheckError("ERROR::DeferredRenderer::indirectLightingPass: SSR: OpenGL error code");
+		glCullFace(GL_BACK);
+		glDisable(GL_BLEND);
+		glCheckError("ERROR::DeferredRenderer::indirectLightingPass: SSR: OpenGL error code");
+	}
 }
 
 void DeferredRenderer::postProcessPass(Scene& scene) {
