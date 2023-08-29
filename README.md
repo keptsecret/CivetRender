@@ -30,6 +30,7 @@ GPU accelerated rendering features is baked in but not currently fully implement
 * Indirect lighting using path-traced __radiance and pre-filtered irradiance probes__
   * Irradiance lighting encoded as 12 Spherical Gaussians per probe 
   * Prevent light leaking with filtered distance visibility tests
+* Reflections on specular/metallic surfaces with __Screen Space Reflections__ (SSR)
 * __HDR workflow__: ACES filmic curve tonemapping and automatic exposure control
 
 ### Ray-tracer
@@ -44,7 +45,12 @@ GPU accelerated rendering features is baked in but not currently fully implement
 ## Samples
 
 ![Cornell box](resources/screenshots/cornell-box.png)
-Original Cornell box render  
+Original Cornell box render
+
+---
+
+![Cornell box SSR](resources/screenshots/cornell-box-reflections.png)
+Cornell box with a reflective floor, rendered with SSR enabled
 
 ---
 
@@ -56,7 +62,11 @@ An indoor section of sponza with increased exposure, showcasing indirect lightin
 ![Sponza HD](resources/screenshots/sponza-hd.png)
 A version of the Sponza atrium with HD textures and normal maps
 
+---
 
+![Sponza HD indoors](resources/screenshots/sponza-hd-indoors.png)
+A shaded section of the Sponza atrium, showcasing screen space reflections
 
+---
 
 See the `/resources/screenshots` for more samples, including renders during early development.
