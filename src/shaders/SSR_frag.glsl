@@ -17,7 +17,7 @@ uniform float nearPlane;
 uniform float farPlane;
 
 // SSR parameters
-const float maxSteps = 50;
+const float maxSteps = 256;
 const float binarySearchIterations = 5;
 const float jitterAmount = 1.0;
 const float maxDistance = 200.0;
@@ -42,7 +42,7 @@ float linear01Depth(float z) {
     return 1.0 / ((1.0 - tmp) * z + tmp);
 }
 
-// adapted from McGuire's DDA solution: https://casual-effects.blogspot.com/2014/08/screen-space-ray-tracing.html
+// adapted from McGuire's SS tracing solution: https://casual-effects.blogspot.com/2014/08/screen-space-ray-tracing.html
 bool raymarch(vec3 csOrig, vec3 csDir, float jitter, out vec2 hitPixel, out vec3 hitPos, out float iterations) {
     float rayLength = ((csOrig.z + csDir.z * maxDistance) > -nearPlane) ? (-nearPlane - csOrig.z) / csDir.z : maxDistance;
     vec3 csEndPos = csOrig + csDir * rayLength;
@@ -82,7 +82,7 @@ bool raymarch(vec3 csOrig, vec3 csDir, float jitter, out vec2 hitPixel, out vec3
     vec4 pqk = vec4(P0, Q0.z, k0);
     vec4 dPQK = vec4(dP, dQ.z, dk);
     bool intersect = false;
-    for (i = 0; i < maxSteps && intersect == false && pqk.x * stepDir <= end; i++) {
+    for (i = 0.0; i < maxSteps && intersect == false && pqk.x * stepDir <= end; i++) {
         pqk += dPQK;
 
         zA = zB;
@@ -91,7 +91,7 @@ bool raymarch(vec3 csOrig, vec3 csDir, float jitter, out vec2 hitPixel, out vec3
         hitPixel = permute ? pqk.yx : pqk.xy;
         hitPixel = hitPixel / screenSize;
         float currZ = linear01Depth(texture(DepthMap, hitPixel).x) * -farPlane;
-        intersect = zA >= currZ - zThickness && zB <= currZ;
+        intersect = (zA >= currZ - zThickness) && (zB <= currZ);
     }
 
     float addDQ = 0.0;
@@ -112,7 +112,7 @@ bool raymarch(vec3 csOrig, vec3 csDir, float jitter, out vec2 hitPixel, out vec3
             hitPixel = permute ? pqk.yx : pqk.xy;
             hitPixel = hitPixel / screenSize;
             float currZ = linear01Depth(texture(DepthMap, hitPixel).x) * -farPlane;
-            bool intersect2 = zA >= currZ - zThickness && zB <= currZ;
+            bool intersect2 = (zA >= currZ - zThickness) && (zB <= currZ);
 
             originalStride *= 0.5;
             stride = intersect2 ? -originalStride : originalStride;
@@ -126,18 +126,35 @@ bool raymarch(vec3 csOrig, vec3 csDir, float jitter, out vec2 hitPixel, out vec3
     return intersect;
 }
 
+float computeBlendFactor(float iterCount, vec2 hitPixel, vec3 hitPoint, vec3 vsPos, vec3 vsDir) {
+    float alpha = 1.0;
+
+    // fade if high iteration count
+    alpha *= 1.0 - pow(iterCount / maxSteps, 8.0);
+
+    // fade on screen edge
+    float screenFade = screenEdgeFadeStart;
+    vec2 hitPixelNDC = (hitPixel * 2.0 - 1.0);
+    float maxDims = min(1.0, max(abs(hitPixelNDC.x), abs(hitPixelNDC.y)));
+    alpha *= 1.0 - (max(0.0, maxDims - screenFade) / (1.0 - screenFade));
+
+    // fade according to eye angle with surface
+    float eyeDir = clamp(vsDir.z, eyeFadeStart, eyeFadeEnd);
+    alpha *= 1.0 - ((eyeDir - eyeFadeStart) / (eyeFadeEnd - eyeFadeStart));
+
+    return alpha;
+}
+
 void main() {
     vec2 texCoords = getTexCoords();
     float metallic = texture(AORoughMetallicMap, texCoords).b;
     if (metallic < 0.01) {
-        FragColor.rgb = texture(RawFinalImage, texCoords).rgb;
-        return;
+        discard;
     }
 
     float depth = texture(DepthMap, texCoords).x;
     if (depth >= 0.9999f) {
-        FragColor.rgb = texture(RawFinalImage, texCoords).rgb;
-        return;
+        discard;
     }
 
     vec3 normal_wS = normalize(texture(NormalMap, texCoords).xyz);
@@ -149,6 +166,7 @@ void main() {
     vec3 pos_vS = viewPos.xyz;
     vec3 rayDir_vS = normalize(pos_vS);
     vec3 reflectDir_vS = reflect(rayDir_vS, normal_vS);
+    vec3 reflectDir_wS = (sceneInvView * vec4(reflectDir_vS, 0)).xyz;
 
     vec2 hitPixel = vec2(0);
     vec3 hitPos = vec3(0);
@@ -157,5 +175,8 @@ void main() {
     float iterations = 0;
     bool hit = raymarch(pos_vS, reflectDir_vS, jitter * jitterAmount, hitPixel, hitPos, iterations);
 
-    FragColor.rgb = texture(RawFinalImage, hitPixel).rgb;
+    float blendFactor = computeBlendFactor(iterations, hitPixel, hitPos, pos_vS, reflectDir_vS);
+    // Ideally, we'd have a cubemap of the view from the reflective surface
+    // Settling with environment map is fine for open scenes
+    FragColor.rgb = mix(texture(skyboxSampler, reflectDir_wS).rgb, texture(RawFinalImage, hitPixel).rgb, blendFactor);
 }

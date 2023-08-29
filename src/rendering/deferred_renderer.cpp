@@ -80,6 +80,7 @@ void DeferredRenderer::init(unsigned int w, unsigned int h) {
 	postprocess_shader.setMat4("projection", identity.m);
 	postprocess_shader.setMat4("view", identity.m);
 	postprocess_shader.setMat4("model", identity.m);
+	postprocess_shader.setInt("RawFinalImage", 0);
 
 	depth_shader = Shader("../civet/src/shaders/light_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl");
 	depth_cascade_shader = Shader("../civet/src/shaders/light_cube_depth_vert.glsl", "../civet/src/shaders/light_depth_frag.glsl", "../civet/src/shaders/light_cascaded_depth_geom.glsl");
@@ -215,6 +216,8 @@ void DeferredRenderer::indirectLightingPass(Scene& scene) {
 
 		// Blend screen space reflections to current render
 		glEnable(GL_BLEND);
+		glBlendEquation(GL_FUNC_ADD);
+		glBlendFunc(GL_ONE, GL_ONE);
 
 		reflection_shader.use();
 		gbuffer.bindLightingPass();
@@ -319,7 +322,7 @@ void DeferredRenderer::dirLightPass(GLModel& model, GLDirectionalLight& light) {
 	glCullFace(GL_FRONT); ///< quad is facing the wrong way, so we do this
 
 	dirlight_pass_shader.setMat4("cam_view", view_mat.m);
-	light.bindShadowMap(dirlight_pass_shader,  "light.shadow_map", gbuffer.num_textures);
+	light.bindShadowMap(dirlight_pass_shader, "light.shadow_map", gbuffer.num_textures);
 	bounding_quad.draw(dirlight_pass_shader, gbuffer.num_textures + 1);
 
 	glCullFace(GL_BACK);

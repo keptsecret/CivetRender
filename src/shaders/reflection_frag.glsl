@@ -24,9 +24,13 @@ void main() {
     vec3 albedo = texture(AlbedoMap, texCoords).rgb;
     float roughness = texture(AORoughMetallicMap, texCoords).g;
     float metallic = texture(AORoughMetallicMap, texCoords).b;
+    if (metallic < 0.01) {
+        discard;
+    }
 
-    vec3 reflection = texture(ReflectedMap, texCoords).rgb;
-//    vec3 blurred = blur(ReflectedMap, texCoords, vec2(5, 0));
+    vec4 reflectedColor = texture(ReflectedMap, texCoords);
+    vec3 reflection = reflectedColor.rgb;
+    vec3 blurred = blur(ReflectedMap, texCoords, vec2(5, 0));
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
@@ -35,7 +39,7 @@ void main() {
     vec3 V = normalize(viewPos - worldPos);
     vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-    FragColor.rgb = reflection;//mix(reflection, blurred, roughness) * F;
+    FragColor.rgb = mix(reflection, blurred, roughness) * F;
 }
 
 vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
