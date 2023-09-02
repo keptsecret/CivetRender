@@ -20,8 +20,8 @@ uniform float farPlane;
 const float maxSteps = 256;
 const float binarySearchIterations = 5;
 const float jitterAmount = 1.0;
-const float maxDistance = 200.0;
-const float stride = 8.0;
+const float maxDistance = 3000.0;
+const float stride = 10.0;
 const float zThickness = 1.5;
 const float strideZCutoff = 100.0;
 const float screenEdgeFadeStart = 0.75;
@@ -126,29 +126,10 @@ bool raymarch(vec3 csOrig, vec3 csDir, float jitter, out vec2 hitPixel, out vec3
     return intersect;
 }
 
-float computeBlendFactor(float iterCount, vec2 hitPixel, vec3 hitPoint, vec3 vsPos, vec3 vsDir) {
-    float alpha = 1.0;
-
-    // fade if high iteration count
-    alpha *= 1.0 - pow(iterCount / maxSteps, 8.0);
-
-    // fade on screen edge
-    float screenFade = screenEdgeFadeStart;
-    vec2 hitPixelNDC = (hitPixel * 2.0 - 1.0);
-    float maxDims = min(1.0, max(abs(hitPixelNDC.x), abs(hitPixelNDC.y)));
-    alpha *= 1.0 - (max(0.0, maxDims - screenFade) / (1.0 - screenFade));
-
-    // fade according to eye angle with surface
-    float eyeDir = clamp(vsDir.z, eyeFadeStart, eyeFadeEnd);
-    alpha *= 1.0 - ((eyeDir - eyeFadeStart) / (eyeFadeEnd - eyeFadeStart));
-
-    return alpha;
-}
-
 void main() {
     vec2 texCoords = getTexCoords();
-    float metallic = texture(AORoughMetallicMap, texCoords).b;
-    if (metallic < 0.01) {
+    float roughness = texture(AORoughMetallicMap, texCoords).g;
+    if (roughness > 0.6) {
         discard;
     }
 
@@ -167,16 +148,37 @@ void main() {
     vec3 rayDir_vS = normalize(pos_vS);
     vec3 reflectDir_vS = reflect(rayDir_vS, normal_vS);
     vec3 reflectDir_wS = (sceneInvView * vec4(reflectDir_vS, 0)).xyz;
+    if (dot(reflectDir_wS, normal_wS) < 0.001) {
+        discard;
+    }
 
-    vec2 hitPixel = vec2(0);
+    vec2 hitCoord = vec2(0);
     vec3 hitPos = vec3(0);
     vec2 uv = texCoords * screenSize;
     float jitter = mod((uv.x + uv.y) * 0.25, 1.0);
     float iterations = 0;
-    bool hit = raymarch(pos_vS, reflectDir_vS, jitter * jitterAmount, hitPixel, hitPos, iterations);
+    bool hit = raymarch(pos_vS, reflectDir_vS, jitter * jitterAmount, hitCoord, hitPos, iterations);
 
-    float blendFactor = computeBlendFactor(iterations, hitPixel, hitPos, pos_vS, reflectDir_vS);
+    vec2 hitPixel = hitCoord * screenSize;
+    vec2 margin = vec2((screenSize.x + screenSize.y) * 0.05);
+    if (any(bvec4(lessThan(hitPixel, vec2(0.0)), greaterThan(hitPixel, screenSize)))) {
+        discard;
+    }
+
+    // fade according to eye angle with surface
+    float eyeDir = clamp(reflectDir_vS.z, eyeFadeStart, eyeFadeEnd);
+    float eyeBlend = 1.0 - ((eyeDir - eyeFadeStart) / (eyeFadeEnd - eyeFadeStart));
+
     // Ideally, we'd have a cubemap of the view from the reflective surface
     // Settling with environment map is fine for open scenes
-    FragColor.rgb = mix(texture(skyboxSampler, reflectDir_wS).rgb, texture(RawFinalImage, hitPixel).rgb, blendFactor);
+    FragColor.rgb = mix(texture(skyboxSampler, reflectDir_wS).rgb, texture(RawFinalImage, hitCoord).rgb, eyeBlend);
+
+    // fade if high iteration count
+    float fade = 1.0 - pow(iterations / maxSteps, 8.0);
+
+    // fade on screen edge
+    vec2 marginGrad = mix(screenSize - hitPixel, hitPixel, lessThan(hitPixel, screenSize * 0.5));
+    float marginFade = smoothstep(0.0, margin.x * margin.y, marginGrad.x * marginGrad.y);
+
+    FragColor.a = fade * marginFade;
 }

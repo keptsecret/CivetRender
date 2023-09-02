@@ -217,7 +217,7 @@ void DeferredRenderer::indirectLightingPass(Scene& scene) {
 		// Blend screen space reflections to current render
 		glEnable(GL_BLEND);
 		glBlendEquation(GL_FUNC_ADD);
-		glBlendFunc(GL_ONE, GL_ONE);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 
 		reflection_shader.use();
 		gbuffer.bindLightingPass();

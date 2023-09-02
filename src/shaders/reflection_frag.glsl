@@ -10,7 +10,7 @@ uniform sampler2D ReflectedMap;
 uniform vec2 screenSize;
 uniform vec3 viewPos;
 
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
+float fresnelSchlickRoughness(float cosTheta, float F0, float roughness);
 vec3 blur(sampler2D image, vec2 uv, vec2 direction);
 
 vec2 getTexCoords() {
@@ -24,26 +24,25 @@ void main() {
     vec3 albedo = texture(AlbedoMap, texCoords).rgb;
     float roughness = texture(AORoughMetallicMap, texCoords).g;
     float metallic = texture(AORoughMetallicMap, texCoords).b;
-    if (metallic < 0.01) {
-        discard;
-    }
 
     vec4 reflectedColor = texture(ReflectedMap, texCoords);
     vec3 reflection = reflectedColor.rgb;
+    float fade = reflectedColor.a;
     vec3 blurred = blur(ReflectedMap, texCoords, vec2(5, 0));
 
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, metallic);
+    float F0 = mix(0.04, 1.0, metallic);
+    float roughnessFade = smoothstep(0.4, 0.7, 1.0 - roughness);
 
     vec3 N = normalize(texture(NormalMap, texCoords).xyz);
     vec3 V = normalize(viewPos - worldPos);
-    vec3 F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    float F = fresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
 
-    FragColor.rgb = mix(reflection, blurred, roughness) * F;
+    FragColor.rgb = mix(reflection, blurred, roughness);
+    FragColor.a = F * roughnessFade * fade;
 }
 
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
-    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+float fresnelSchlickRoughness(float cosTheta, float F0, float roughness) {
+    return F0 + (max(1.0 - roughness, F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
 vec3 blur(sampler2D image, vec2 texCoord, vec2 direction) {
