@@ -61,6 +61,10 @@ vec3 calcAutoExposure(vec3 color) {
     return exp2(exposure) * color;
 }
 
+vec3 calcManualExposure(vec3 color, float exposure) {
+    return exp2(exposure) * color;
+}
+
 // Approximate conversion to srgb from http://chilliant.blogspot.com/2012/08/srgb-approximations-for-hlsl.html
 // Use instead of gamma correction
 vec3 linear_to_srgb(vec3 color) {
