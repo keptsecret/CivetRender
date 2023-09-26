@@ -56,6 +56,7 @@ void main() {
     MetallicRoughAOOut.r = material.use_ao_map ? texture(material.texture_ao, TexCoords).r : material.ambient;
     MetallicRoughAOOut.g = material.use_roughness_map ? texture(material.texture_roughness, TexCoords).g : material.roughness;
     MetallicRoughAOOut.g = material.is_glossy_rough ? 1 - MetallicRoughAOOut.g : MetallicRoughAOOut.g;
+    MetallicRoughAOOut.g = max(MetallicRoughAOOut.g, 0.025);
     MetallicRoughAOOut.b = material.use_metallic_map ? texture(material.texture_metallic, TexCoords).b : material.metallic;
 
     NormalOut = normalize(Normal);

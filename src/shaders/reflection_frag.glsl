@@ -23,7 +23,6 @@ void main() {
 
     vec3 albedo = texture(AlbedoMap, texCoords).rgb;
     float roughness = texture(AORoughMetallicMap, texCoords).g;
-    roughness = max(roughness, 0.025);  // going to 0 causes flickering and errors
     float metallic = texture(AORoughMetallicMap, texCoords).b;
 
     vec4 reflectedColor = texture(ReflectedMap, texCoords);
