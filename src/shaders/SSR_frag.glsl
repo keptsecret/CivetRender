@@ -24,7 +24,7 @@ const float maxDistance = 3000.0;
 const float stride = 10.0;
 const float zThickness = 1.5;
 const float strideZCutoff = 100.0;
-const float screenEdgeFadeStart = 0.75;
+const float screenEdgeFadeStart = 0.8;
 const float eyeFadeStart = 0.5;
 const float eyeFadeEnd = 1.0;
 
@@ -129,9 +129,6 @@ bool raymarch(vec3 csOrig, vec3 csDir, float jitter, out vec2 hitPixel, out vec3
 void main() {
     vec2 texCoords = getTexCoords();
     float roughness = texture(AORoughMetallicMap, texCoords).g;
-    if (roughness > 0.6) {
-        discard;
-    }
 
     float depth = texture(DepthMap, texCoords).x;
     if (depth >= 0.9999f) {
@@ -159,26 +156,24 @@ void main() {
     float iterations = 0;
     bool hit = raymarch(pos_vS, reflectDir_vS, jitter * jitterAmount, hitCoord, hitPos, iterations);
 
-    vec2 hitPixel = hitCoord * screenSize;
-    vec2 margin = vec2((screenSize.x + screenSize.y) * 0.05);
-    if (any(bvec4(lessThan(hitPixel, vec2(0.0)), greaterThan(hitPixel, screenSize)))) {
-        discard;
-    }
-
-    // fade according to eye angle with surface
+    // fade according to ray angle facing camera
     float eyeDir = clamp(reflectDir_vS.z, eyeFadeStart, eyeFadeEnd);
     float eyeBlend = 1.0 - ((eyeDir - eyeFadeStart) / (eyeFadeEnd - eyeFadeStart));
 
-    // Ideally, we'd have a cubemap of the view from the reflective surface
-    // Settling with environment map is fine for open scenes
-    FragColor.rgb = mix(texture(skyboxSampler, reflectDir_wS).rgb, texture(RawFinalImage, hitCoord).rgb, eyeBlend);
-
     // fade if high iteration count
-    float fade = 1.0 - pow(iterations / maxSteps, 8.0);
+    float bounceFade = 1.0 - pow(iterations / maxSteps, 8.0);
 
     // fade on screen edge
-    vec2 marginGrad = mix(screenSize - hitPixel, hitPixel, lessThan(hitPixel, screenSize * 0.5));
-    float marginFade = smoothstep(0.0, margin.x * margin.y, marginGrad.x * marginGrad.y);
+    float screenFade = screenEdgeFadeStart;
+    vec2 hitCoordNDC = (hitCoord * 2.0 - 1.0);
+    float maxDim = min(1.0, max(abs(hitCoordNDC.x), abs(hitCoordNDC.y)));
+    screenFade = 1.0 - (max(0.0, maxDim - screenFade) / (1.0 - screenFade));
 
-    FragColor.a = fade * marginFade;
+    // Ideally, we'd have a cubemap of the view from the reflective surface
+    // Settling with environment map is fine for open scenes
+    vec3 reflectColor = texture(RawFinalImage, hitCoord).rgb;
+    reflectColor = any(isnan(reflectColor)) ? texture(RawFinalImage, texCoords).rgb : reflectColor;
+    FragColor.rgb = mix(texture(skyboxSampler, reflectDir_wS).rgb, reflectColor, eyeBlend * screenFade * bounceFade);
+
+    FragColor.a = bounceFade * screenFade;
 }
